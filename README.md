@@ -17,8 +17,12 @@ The output data frame can be exported in several different formats; see `trachom
 
 See also `trachoma_run.py` for an example of how to use the `Trachoma_Simulation()` function.
 
+### How to run
 
+- Install [pipenv](https://drive.google.com/drive/folders/1Or6lUkymYd_p031xKGZLcnTV4GYf-oYb) according to the instructions for your OS, then `cd` to the project directory and run:
 
-
-
-
+```
+	$ pipenv install . # sets up per-project python environment ('env')
+	$ pipenv shell # starts a per-project shell using that env
+	(ntd-model-trachoma) $ python trachoma_run.py # runs the model
+```
