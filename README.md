@@ -44,7 +44,7 @@ Install [pipenv](https://drive.google.com/drive/folders/1Or6lUkymYd_p031xKGZLcnT
 ```
 	$ pipenv install . # sets up per-project python environment ('env')
 	$ pipenv shell # starts a per-project shell using that env
-	(ntd-model-trachoma) $ python trachoma_run.py # runs the model
+	(ntd-model-trachoma) $ python tests/trachoma_run.py # runs the test model scenarios
 ```
 
 
