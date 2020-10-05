@@ -4,6 +4,8 @@ from joblib import Parallel, delayed
 import multiprocessing
 import pickle
 import time
+import json
+import functools
 
 from trachoma.trachoma_functions import *
 
@@ -85,21 +87,35 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFil
 
     try:
 
-        # load the MDA years
-        first_mda, last_mda = np.int(timeparams.iloc[0, 2]), np.int(timeparams.iloc[0, 3])
+        # try to load MDA dates from JSON-encoded month list in 'mda_vector' in column 5 if present
+        # looks like "[202106,202112,202206]"
+        mda_vector = json.loads( timeparams.iloc[0, 4] )
 
-        # apply the MDA every 12 months
-        mda_start_date = pd.Timestamp(str(first_mda) + '-12-31')
-        mda_end_date = pd.Timestamp(str(last_mda) + '-12-31')
-        mda_dates = pd.date_range(start=mda_start_date, end=mda_end_date, freq='12M')
-        mda_times = [burnin + np.int(np.round(t)) for t in np.arange(52 + 52 * (first_mda - start_sim_year), 52 * nyears + 52, 52)]
-        mda_times = np.array(mda_times[:len(mda_dates)])
+        # [ [2021,6], [2021,12], [2022,6] ]
+        mda_date_ints = [ [ np.int( str( t )[0:4] ), np.int( str( t )[4:6]  ) ] for t in mda_vector ]
+
+        # [ 2021-06-30 00:00:00, 2021-12-31 00:00:00, 2022-06-30 00:00:00 ]
+        mda_dates = [ pd.Timestamp( str( t[0] ) + '-' + str(t[1]).zfill(2) + '-' + ( '30' if t[1] == 6 else '31' ) ) for t in mda_date_ints ]
+
+        # work out the MDA application times from the specified periods - [ 26, 52, 78 ]
+        mda_times = functools.reduce( lambda acc, k: acc + [ ( ( k[0] - mda_date_ints[0][0] ) * 52 ) + ( 26 if k[1] == 6 else 52 ) ], mda_date_ints, [] )
 
     except:
 
-        # do not apply MDA
-        mda_dates = []
-        mda_times = []
+        try:
+            # load the MDA years
+            first_mda, last_mda = np.int(timeparams.iloc[0, 2]), np.int(timeparams.iloc[0, 3])
+
+            # apply the MDA every 12 months
+            mda_start_date = pd.Timestamp(str(first_mda) + '-12-31')
+            mda_end_date = pd.Timestamp(str(last_mda) + '-12-31')
+            mda_dates = pd.date_range(start=mda_start_date, end=mda_end_date, freq='12M')
+            mda_times = [burnin + np.int(np.round(t)) for t in np.arange(52 + 52 * (first_mda - start_sim_year), 52 * nyears + 52, 52)]
+            mda_times = np.array(mda_times[:len(mda_dates)])
+
+        except:
+            mda_dates = []
+            mda_times = []
 
     # Decide how long simulation you want and when you want MDA to be carried out
     sim_params = dict(
