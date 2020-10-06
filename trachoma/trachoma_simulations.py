@@ -88,17 +88,17 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFil
     try:
 
         # try to load MDA dates from JSON-encoded month list in 'mda_vector' in column 5 if present
-        # looks like "[202106,202112,202206]"
+        # looks like "[202101,202106,202201]"
         mda_vector = json.loads( timeparams.iloc[0, 4] )
 
-        # [ [2021,6], [2021,12], [2022,6] ]
+        # [ [2021,1], [2021,6], [2022,1] ]
         mda_date_ints = [ [ np.int( str( t )[0:4] ), np.int( str( t )[4:6]  ) ] for t in mda_vector ]
 
-        # [ 2021-06-30 00:00:00, 2021-12-31 00:00:00, 2022-06-30 00:00:00 ]
+        # [ 2021-01-01 00:00:00, 2021-06-01 00:00:00, 2022-01-01 00:00:00 ]
         mda_dates = [ pd.Timestamp( str( t[0] ) + '-' + str(t[1]).zfill(2) + '-01' ) for t in mda_date_ints ]
 
-        # work out the MDA application times from the specified periods - [ 26, 52, 78 ]
-        mda_times = functools.reduce( lambda acc, k: acc + [ ( ( k[0] - mda_date_ints[0][0] ) * 52 ) + ( 1 if k[1] == 1 else 26 ) ], mda_date_ints, [] )
+        # work out the MDA application times from the specified periods - [ 1, 27, 53 ]
+        mda_times = np.array( functools.reduce( lambda acc, k: acc + [ ( ( k[0] - mda_date_ints[0][0] ) * 52 ) + ( 1 if k[1] == 1 else 26 ) ], mda_date_ints, [] ) )
 
     except:
 
