@@ -6,10 +6,24 @@ import pickle
 import time
 import json
 import functools
+import datetime
 
 from trachoma.trachoma_functions import *
 
-def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFilePath, InSimFilePath):
+def timer(func):
+    """Print the runtime of the decorated function"""
+    @functools.wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        start_time = time.perf_counter()    # 1
+        print(f"-> Running {func.__name__!r}, starting at {datetime.datetime.now()}")
+        value = func(*args, **kwargs)
+        end_time = time.perf_counter()      # 2
+        run_time = end_time - start_time    # 3
+        print(f"=> Finished {func.__name__!r} in {run_time:.4f} secs\n\n")
+        return value
+    return wrapper_timer
+
+def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFilePath, InSimFilePath, rho, MDA_Cov):
 
     '''
     Define all required input parameters.
@@ -46,6 +60,12 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFil
         and resume the previous simulations from this state.
         If this is not provided, the code will start new
         simulations from scratch, including the burnin.
+
+    rho: float
+        Systematic Adherence
+
+    MDA_Cov: float
+        MDA Coverage
 
     Returns:
     -----------
@@ -156,9 +176,9 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFil
         epsilon=0.5,
 
         # Parameters relating to MDA
-        MDA_Cov=0.8,   # MDA coverage
+        MDA_Cov=MDA_Cov,   # MDA coverage
         MDA_Eff=0.85,  # Efficacy of treatment
-        rho=0.3        # Correlation parameter for systematic non-compliance function
+        rho=rho        # Correlation parameter for systematic non-compliance function
     )
 
     # Demography parameters
@@ -170,7 +190,8 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFil
 
     return sim_params, params, demog
 
-def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False, OutSimFilePath=None, InSimFilePath=None):
+@timer
+def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False, OutSimFilePath=None, InSimFilePath=None, rho=0.3, MDA_Cov=0.8):
 
     '''
     Longitudinal simulations.
@@ -208,6 +229,12 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False
         If this is not provided, the code will start new
         simulations from scratch, including the burnin.
 
+    rho: float
+        Systematic Adherence. Defaults to 0.3.
+
+    MDA_Cov: float
+        MDA Coverage. Defaults to 0.8
+
     Returns:
     -----------
     None.
@@ -226,7 +253,7 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False
 
         # load all model parameters
         sim_params, params, demog = loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput,
-        OutSimFilePath, InSimFilePath)
+        OutSimFilePath, InSimFilePath, rho, MDA_Cov)
 
         if InSimFilePath is None: # start new simulations
 
