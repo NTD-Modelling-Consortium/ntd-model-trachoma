@@ -93,6 +93,7 @@ for MDA_Cov in [ 0.6, 0.7, 0.8, 0.9 ]:
             PrevFilePath = f"{output_dir}/{csv_file_name}"
 
             print( f"=== Running:\n\tMDA_Cov {MDA_Cov}\n\tvector {mda_type}\n\tinput {MDAFilePath}\n\toutput {PrevFilePath}\n" )
+            continue
 
             # run the simulation
             Trachoma_Simulation(
@@ -112,7 +113,7 @@ for MDA_Cov in [ 0.6, 0.7, 0.8, 0.9 ]:
             op_data = pd.read_csv( PrevFilePath )
 
             # make a json file path to summarise it into
-            json_file_name = f"{file_name_root}.json"
+            json_file_name = f"{file_name_root}-summary.json"
             summary_json_path = f"{output_dir}/{json_file_name}"
 
             # summarise it in there 
