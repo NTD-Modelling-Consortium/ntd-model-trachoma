@@ -64,10 +64,10 @@ for MDA_Cov in [ 0.6, 0.7, 0.8, 0.9 ]:
 
             # mkdir -p group dirs
             output_dir = f"{FilePathRoot}/output/group-{group}/coverage-{MDA_Cov}/mdatype-{mda_type}"
-#            pathlib.Path( output_dir ).mkdir( parents = True, exist_ok = True )
+            pathlib.Path( output_dir ).mkdir( parents = True, exist_ok = True )
 
             input_dir = f"{FilePathRoot}/input/group-{group}/coverage-{MDA_Cov}/mdatype-{mda_type}"
-#            pathlib.Path( input_dir ).mkdir( parents = True, exist_ok = True )
+            pathlib.Path( input_dir ).mkdir( parents = True, exist_ok = True )
 
             mda_list_string = '-'.join( [ str( x ) for x in mda_list ] )
             file_name_root = f"{group}-{MDA_Cov}-{mda_type}-{mda_list_string}"
@@ -86,14 +86,13 @@ for MDA_Cov in [ 0.6, 0.7, 0.8, 0.9 ]:
             } ] )
 
             # write Input MDA to file
-#            df.to_csv( MDAFilePath, index=None )
+            df.to_csv( MDAFilePath, index=None )
 
             # output CSV file path
             csv_file_name = f"{file_name_root}.csv"
             PrevFilePath = f"{output_dir}/{csv_file_name}"
 
             print( f"=== Running:\n\tMDA_Cov {MDA_Cov}\n\tvector {mda_type}\n\tinput {MDAFilePath}\n\toutput {PrevFilePath}\n" )
-            continue
 
             # run the simulation
             Trachoma_Simulation(
@@ -122,4 +121,3 @@ for MDA_Cov in [ 0.6, 0.7, 0.8, 0.9 ]:
                 '25_percentile': op_data.iloc[:, 2:].quantile(0.25),
                 '75_percentile': op_data.iloc[:, 2:].quantile(0.75)
             }).to_json( summary_json_path )
-
