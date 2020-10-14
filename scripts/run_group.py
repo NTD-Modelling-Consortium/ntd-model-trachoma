@@ -119,6 +119,6 @@ for MDA_Cov in [ 0.6, 0.7, 0.8, 0.9 ]:
             # summarise it in there 
             pd.DataFrame( {
                 'median': op_data.iloc[:, 2:].median(),
-                '25_percentile': op_data.iloc[:, 2:].quantile(0.25),
-                '75_percentile': op_data.iloc[:, 2:].quantile(0.75)
+                'percentile_25': op_data.iloc[:, 2:].quantile(0.25),
+                'percentile_75': op_data.iloc[:, 2:].quantile(0.75)
             }).to_json( summary_json_path )
