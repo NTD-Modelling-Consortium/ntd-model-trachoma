@@ -3,12 +3,15 @@ import glob
 import pathlib
 import pandas as pd
 
-for PrevFilePath in glob.glob('data/Trachoma200/OutputPrev_group[0-9]*.csv'):
+# TODO parameterize paths in *argv
+
+for PrevFilePath in glob.glob('data/merged/OutputPrev_group[0-9]*.csv'):
 
     output_prevalence = pd.read_csv( PrevFilePath )
 
-    gid = re.match( "^data/Trachoma200/OutputPrev_group(?P<gid>[0-9]{2,3}).csv$", PrevFilePath ).group('gid')
+    gid = re.match( "^data/merged/OutputPrev_group(?P<gid>[0-9]{2,3}).csv$", PrevFilePath ).group('gid')
 
+    # FIXME
     output_dir = f"../../ntd-simulator/public/diseases/trachoma/data/group-{gid}"
     pathlib.Path( output_dir ).mkdir( parents = True, exist_ok = True )
 

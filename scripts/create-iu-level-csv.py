@@ -20,8 +20,11 @@ import glob
 import json
 import pandas as pd
 
+# TODO paramaterize paths
+# TODO parameterize groups_to_use
+
 groupToIus = {}
-iuGroupMappings = json.load( open("../../ntd-simulator/src/pages/components/simulator/models/iuGroupMapping.json"))
+iuGroupMappings = json.load( open("../../ntd-simulator/src/pages/components/simulator/helpers/iuGroupMapping.json"))
 for k, v in iuGroupMappings.items():
     gid = str(v)
     if not gid in groupToIus:
@@ -34,9 +37,17 @@ output_data = []
 output_columns = [ 'IUID', 'Endemicity' ]
 output_columns.extend( [ f"Prev_Year{x}" for x in range( 2000, 2020 ) ] )
 
-for PrevFilePath in glob.glob('data/Trachoma200/OutputPrev_group[0-9]*.csv'):
+output_prev_group_file_path = 'data/merged'
+pattern = "^" + output_prev_group_file_path + "/OutputPrev_group(?P<gid>[0-9]{1,3}).csv$"
 
-    gid = re.match( "^data/Trachoma200/OutputPrev_group(?P<gid>[0-9]{2,3}).csv$", PrevFilePath ).group('gid')
+groups_to_use = [ 99, 103, 124, 126, 128, 132, 142 ]
+
+for PrevFilePath in glob.glob(f"{output_prev_group_file_path}/OutputPrev_group[0-9]*.csv"):
+
+    gid = re.match( pattern, PrevFilePath ).group('gid')
+
+    if not int( gid ) in groups_to_use:
+        continue
 
     sys.stderr.write( f"processing file {PrevFilePath} for group {gid}\n" )
 
