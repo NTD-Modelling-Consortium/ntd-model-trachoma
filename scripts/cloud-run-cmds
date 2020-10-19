@@ -5,7 +5,3 @@ cd ntd-model-trachoma
 pipenv install .
 pipenv shell
 pip install .
-gcloud compute scp tests/do_trachoma.py  ubuntu-20-runner-8-32:ntd-model-trachoma/tests/do_trachoma.py  --zone=europe-west2-a
-gcloud compute scp data/Trachoma200/OutputVals_group56.p ubuntu-20-runner-8-32:ntd-model-trachoma/data/Trachoma200/OutputVals_group56.p --zone=europe-west2-a
-gcloud compute scp data/Trachoma200/InputBet_group56.csv ubuntu-20-runner-8-32:ntd-model-trachoma/data/Trachoma200/InputBet_group56.csv --zone=europe-west2-a
-gcloud compute scp files/OutputVals_scen5a.p ubuntu-20-runner-8-32:ntd-model-trachoma/files/OutputVals_scen5a.p --zone=europe-west2-a
