@@ -1,4 +1,4 @@
-for entry in $( ag --nonumbers -v '^#' scripts/group-to-region ) ; do
+for entry in $( ag --nonumbers -v '^#' scripts/gcp-group-to-region ) ; do
 
     region=$( echo $entry | cut -f 1 -d ':' )
     group=$( echo $entry | cut -f 2 -d ':' )
