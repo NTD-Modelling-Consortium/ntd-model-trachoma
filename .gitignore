@@ -130,3 +130,7 @@ dmypy.json
 
 # data
 data/
+*.tbz
+*.tgz
+*.tar.gz
+*.zip
