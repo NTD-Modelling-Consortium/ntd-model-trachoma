@@ -5,6 +5,7 @@ import pathlib
 import sys
 import os
 import re
+from google.cloud import storage
 from trachoma.trachoma_simulations import Trachoma_Simulation
 
 if len( sys.argv ) != 2 :
@@ -22,8 +23,14 @@ mda_vectors = {
 }
 
 FilePathRoot = f"data/merged"
+CloudPathRoot = f"diseases/trachoma/data"
+
+client = storage.Client()
+bucket = client.get_bucket('ntd-disease-simulator-data')
 
 for group in groups:
+
+    ''' SET UP INPUT FILE PATHS '''
 
     BetFilePath = f"{FilePathRoot}/InputBet_group{group}.csv"
     InSimFilePath = f"{FilePathRoot}/OutputVals_group{group}.p"
@@ -36,6 +43,41 @@ for group in groups:
         print( f"Input simulation file {InSimFilePath} doesn't exist, exiting." )
         sys.exit()
 
+    GroupOutputFileDir = f"{FilePathRoot}/group-{group}"
+    pathlib.Path( GroupOutputFileDir ).mkdir( parents = True, exist_ok = True )
+
+    ''' SUMMARISE HISTORICAL DATA '''
+
+    # read in historical data file
+    HistPrevFilePath = f"{FilePathRoot}/OutputPrev_group{group}.csv"
+    historical_prevalence = pd.read_csv( HistPrevFilePath )
+
+    # make a json file path to summarise it into
+    hist_summary_file_name = f"{group}-historical-prevalence-summary.json"
+    HistSummaryFilePath = f"{GroupOutputFileDir}/{hist_summary_file_name}"
+
+    # summarise it in there
+    pd.DataFrame( {
+        'median': historical_prevalence.iloc[:, 2:].median(),
+        'lower': historical_prevalence.iloc[:, 2:].quantile(0.05),
+        'upper': historical_prevalence.iloc[:, 2:].quantile(0.95)
+    }).to_json( HistSummaryFilePath )
+
+    ''' UPLOAD HISTORICAL DATA & SUMMARY '''
+
+    # upload summary file
+    HistSummaryCloudPath = f"{CloudPathRoot}/group-{group}/{hist_summary_file_name}"
+    historical_summary_blob = bucket.blob( HistSummaryCloudPath )
+    historical_summary_blob.upload_from_filename( HistSummaryFilePath )
+
+    # upload historical data
+    hist_prev_cloud_name = f"{group}-historical-prevalence.csv"
+    HistPrevCloudPath = f"{CloudPathRoot}/group-{group}/{hist_prev_cloud_name}"
+    historical_data_blob = bucket.blob( HistPrevCloudPath )
+    historical_data_blob.upload_from_filename( HistPrevFilePath )
+
+    ''' RUN SIMULATIONS '''
+
     # specified MDA coverage values
     for MDA_Cov in [ 0.6, 0.7, 0.8, 0.9 ]:
 
@@ -47,10 +89,14 @@ for group in groups:
             for mda_list in mda_lists:
 
                 # mkdir -p group dirs
-                output_dir = f"{FilePathRoot}/output/group-{group}/coverage-{MDA_Cov}/mdatype-{mda_type}"
+                output_file_path = f"group-{group}/coverage-{MDA_Cov}/mdatype-{mda_type}"
+                output_dir = f"{FilePathRoot}/output/{output_file_path}"
                 pathlib.Path( output_dir ).mkdir( parents = True, exist_ok = True )
 
-                input_dir = f"{FilePathRoot}/input/group-{group}/coverage-{MDA_Cov}/mdatype-{mda_type}"
+                # set up cloud storage path
+                cloud_dir = f"{CloudPathRoot}/{output_file_path}"
+
+                input_dir = f"{FilePathRoot}/input/{output_file_path}"
                 pathlib.Path( input_dir ).mkdir( parents = True, exist_ok = True )
 
                 mda_list_string = '-'.join( [ str( x ) for x in mda_list ] )
@@ -73,11 +119,13 @@ for group in groups:
                 df.to_csv( MDAFilePath, index=None )
 
                 # output CSV file paths
-                prev_csv_file_name = f"{file_name_root}_prev.csv"
+                prev_csv_file_name = f"{file_name_root}-prev.csv"
                 PrevFilePath = f"{output_dir}/{prev_csv_file_name}"
+                PrevCloudPath = f"{cloud_dir}/{prev_csv_file_name}"
 
-                infect_csv_file_name = f"{file_name_root}_infect.csv"
+                infect_csv_file_name = f"{file_name_root}-infect.csv"
                 InfectFilePath = f"{output_dir}/{infect_csv_file_name}"
+                InfectCloudPath = f"{cloud_dir}/{infect_csv_file_name}"
 
                 print( f"=== Running:\n\tGroup: {group}\n\tMDA_Cov {MDA_Cov}\n\tvector {mda_type}\n\tinput {MDAFilePath}\n\toutput {PrevFilePath}\n" )
 
@@ -93,8 +141,19 @@ for group in groups:
                     MDA_Cov=MDA_Cov
                 )
 
+                # upload prevalence file
+                blob = bucket.blob( "diseases/trachoma/data/group-103/coverage-0.6/mdatype-12/103-0.6-12-202001_prev.csv" )
+                prev_blob = bucket.blob( PrevCloudPath )
+                prev_blob.upload_from_filename( PrevFilePath )
+
+                # upload infection file
+                infect_blob = bucket.blob( InfectCloudPath )
+                infect_blob.upload_from_filename( InfectFilePath )
+
                 # remove the input file
                 os.remove( MDAFilePath )
+
+                ''' SUMMARISE OUTPUT DATA '''
 
                 # read in the simulation output
                 op_data = pd.read_csv( PrevFilePath )
@@ -102,6 +161,7 @@ for group in groups:
                 # make a json file path to summarise it into
                 json_file_name = f"{file_name_root}-summary.json"
                 summary_json_path = f"{output_dir}/{json_file_name}"
+                summary_json_cloud_path = f"{cloud_dir}/{json_file_name}"
 
                 # summarise it in there
                 pd.DataFrame( {
@@ -109,6 +169,10 @@ for group in groups:
                     'lower': op_data.iloc[:, 2:].quantile(0.05),
                     'upper': op_data.iloc[:, 2:].quantile(0.95)
                 }).to_json( summary_json_path )
+
+                # upload summary file
+                summary_blob = bucket.blob( summary_json_cloud_path )
+                summary_blob.upload_from_filename( summary_json_path )
 
     print( f"===== FINISHED RUNNING GROUP {group} =====" )
 
