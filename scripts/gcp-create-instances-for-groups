@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+machine_type="c2-standard-60"
+image_name="ntd-trachoma-runner-20201022a"
+instance_no=0
+zones=( "a" "b" "c" "f" )
+zones_length=${#zones[@]}
+prev_region=""
+
+instance_to_group_map_file="instances-to-groups-$(date +%Y%m%d%H%M%S)"
+
+declare -A ZONES_USED
+
+for entry in $( ag --nonumbers -v '^#' scripts/gcp-region-to-group | sort ) ; do
+
+    region=$( echo $entry | cut -f 1 -d ':' )
+
+    zone_index=$(( instance_no % zones_length ))
+
+    if [[ "${region}" = "${prev_region}" ]] ; then
+        instance_no=$((instance_no + 1))
+    else
+        instance_no=1
+    fi
+    prev_region="${region}"
+
+    group=$( echo $entry | cut -f 2 -d ':' )
+
+    zone="${region}-${zones[zone_index]}"
+    zone_key="${region}-${zones[zone_index]}"
+    so_far="${ZONES_USED[$zone_key]}"
+
+    [[ "${so_far}" = "" ]] && used_zone_index=0 || used_zone_index=$((so_far))
+
+    ZONES_USED[$zone_key]=$(( used_zone_index + 1 ))
+
+    name="runner-${zone}-${ZONES_USED[$zone_key]}"
+
+    echo "*** creating instance ${name} for group ${group} ***"
+    echo "${name}:${group}" >> ${instance_to_group_map_file}
+    echo gcloud compute instances create --zone "${zone}" --machine-type "${machine_type}" --image "${image_type}" "${name}"
+   # gcloud compute instances create --zone "${zone}" --machine-type "${machine_type}" --image "${image_type}" "${name}"
+    echo
+done
