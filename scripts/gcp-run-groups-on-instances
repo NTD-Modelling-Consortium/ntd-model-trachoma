@@ -13,9 +13,8 @@ do
 
     echo "-> running groups ${group} on instance ${instance} in zone ${zone}"
     echo gcloud compute ssh "${instance}" --zone "${zone}" --command "( cd ntd-model-trachoma && git pull origin master && bash scripts/nohup-group.bash ${group} && ls -1 run_group_*)"
+   # gcloud compute ssh "${instance}" --zone "${zone}" --command "( cd ntd-model-trachoma && git pull origin master && bash scripts/nohup-group.bash ${group} && ls -1 run_group_*)"
     echo
-    continue
 
-    gcloud compute ssh "${name}" --zone "${zone}" --command "( cd ntd-model-trachoma && git pull origin master && bash scripts/nohup-group.bash ${group} && ls -1 run_group_*)"
 done < "${1}"
 

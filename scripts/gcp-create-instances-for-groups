@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-machine_type="c2-standard-60"
-image_name="ntd-trachoma-runner-20201022a"
+machine_type="n2d-highcpu-128"
+image_name="ntd-trachoma-runner-20201022b"
+scopes="storage-full"
 instance_no=0
-zones=( "a" "b" "c" "f" )
+zones=( "c" "f" )
 zones_length=${#zones[@]}
 prev_region=""
 
@@ -37,7 +38,7 @@ for entry in $( ag --nonumbers -v '^#' scripts/gcp-region-to-group | sort ) ; do
 
     echo "*** creating instance ${name} for group ${group} ***"
     echo "${name}:${group}" >> ${instance_to_group_map_file}
-    echo gcloud compute instances create --zone "${zone}" --machine-type "${machine_type}" --image "${image_type}" "${name}"
-   # gcloud compute instances create --zone "${zone}" --machine-type "${machine_type}" --image "${image_type}" "${name}"
+    echo gcloud compute instances create --zone "${zone}" --machine-type "${machine_type}" --scopes="${scopes}" --image "${image_name}" "${name}"
+    gcloud compute instances create --zone "${zone}" --machine-type "${machine_type}" --scopes="${scopes}" --image "${image_name}" "${name}"
     echo
 done
