@@ -102,8 +102,8 @@ for group in groups:
                 # summarise it in there
                 pd.DataFrame( {
                     'median': op_data.iloc[:, 2:].median(),
-                    'percentile_25': op_data.iloc[:, 2:].quantile(0.25),
-                    'percentile_75': op_data.iloc[:, 2:].quantile(0.75)
+                    'lower': op_data.iloc[:, 2:].quantile(0.05),
+                    'upper': op_data.iloc[:, 2:].quantile(0.95)
                 }).to_json( summary_json_path )
 
     print( f"===== FINISHED RUNNING GROUP {group} =====" )

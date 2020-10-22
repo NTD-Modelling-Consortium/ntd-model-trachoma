@@ -17,8 +17,8 @@ for PrevFilePath in glob.glob('data/merged/OutputPrev_group[0-9]*.csv'):
 
     summary = pd.DataFrame( {
         'median': output_prevalence.iloc[:, 2:].median(),
-        'percentile_25': output_prevalence.iloc[:, 2:].quantile(0.25),
-        'percentile_75': output_prevalence.iloc[:, 2:].quantile(0.75)
+        'lower': output_prevalence.iloc[:, 2:].quantile(0.05),
+        'upper': output_prevalence.iloc[:, 2:].quantile(0.95)
     })
 
     output_file = f"{output_dir}/{gid}-historical-prevalence-summary.json"
