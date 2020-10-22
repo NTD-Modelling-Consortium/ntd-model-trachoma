@@ -72,9 +72,12 @@ for group in groups:
                 # write Input MDA to file
                 df.to_csv( MDAFilePath, index=None )
 
-                # output CSV file path
-                csv_file_name = f"{file_name_root}.csv"
-                PrevFilePath = f"{output_dir}/{csv_file_name}"
+                # output CSV file paths
+                prev_csv_file_name = f"{file_name_root}_prev.csv"
+                PrevFilePath = f"{output_dir}/{prev_csv_file_name}"
+
+                infect_csv_file_name = f"{file_name_root}_infect.csv"
+                InfectFilePath = f"{output_dir}/{infect_csv_file_name}"
 
                 print( f"=== Running:\n\tGroup: {group}\n\tMDA_Cov {MDA_Cov}\n\tvector {mda_type}\n\tinput {MDAFilePath}\n\toutput {PrevFilePath}\n" )
 
@@ -83,6 +86,7 @@ for group in groups:
                     BetFilePath=BetFilePath,
                     MDAFilePath=MDAFilePath,
                     PrevFilePath=PrevFilePath,
+                    InfectFilePath=InfectFilePath,
                     SaveOutput=False,
                     OutSimFilePath=None,
                     InSimFilePath=InSimFilePath,

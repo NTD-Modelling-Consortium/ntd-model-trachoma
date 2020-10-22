@@ -23,7 +23,7 @@ def timer(func):
         return value
     return wrapper_timer
 
-def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFilePath, InSimFilePath, rho, MDA_Cov):
+def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput, OutSimFilePath, InSimFilePath, rho, MDA_Cov):
 
     '''
     Define all required input parameters.
@@ -42,6 +42,10 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFil
     PrevFilePath: str
         This is the path where the output CSV file with
         the simulated prevalence will be saved.
+
+    InfectFilePath: str
+        This is the path where the output CSV file with
+        the simulated infection will be saved.
 
     SaveOutput: bool
         If True, the last state of the simulations will
@@ -191,7 +195,7 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput, OutSimFil
     return sim_params, params, demog
 
 @timer
-def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False, OutSimFilePath=None, InSimFilePath=None, rho=0.3, MDA_Cov=0.8):
+def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput=False, OutSimFilePath=None, InSimFilePath=None, rho=0.3, MDA_Cov=0.8):
 
     '''
     Longitudinal simulations.
@@ -210,6 +214,10 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False
     PrevFilePath: str
         This is the path where the output CSV file with
         the simulated prevalence will be saved.
+
+    InfectFilePath: str
+        This is the path where the output CSV file with
+        the simulated infection will be saved.
 
     SaveOutput: bool
         If True, the last state of the simulations will
@@ -241,7 +249,7 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False
     '''
 
     # make sure that the user has provided all the necessary inputs
-    if '.csv' not in BetFilePath or '.csv' not in MDAFilePath or '.csv' not in PrevFilePath:
+    if '.csv' not in BetFilePath or '.csv' not in MDAFilePath or '.csv' not in PrevFilePath or '.csv' not in InfectFilePath:
 
         message = 'Please provide the directory to the CSV files.'
 
@@ -252,7 +260,7 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False
     else:
 
         # load all model parameters
-        sim_params, params, demog = loadParameters(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput,
+        sim_params, params, demog = loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput,
         OutSimFilePath, InSimFilePath, rho, MDA_Cov)
 
         if InSimFilePath is None: # start new simulations
@@ -308,17 +316,30 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, SaveOutput=False
         end_time = time.time()
 
         # save the simulated prevalence in a CSV file
-        columns = ['Random Generator', 'bet']
-        columns.extend([d.strftime(format='%m-%Y') for d in sim_params['Out_dates']])
-        df = pd.DataFrame(columns=columns)
-        df['Random Generator'] = sim_params['Seed']
-        df['bet'] = sim_params['Beta']
+        prevalence_columns = ['Random Generator', 'bet']
+        prevalence_columns.extend([d.strftime(format='%m-%Y') for d in sim_params['Out_dates']])
+        ddf = pd.DataFrame(columns=prevalence_columns)
+        ddf['Random Generator'] = sim_params['Seed']
+        ddf['bet'] = sim_params['Beta']
 
         for i in range(len(out)):
 
-            df.iloc[i, 2:] = [out[i]['True_Prev_Disease_children_1_9'][j - 1] for j in sim_params['Out_times']]
+            ddf.iloc[i, 2:] = [out[i]['True_Prev_Disease_children_1_9'][j - 1] for j in sim_params['Out_times']]
 
-        df.to_csv(PrevFilePath, index=None)
+        ddf.to_csv(PrevFilePath, index=None)
+
+        # save the simulated infections in a CSV file
+        infection_columns = ['Random Generator', 'bet']
+        infection_columns.extend([d.strftime(format='%m-%Y') for d in sim_params['Out_dates']])
+        idf = pd.DataFrame(columns=infection_columns)
+        idf['Random Generator'] = sim_params['Seed']
+        idf['bet'] = sim_params['Beta']
+
+        for i in range(len(out)):
+
+            idf.iloc[i, 2:] = [out[i]['True_Infections_Disease_children_1_9'][j - 1] for j in sim_params['Out_times']]
+
+        idf.to_csv(InfectFilePath, index=None)
 
         # save all the simulated values in a pickle file
         if SaveOutput:
