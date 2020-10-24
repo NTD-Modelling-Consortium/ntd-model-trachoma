@@ -69,6 +69,7 @@ for group in groups:
     HistSummaryCloudPath = f"{CloudPathRoot}/group-{group}/{hist_summary_file_name}"
     historical_summary_blob = bucket.blob( HistSummaryCloudPath )
     historical_summary_blob.upload_from_filename( HistSummaryFilePath )
+    os.remove( HistSummaryFilePath )
 
     # upload historical data
     hist_prev_cloud_name = f"{group}-historical-prevalence.csv"
@@ -145,10 +146,12 @@ for group in groups:
                 blob = bucket.blob( "diseases/trachoma/data/group-103/coverage-0.6/mdatype-12/103-0.6-12-202001_prev.csv" )
                 prev_blob = bucket.blob( PrevCloudPath )
                 prev_blob.upload_from_filename( PrevFilePath )
+                os.remove( PrevFilePath )
 
                 # upload infection file
                 infect_blob = bucket.blob( InfectCloudPath )
                 infect_blob.upload_from_filename( InfectFilePath )
+                os.remove( InfectFilePath )
 
                 # remove the input file
                 os.remove( MDAFilePath )
@@ -173,6 +176,7 @@ for group in groups:
                 # upload summary file
                 summary_blob = bucket.blob( summary_json_cloud_path )
                 summary_blob.upload_from_filename( summary_json_path )
+                os.remove( summary_json_path )
 
     print( f"===== FINISHED RUNNING GROUP {group} =====" )
 
