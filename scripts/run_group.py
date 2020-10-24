@@ -146,12 +146,10 @@ for group in groups:
                 blob = bucket.blob( "diseases/trachoma/data/group-103/coverage-0.6/mdatype-12/103-0.6-12-202001_prev.csv" )
                 prev_blob = bucket.blob( PrevCloudPath )
                 prev_blob.upload_from_filename( PrevFilePath )
-                os.remove( PrevFilePath )
 
                 # upload infection file
                 infect_blob = bucket.blob( InfectCloudPath )
                 infect_blob.upload_from_filename( InfectFilePath )
-                os.remove( InfectFilePath )
 
                 # remove the input file
                 os.remove( MDAFilePath )
@@ -176,6 +174,10 @@ for group in groups:
                 # upload summary file
                 summary_blob = bucket.blob( summary_json_cloud_path )
                 summary_blob.upload_from_filename( summary_json_path )
+
+                ''' REMOVE LOCAL OUTPUT FILES '''
+                os.remove( PrevFilePath )
+                os.remove( InfectFilePath )
                 os.remove( summary_json_path )
 
     print( f"===== FINISHED RUNNING GROUP {group} =====" )
