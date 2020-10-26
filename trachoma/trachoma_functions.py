@@ -351,7 +351,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
         infections.append(n_true_infected_children_1_9 / n_children_ages_1_9)
 
     vals['True_Prev_Disease_children_1_9'] = prevalence # save the prevalence in children aged 1-9
-    vals['True_Infections_Disease_children_1_9'] = prevalence # save the infections in children aged 1-9
+    vals['True_Infections_Disease_children_1_9'] = infections # save the infections in children aged 1-9
     vals['State'] = np.random.get_state() # save the state of the simulations
 
     return vals
