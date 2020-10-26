@@ -7,6 +7,7 @@ import time
 import json
 import functools
 import datetime
+import sys
 
 from trachoma.trachoma_functions import *
 
@@ -121,8 +122,15 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
         # [ 2021-01-01 00:00:00, 2021-06-01 00:00:00, 2022-01-01 00:00:00 ]
         mda_dates = [ pd.Timestamp( str( t[0] ) + '-' + str(t[1]).zfill(2) + '-01' ) for t in mda_date_ints ]
 
+        # number of weeks since 2020-01
+        start_date_int = [ 2020, 1 ]
+        month_addition = 1 if mda_date_ints[0][1] == 6 else 0
+        weeks_from_202001 = int( ( ( mda_date_ints[0][0] - start_date_int[0] ) * 52 ) + ( ( ( mda_date_ints[0][1] - start_date_int[1] ) + month_addition ) * ( 52 / 12 ) ) )
+
+        # TODO FIXME account for  equivalent of ( first_mda - start_sim_year )
+
         # work out the MDA application times from the specified periods - [ 1, 27, 53 ]
-        mda_times = np.array( functools.reduce( lambda acc, k: acc + [ ( ( k[0] - mda_date_ints[0][0] ) * 52 ) + ( 1 if k[1] == 1 else 26 ) ], mda_date_ints, [] ) )
+        mda_times = np.array( functools.reduce( lambda acc, k: acc + [ burnin + weeks_from_202001 + ( ( k[0] - mda_date_ints[0][0] ) * 52 ) + ( 1 if k[1] == 1 else 26 ) ], mda_date_ints, [] ) )
 
     except:
 
