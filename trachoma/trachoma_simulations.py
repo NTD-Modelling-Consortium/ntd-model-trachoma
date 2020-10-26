@@ -129,6 +129,9 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
 
         # TODO FIXME account for  equivalent of ( first_mda - start_sim_year )
 
+        # TODO FIXME work out what's going on with InSimFilePath so we know how to deal with this better
+        burnin = 40 * 52
+
         # work out the MDA application times from the specified periods - [ 1, 27, 53 ]
         mda_times = np.array( functools.reduce( lambda acc, k: acc + [ burnin + weeks_from_202001 + ( ( k[0] - mda_date_ints[0][0] ) * 52 ) + ( 1 if k[1] == 1 else 26 ) ], mda_date_ints, [] ) )
 
