@@ -43,7 +43,7 @@ for group in groups:
         print( f"Input simulation file {InSimFilePath} doesn't exist, exiting." )
         sys.exit()
 
-    GroupOutputFileDir = f"{FilePathRoot}/group-{group}"
+    GroupOutputFileDir = f"{FilePathRoot}/output/group-{group}"
     pathlib.Path( GroupOutputFileDir ).mkdir( parents = True, exist_ok = True )
 
     ''' SUMMARISE HISTORICAL DATA '''
@@ -128,7 +128,7 @@ for group in groups:
                 InfectFilePath = f"{output_dir}/{infect_csv_file_name}"
                 InfectCloudPath = f"{cloud_dir}/{infect_csv_file_name}"
 
-                print( f"=== Running:\n\tGroup: {group}\n\tMDA_Cov {MDA_Cov}\n\tvector {mda_type}\n\tinput {MDAFilePath}\n\toutput {PrevFilePath}\n" )
+                print( f"=== Running:\n\tGroup: {group}\n\tMDA_Cov {MDA_Cov}\n\tMDA type {mda_type}\n\tinput {MDAFilePath}\n\toutput {PrevFilePath}\n" )
 
                 # run the simulation
                 Trachoma_Simulation(
@@ -143,7 +143,6 @@ for group in groups:
                 )
 
                 # upload prevalence file
-                blob = bucket.blob( "diseases/trachoma/data/group-103/coverage-0.6/mdatype-12/103-0.6-12-202001_prev.csv" )
                 prev_blob = bucket.blob( PrevCloudPath )
                 prev_blob.upload_from_filename( PrevFilePath )
 
