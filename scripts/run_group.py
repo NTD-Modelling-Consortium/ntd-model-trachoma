@@ -82,102 +82,107 @@ for group in groups:
     # specified MDA coverage values
     for MDA_Cov in [ 0.6, 0.7, 0.8, 0.9 ]:
 
-        # annual, biannual
-        for mda_type, mda_vector in mda_vectors.items():
+        try:
 
-            mda_lists = [ mda_vector[i:j] for i, j in itertools.combinations( range( len( mda_vector ) + 1 ), 2 ) ]
+            # annual, biannual
+            for mda_type, mda_vector in mda_vectors.items():
 
-            for mda_list in mda_lists:
+                mda_lists = [ mda_vector[i:j] for i, j in itertools.combinations( range( len( mda_vector ) + 1 ), 2 ) ]
 
-                # mkdir -p group dirs
-                output_file_path = f"group-{group}/coverage-{MDA_Cov}/mdatype-{mda_type}"
-                output_dir = f"{FilePathRoot}/output/{output_file_path}"
-                pathlib.Path( output_dir ).mkdir( parents = True, exist_ok = True )
+                for mda_list in mda_lists:
 
-                # set up cloud storage path
-                cloud_dir = f"{CloudPathRoot}/{output_file_path}"
+                    # mkdir -p group dirs
+                    output_file_path = f"group-{group}/coverage-{MDA_Cov}/mdatype-{mda_type}"
+                    output_dir = f"{FilePathRoot}/output/{output_file_path}"
+                    pathlib.Path( output_dir ).mkdir( parents = True, exist_ok = True )
 
-                input_dir = f"{FilePathRoot}/input/{output_file_path}"
-                pathlib.Path( input_dir ).mkdir( parents = True, exist_ok = True )
+                    # set up cloud storage path
+                    cloud_dir = f"{CloudPathRoot}/{output_file_path}"
 
-                mda_list_string = '-'.join( [ str( x ) for x in mda_list ] )
-                file_name_root = f"{group}-{MDA_Cov}-{mda_type}-{mda_list_string}"
+                    input_dir = f"{FilePathRoot}/input/{output_file_path}"
+                    pathlib.Path( input_dir ).mkdir( parents = True, exist_ok = True )
 
-                # Input MDA file path/name
-                input_mda_file_name = f"InputMDA-{file_name_root}.csv"
-                MDAFilePath = f"{input_dir}/{input_mda_file_name}"
+                    mda_list_string = '-'.join( [ str( x ) for x in mda_list ] )
+                    file_name_root = f"{group}-{MDA_Cov}-{mda_type}-{mda_list_string}"
 
-                # Input MDA data
-                df = pd.DataFrame.from_records( [ {
-                    'start_sim_year': 2020,
-                    'end_sim_year': 2030,
-                    'first_mda': '',
-                    'last_mda': '',
-                    'mda_vector': json.dumps( mda_list )
-                } ] )
+                    # Input MDA file path/name
+                    input_mda_file_name = f"InputMDA-{file_name_root}.csv"
+                    MDAFilePath = f"{input_dir}/{input_mda_file_name}"
 
-                # write Input MDA to file
-                df.to_csv( MDAFilePath, index=None )
+                    # Input MDA data
+                    df = pd.DataFrame.from_records( [ {
+                        'start_sim_year': 2020,
+                        'end_sim_year': 2030,
+                        'first_mda': '',
+                        'last_mda': '',
+                        'mda_vector': json.dumps( mda_list )
+                    } ] )
 
-                # output CSV file paths
-                prev_csv_file_name = f"{file_name_root}-prev.csv"
-                PrevFilePath = f"{output_dir}/{prev_csv_file_name}"
-                PrevCloudPath = f"{cloud_dir}/{prev_csv_file_name}"
+                    # write Input MDA to file
+                    df.to_csv( MDAFilePath, index=None )
 
-                infect_csv_file_name = f"{file_name_root}-infect.csv"
-                InfectFilePath = f"{output_dir}/{infect_csv_file_name}"
-                InfectCloudPath = f"{cloud_dir}/{infect_csv_file_name}"
+                    # output CSV file paths
+                    prev_csv_file_name = f"{file_name_root}-prev.csv"
+                    PrevFilePath = f"{output_dir}/{prev_csv_file_name}"
+                    PrevCloudPath = f"{cloud_dir}/{prev_csv_file_name}"
 
-                print( f"=== Running:\n\tGroup: {group}\n\tMDA_Cov {MDA_Cov}\n\tMDA type {mda_type}\n\tinput {MDAFilePath}\n\toutput {PrevFilePath}\n" )
+                    infect_csv_file_name = f"{file_name_root}-infect.csv"
+                    InfectFilePath = f"{output_dir}/{infect_csv_file_name}"
+                    InfectCloudPath = f"{cloud_dir}/{infect_csv_file_name}"
 
-                # run the simulation
-                Trachoma_Simulation(
-                    BetFilePath=BetFilePath,
-                    MDAFilePath=MDAFilePath,
-                    PrevFilePath=PrevFilePath,
-                    InfectFilePath=InfectFilePath,
-                    SaveOutput=False,
-                    OutSimFilePath=None,
-                    InSimFilePath=InSimFilePath,
-                    MDA_Cov=MDA_Cov
-                )
+                    print( f"=== Running:\n\tGroup: {group}\n\tMDA_Cov {MDA_Cov}\n\tMDA type {mda_type}\n\tinput {MDAFilePath}\n\toutput {PrevFilePath}\n" )
 
-                # upload prevalence file
-                prev_blob = bucket.blob( PrevCloudPath )
-                prev_blob.upload_from_filename( PrevFilePath )
+                    # run the simulation
+                    Trachoma_Simulation(
+                        BetFilePath=BetFilePath,
+                        MDAFilePath=MDAFilePath,
+                        PrevFilePath=PrevFilePath,
+                        InfectFilePath=InfectFilePath,
+                        SaveOutput=False,
+                        OutSimFilePath=None,
+                        InSimFilePath=InSimFilePath,
+                        MDA_Cov=MDA_Cov
+                    )
 
-                # upload infection file
-                infect_blob = bucket.blob( InfectCloudPath )
-                infect_blob.upload_from_filename( InfectFilePath )
+                    # upload prevalence file
+                    prev_blob = bucket.blob( PrevCloudPath )
+                    prev_blob.upload_from_filename( PrevFilePath )
 
-                # remove the input file
-                os.remove( MDAFilePath )
+                    # upload infection file
+                    infect_blob = bucket.blob( InfectCloudPath )
+                    infect_blob.upload_from_filename( InfectFilePath )
 
-                ''' SUMMARISE OUTPUT DATA '''
+                    # remove the input file
+                    os.remove( MDAFilePath )
 
-                # read in the simulation output
-                op_data = pd.read_csv( PrevFilePath )
+                    ''' SUMMARISE OUTPUT DATA '''
 
-                # make a json file path to summarise it into
-                json_file_name = f"{file_name_root}-summary.json"
-                summary_json_path = f"{output_dir}/{json_file_name}"
-                summary_json_cloud_path = f"{cloud_dir}/{json_file_name}"
+                    # read in the simulation output
+                    op_data = pd.read_csv( PrevFilePath )
 
-                # summarise it in there
-                pd.DataFrame( {
-                    'median': op_data.iloc[:, 2:].median(),
-                    'lower': op_data.iloc[:, 2:].quantile(0.05),
-                    'upper': op_data.iloc[:, 2:].quantile(0.95)
-                }).to_json( summary_json_path )
+                    # make a json file path to summarise it into
+                    json_file_name = f"{file_name_root}-summary.json"
+                    summary_json_path = f"{output_dir}/{json_file_name}"
+                    summary_json_cloud_path = f"{cloud_dir}/{json_file_name}"
 
-                # upload summary file
-                summary_blob = bucket.blob( summary_json_cloud_path )
-                summary_blob.upload_from_filename( summary_json_path )
+                    # summarise it in there
+                    pd.DataFrame( {
+                        'median': op_data.iloc[:, 2:].median(),
+                        'lower': op_data.iloc[:, 2:].quantile(0.05),
+                        'upper': op_data.iloc[:, 2:].quantile(0.95)
+                    }).to_json( summary_json_path )
 
-                ''' REMOVE LOCAL OUTPUT FILES '''
-                os.remove( PrevFilePath )
-                os.remove( InfectFilePath )
-                os.remove( summary_json_path )
+                    # upload summary file
+                    summary_blob = bucket.blob( summary_json_cloud_path )
+                    summary_blob.upload_from_filename( summary_json_path )
+
+                    ''' REMOVE LOCAL OUTPUT FILES '''
+                    os.remove( PrevFilePath )
+                    os.remove( InfectFilePath )
+                    os.remove( summary_json_path )
+
+        except Exception as e:
+            print( f"+++++ ERROR in group {group} MDA_Cov {MDA_Cov}: {str(e)}" )
 
     print( f"===== FINISHED RUNNING GROUP {group} =====" )
 
