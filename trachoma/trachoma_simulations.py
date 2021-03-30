@@ -8,6 +8,8 @@ import json
 import functools
 import datetime
 import sys
+import os
+import uuid
 
 from trachoma.trachoma_functions import *
 
@@ -15,16 +17,18 @@ def timer(func):
     """Print the runtime of the decorated function"""
     @functools.wraps(func)
     def wrapper_timer(*args, **kwargs):
+        run_uuid = uuid.uuid4()
         start_time = time.perf_counter()    # 1
-        print(f"-> Running {func.__name__!r}, starting at {datetime.datetime.now()}")
+        print_function = kwargs[ 'logger' ].info if kwargs[ 'logger' ] is not None else print
+        print_function(f"-> Timer {run_uuid} running {func.__name__!r}, starting at {datetime.datetime.now()}")
         value = func(*args, **kwargs)
         end_time = time.perf_counter()      # 2
         run_time = end_time - start_time    # 3
-        print(f"=> Finished {func.__name__!r} in {run_time:.4f} secs\n\n")
+        print_function(f"=> Timer {run_uuid} finished {func.__name__!r} in {run_time:.4f} secs")
         return value
     return wrapper_timer
 
-def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput, OutSimFilePath, InSimFilePath, rho, MDA_Cov):
+def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput, OutSimFilePath, InSimFilePath, rho, MDA_Cov, numReps, logger=None):
 
     '''
     Define all required input parameters.
@@ -84,8 +88,10 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
         demography parameters.
     '''
 
+    print_function = logger.info if logger is not None else print
+
     # load the values of beta and of the random seed
-    simparams = pd.read_csv(BetFilePath)
+    simparams = pd.read_csv( BetFilePath ) if numReps == 0 else pd.read_csv( BetFilePath, nrows=numReps )
     beta, seed = simparams.iloc[:, 1], simparams.iloc[:, 0]
 
     # if we are resuming previous simulations we skip
@@ -205,7 +211,12 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
     return sim_params, params, demog
 
 @timer
-def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput=False, OutSimFilePath=None, InSimFilePath=None, rho=0.3, MDA_Cov=0.8):
+def Trachoma_Simulation(
+    BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath,
+    SaveOutput=False, OutSimFilePath=None, InSimFilePath=None,
+    rho=0.3, MDA_Cov=0.8, numReps=0,
+    useCloudStorage=False, download_blob_to_file=None, logger=None
+):
 
     '''
     Longitudinal simulations.
@@ -258,6 +269,8 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, 
     None.
     '''
 
+    print_function = logger.info if logger is not None else print
+
     # make sure that the user has provided all the necessary inputs
     if '.csv' not in BetFilePath or '.csv' not in MDAFilePath or '.csv' not in PrevFilePath or '.csv' not in InfectFilePath:
 
@@ -271,7 +284,7 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, 
 
         # load all model parameters
         sim_params, params, demog = loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput,
-        OutSimFilePath, InSimFilePath, rho, MDA_Cov)
+        OutSimFilePath, InSimFilePath, rho, MDA_Cov, numReps, logger)
 
         if InSimFilePath is None: # start new simulations
 
@@ -297,9 +310,17 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, 
 
         else: # continue previous simulations
 
+            # if the .p data file is in cloud storage, download it once and then read locally
+            if( useCloudStorage is True and download_blob_to_file is not None ):
+                local_p_file = f"./{ InSimFilePath.split( '/' )[ -1 ] }"
+                print_function( f"Downloading pickle data (1) from {InSimFilePath} to {local_p_file}..." )
+                download_blob_to_file( InSimFilePath, local_p_file )
+                InSimFilePath = local_p_file
+
             if sim_params['N_MDA'] != 0:  # create treatment matrix
 
-                previous_rounds = pickle.load(open(InSimFilePath, 'rb'))[0]['N_MDA']  # previous MDA rounds
+                pickleData = pickle.load(open(InSimFilePath, 'rb'))
+                previous_rounds = pickleData[0]['N_MDA']  # previous MDA rounds
                 Tx_mat = Tx_matrix(params=params, sim_params=sim_params, previous_rounds=previous_rounds)
 
             else:
@@ -308,7 +329,8 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, 
 
             def multiple_simulations(j):
 
-                vals = pickle.load(open(InSimFilePath, 'rb'))[j]  # load the previous simulations
+                pickleData = pickle.load(open(InSimFilePath, 'rb'))
+                vals = pickleData[j]  # load the previous simulations
 
                 out = sim_Ind_MDA(params=params, Tx_mat=Tx_mat, vals=vals, timesim=sim_params['timesim'],
                 demog=demog, bet=sim_params['Beta'][j], MDA_times=sim_params['MDA_times'], seed=None,
@@ -317,13 +339,17 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, 
                 return out
 
         # run simulations
+        model_version = 'v20210329a'
         num_cores = multiprocessing.cpu_count()
+        print_function( f"Starting {numReps}x Trachoma runs on {num_cores} core(s), {model_version}" )
 
         start_time = time.time()
 
         out = Parallel(n_jobs=num_cores)(delayed(multiple_simulations)(j) for j in range(sim_params['n_sim']))
 
         end_time = time.time()
+
+        print_function( f"Finished {numReps}x Trachoma runs on {num_cores} core(s), {model_version}" )
 
         # save the simulated prevalence in a CSV file
         prevalence_columns = ['Random Generator', 'bet']
@@ -336,6 +362,7 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, 
 
             ddf.iloc[i, 2:] = [out[i]['True_Prev_Disease_children_1_9'][j - 1] for j in sim_params['Out_times']]
 
+        print_function( f"Writing PrevFile to path {PrevFilePath} ..." )
         ddf.to_csv(PrevFilePath, index=None)
 
         # save the simulated infections in a CSV file
@@ -349,15 +376,23 @@ def Trachoma_Simulation(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, 
 
             idf.iloc[i, 2:] = [out[i]['True_Infections_Disease_children_1_9'][j - 1] for j in sim_params['Out_times']]
 
+        print_function( f"Writing InfectFile to path {InfectFilePath} ..." )
         idf.to_csv(InfectFilePath, index=None)
 
         # save all the simulated values in a pickle file
         if SaveOutput:
 
+            print_function( f"Dumping pickle file to {OutSimFilePath} ..." )
             pickle.dump(out, open(OutSimFilePath, 'wb'))
+
+        # remove local .p file if one was downloaded
+        if useCloudStorage is True:
+            if os.path.isfile( InSimFilePath ):
+                print_function( f"Removing downloaded file {InSimFilePath} ..." )
+                os.remove( InSimFilePath )
 
         message = 'Running time: ' + format((end_time - start_time), '.0f') + ' seconds.'
 
-    print(message)
+    print_function(message)
 
     return None
