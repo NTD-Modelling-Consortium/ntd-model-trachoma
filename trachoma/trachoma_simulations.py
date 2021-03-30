@@ -155,8 +155,6 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
             mda_dates = []
             mda_times = []
 
-    print( 'mda_times:', *mda_times )
-
     # Decide how long simulation you want and when you want MDA to be carried out
     sim_params = dict(
         timesim=burnin + 52 * nyears,      # years total duration of simulation (*52 so in weeks) including burn-in
