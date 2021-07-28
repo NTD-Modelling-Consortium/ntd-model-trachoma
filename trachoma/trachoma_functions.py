@@ -89,6 +89,13 @@ def stepF_fixed(vals, params, demog, bet):
 
     return vals
 
+def assign_age_group(age):
+    if age > 15:
+        return 2
+    if age > 9:
+        return 1
+    return 0
+
 def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     '''
