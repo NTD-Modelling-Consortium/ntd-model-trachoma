@@ -1,5 +1,4 @@
 import numpy as np
-import bisect
 from datetime import date
 import matplotlib.pyplot as plt
 
@@ -97,6 +96,12 @@ def get_MDA_times(MDA_dates, Start_date, burnin):
         MDA_times.append(burnin + int((MDA_dates[i] - Start_date).days/7))
     return np.array(MDA_times)
 
+def assign_age_group(age):
+    if age > 15:
+        return 2
+    if age > 9:
+        return 1
+    return 0
 
 def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
@@ -112,7 +117,7 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     # scales mixing with other groups
     social_mixing = (params['epsilon'] * np.diag(np.ones(3)) + (1 - params['epsilon'])) * demog_matrix
-    positions = [bisect.bisect(x=Age[i], a=np.array([0, 9 * 52, 15 * 52, demog['max_age'] * 52])) - 1 for i in range(len(Age))]
+    positions = list(map(assign_age_group, Age))
 
     # removed 'scaling parameter'
     return np.dot(social_mixing, prevLambda)[positions]
