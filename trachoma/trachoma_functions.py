@@ -1,77 +1,74 @@
 import numpy as np
 import bisect
+from datetime import date
+import matplotlib.pyplot as plt
 
 def stepF_fixed(vals, params, demog, bet):
 
     '''
     Step function i.e. transitions in each time non-MDA timestep.
     '''
+    # Step 1: Identify individuals available for infection.
+    # Susceptible individuals available for infection.
+    Ss = np.where(np.logical_and(vals['IndI'] == 0,vals['IndD'] == 0))[0]
+    # Diseased individuals suitable for reinfection (ie not individuals who have recently been reinfected)
+    Ds = np.where(np.logical_and(vals['IndI'] == 0, vals['IndD'] == 1, vals['T_latent']==0))[0]
 
-    # Susceptible individuals available for infection. Disease positive
-    # individuals can also get infected as scaled rate.
-    Ss = np.where(vals['IndI'] == 0)[0]
-
+    # Step 2: Calculate infection pressure from previous time step and choose infected individuals
     # Susceptible individuals acquiring new infections. This gives a lambda
     # for each individual dependent on age and disease status.
     lambda_step = 1 - np.exp(- getlambdaStep(params=params, Age=vals['Age'], bact_load=vals['bact_load'],
     IndD=vals['IndD'], bet=bet, demog=demog))
-
     # New infections
     newInf = Ss[np.random.uniform(size=len(Ss)) < lambda_step[Ss]]
+    newReInf = Ds[np.random.uniform(size=len(Ds)) < lambda_step[Ds]]
 
-    # With each timestep, subtract 1, those not in latent period go to -1 then should reset to zero,
-    # those in latent period should count down with each timestep.
-    vals['T_latent'] -= 1
-    newDis = np.where(vals['T_latent'] == 0)[0]  # Designated latent period for that individual has expired
-    vals['T_latent'][vals['T_latent'] < 1] = 0   # Reset all not in latent period to 0 at each timestep
+    # Step 3: Identify transitions
+    newDis = np.where(vals['T_latent'] == 1)[0]  # Designated latent period for that individual is about to expire
+    newClearInf = np.where(vals['T_ID'] == 1)[0]  # Designated infectious period for that individual is about to expire
+    newClearDis = np.where(vals['T_D'] == 1)[0]  # Designated diseased period for that individual is about to expire
+    newInfectious = np.where(np.logical_and(vals['IndI']==1,vals['T_latent']==1))[0] # Only individuals who have avoided MDA become infectious at end of latent
 
-    # New D = Clearing infection, becoming diseased only
-    IDs = np.where(np.logical_and(vals['IndI'] == 1, vals['IndD'] == 1))[0]
-    vals['bact_load'][IDs] = bacterialLoad(No_Inf=vals['No_Inf'][IDs])
+    # Step 4: reduce counters
+    # Those in latent period should count down with each timestep.
+    vals['T_latent'][vals['T_latent'] > 0] -= 1
+    # Those infected should count down with each timestep
+    vals['T_ID'][vals['T_ID'] > 0] -= 1
+    # Those diseased should count down with each timestep
+    vals['T_D'][vals['T_D'] > 0] -= 1
 
-    # With each timestep, subtract 1, those uninfected should go to -1 then be reset to zero,
-    # those infected should count down with each timestep
-    vals['T_ID'] -= 1
-    newClearInf = np.where(vals['T_ID'] == 0)[0]  # Designated infectious period for that individual has expired
-    vals['T_ID'][vals['T_ID'] < 1] = 0  # Reset all uninfected to 0 at each timestep
-
-    # New S = Clear disease
-    vals['bact_load'][np.logical_and(vals['IndI'] == 0, vals['IndD'] == 1)] = 0
-
-    # Each timestep, substract 1, those not diseased should go to -1 then be reset to zero,
-    # those diseased should count down with each timestep
-    vals['T_D'] -= 1
-    newClearDis = np.where(vals['T_D'] == 0)[0]  # Designated diseased period for that individual has expired
-    vals['T_D'][vals['T_D'] < 1] = 0  # Reset all not in diseased period to 0
-
-    # Tracking infection history
-    vals['No_Inf'][newInf] += 1
-
-    # Transition: become infected
-    vals['IndI'][newInf] = 1  # if they've become infected, become I=1
-
+    # Step 5: implement transitions
     # Transition: become diseased (and infected)
     vals['IndD'][newDis] = 1  # if they've become diseased they become D=1
-
-    # Transition: Clear infection (remain diseased)
+    vals['T_ID'][newDis] = ID_period_function(Ind_ID_period_base=vals['Ind_ID_period_base'][newDis],
+    No_Inf=vals['No_Inf'][newDis], params=params)
+    #vals['T_D'][newDis] = 0  # SS Added to prevent transition of doom.
+    # Transition: Clear infection
     vals['IndI'][newClearInf] = 0  # clear infection they become I=0
-
-    # Transition: Clear disease (become susceptible again)
+    # When individual clears infection, their diseased only is set
+    vals['T_D'][newClearInf] = D_period_function(Ind_D_period_base=vals['Ind_D_period_base'][newClearInf],
+    No_Inf=vals['No_Inf'][newClearInf], params=params, Age = vals['Age'][newClearInf])
+    # Stop being infectious too
+    vals['bact_load'][newClearInf] = 0
+    # Transition: Clear disease
     vals['IndD'][newClearDis] = 0  # clear disease they become D=0
+    # Transition: Become infectious
+    vals['bact_load'][newInfectious] = bacterialLoad(No_Inf=vals['No_Inf'][newInfectious])
 
+    # Step 6: implement infections
+    # Transition: become infected
+    vals['IndI'][newInf] = 1  # if they've become infected, become I=1
+    vals['IndI'][newReInf] = 1
     # When individual becomes infected, set their latent period;
     # this is how long they remain in category I (infected but not diseased)
     vals['T_latent'][newInf] = vals['Ind_latent'][newInf]
+    vals['T_latent'][newReInf] = vals['Ind_latent'][newReInf]
+    vals['T_D'][newReInf] = 0
+    vals['T_ID'][newReInf] = 0
 
-    # When individual becomes diseased, set their infected + diseased
-    # period; this is how long ID for
-    vals['T_ID'][newDis] = ID_period_function(Ind_ID_period_base=vals['Ind_ID_period_base'][newDis],
-    No_Inf=vals['No_Inf'][newDis], params=params)
-
-    # When individual clears infection, their diseased only
-    # period is set, this how long D for
-    vals['T_D'][newClearInf] = D_period_function(Ind_D_period_base=vals['Ind_D_period_base'][newClearInf],
-    No_Inf=vals['No_Inf'][newClearInf], params=params)
+    # Tracking infection history
+    vals['No_Inf'][newInf] += 1
+    vals['No_Inf'][newReInf] += 1
 
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
@@ -86,21 +83,22 @@ def stepF_fixed(vals, params, demog, bet):
     vals['T_latent'][reset_indivs] = 0
     vals['T_ID'][reset_indivs] = 0
     vals['T_D'][reset_indivs] = 0
+    #me = 2
+    #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
+    #print(newReInf)
 
     return vals
 
-def assign_age_group(age):
-    if age > 15:
-        return 2
-    if age > 9:
-        return 1
-    return 0
+
+
+def get_MDA_times(MDA_dates, Start_date, burnin):
+    MDA_times = []
+    for i in range(0, len(MDA_dates)):
+        MDA_times.append(burnin + int((MDA_dates[i] - Start_date).days/7))
+    return np.array(MDA_times)
+
 
 def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
-
-    '''
-    Lambda scaled according to disease status.
-    '''
 
     y_children = np.where(np.logical_and(Age >= 0, Age < 9 * 52))[0]  # Young children
     o_children = np.where(np.logical_and(Age >= 9 * 52, Age < 15 * 52))[0]  # Older children
@@ -114,9 +112,10 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     # scales mixing with other groups
     social_mixing = (params['epsilon'] * np.diag(np.ones(3)) + (1 - params['epsilon'])) * demog_matrix
-    positions = list(map(assign_age_group, Age))
-    
-    return np.dot(social_mixing, prevLambda)[positions] * (0.5 + 0.5 * (1 - IndD))
+    positions = [bisect.bisect(x=Age[i], a=np.array([0, 9 * 52, 15 * 52, demog['max_age'] * 52])) - 1 for i in range(len(Age))]
+
+    # removed 'scaling parameter'
+    return np.dot(social_mixing, prevLambda)[positions]
 
 def Reset(Age, demog, params):
 
@@ -173,14 +172,14 @@ def doMDA(params, Age, MDA_round, Tx_mat):
     and probability of clearance given treated.
     '''
 
-    babies = np.where(Age < 26)[0]
+    babies = np.where(Age <= 26)[0]
     treated_babies = babies[Tx_mat[babies, MDA_round] == 1]
     cured_babies = treated_babies[np.random.uniform(size=len(treated_babies)) < (params['MDA_Eff'] * 0.5)]
 
     older = np.where(Age > 26)[0]
     treated_older = older[Tx_mat[older, MDA_round] == 1]
     cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
-
+    #print('MDA:',cured_babies,cured_older)
     return np.append(cured_babies, cured_older)
 
 def MDA_timestep(vals, params, MDA_round, Tx_mat):
@@ -194,7 +193,7 @@ def MDA_timestep(vals, params, MDA_round, Tx_mat):
 
     # Set treated/cured indivs infection status and bacterial load to 0
     vals['IndI'][treated_cured] = 0       # clear infection they become I=0
-    vals['bact_load'][treated_cured] = 0  # clear disease they become D=0
+    vals['bact_load'][treated_cured] = 0  # stop being infectious
 
     return vals
 
@@ -206,13 +205,16 @@ def ID_period_function(Ind_ID_period_base, No_Inf, params):
 
     return np.round((Ind_ID_period_base - params['min_ID']) * np.exp(-params['inf_red'] * (No_Inf - 1)) + params['min_ID'])
 
-def D_period_function(Ind_D_period_base, No_Inf, params):
+def D_period_function(Ind_D_period_base, No_Inf, params, Age):
 
     '''
     Function to give duration of disease only period.
     '''
 
-    return np.round((Ind_D_period_base - params['min_D']) * np.exp(- params['dis_red'] * (No_Inf - 1)) + params['min_D'])
+    ag = params['ag']
+    minAq = params['min_D']+(Ind_D_period_base - params['min_D']) * params['prop_age']
+    T_ID = np.round((Ind_D_period_base - minAq) * np.exp(-params['dis_red'] * (No_Inf-1)) + (minAq-params['min_D']) * np.exp(-ag*(Age-1)) + params['min_D'])
+    return T_ID
 
 def bacterialLoad(No_Inf):
 
@@ -286,7 +288,7 @@ def Seed_infection(params, vals):
 
     # set 1% to infected, can change if want to seed more, may need to if want to simulate
     # low transmission settings to stop stochastic fade-out during burn-in
-    vals['IndI'][:np.int(np.round(params['N'] * 0.01))] = 1
+    vals['IndI'][:int(np.round(params['N'] * 0.01))] = 1
 
     Init_infected = np.where(vals['IndI'] == 1)[0]
 
@@ -337,7 +339,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
 
     prevalence = []
     infections = []
-
+    yearly_threshold_infs = np.zeros(( sim_params['timesim']+1, int(demog['max_age']/52)))
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
@@ -346,19 +348,32 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
 
             vals = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat)
 
-        else:
+        #else:  removed and deleted one indent in the line below to correct mistake.
 
-            vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
+        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
 
-        children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] > 52)
+        a = []
+        children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
         n_children_ages_1_9 = children_ages_1_9.sum()
         n_true_diseased_children_1_9 = vals['IndD'][children_ages_1_9].sum()
         n_true_infected_children_1_9 = vals['IndI'][children_ages_1_9].sum()
         prevalence.append(n_true_diseased_children_1_9 / n_children_ages_1_9)
         infections.append(n_true_infected_children_1_9 / n_children_ages_1_9)
+        for l in range(0, int(demog['max_age']/52)):
+            index = np.logical_and(vals['Age'] >= (l*52), vals['Age'] < ((l+1)*52))
+            p = sum(vals['No_Inf'][index] > params['n_inf_sev'])/len(index)
+            a.append(p)
 
+        yearly_threshold_infs[i, :] = a
+
+    vals['Yearly_threshold_infs'] = yearly_threshold_infs
     vals['True_Prev_Disease_children_1_9'] = prevalence # save the prevalence in children aged 1-9
     vals['True_Infections_Disease_children_1_9'] = infections # save the infections in children aged 1-9
     vals['State'] = np.random.get_state() # save the state of the simulations
 
     return vals
+
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
