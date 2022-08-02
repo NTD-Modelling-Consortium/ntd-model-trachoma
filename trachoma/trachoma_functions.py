@@ -380,6 +380,63 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
 
 
 
+def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, state=None):
+
+    '''
+    Function to run a single simulation with MDA at time points determined by function MDA_times.
+    Output is true prevalence of infection/disease in children aged 1-9.
+    '''
+
+    # when we are starting new simulations
+    # we use the provided random seed
+    if state is None:
+
+        np.random.seed(seed)
+
+    # when we are resuming previous simulations
+    # we use the provided random state
+    else:
+
+        np.random.set_state(state)
+
+    prevalence = []
+    infections = []
+    yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
+    for i in range(1, 1 + timesim):
+
+        if i in MDA_times:
+
+            MDA_round = np.where(MDA_times == i)[0][0]
+
+            vals = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat)
+
+        #else:  removed and deleted one indent in the line below to correct mistake.
+
+        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
+
+        a = []
+        children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
+        n_children_ages_1_9 = children_ages_1_9.sum()
+        n_true_diseased_children_1_9 = vals['IndD'][children_ages_1_9].sum()
+        n_true_infected_children_1_9 = vals['IndI'][children_ages_1_9].sum()
+        prevalence.append(n_true_diseased_children_1_9 / n_children_ages_1_9)
+        infections.append(n_true_infected_children_1_9 / n_children_ages_1_9)
+        for l in range(0, int(demog['max_age']/52)):
+            index = np.logical_and(vals['Age'] >= (l*52), vals['Age'] < ((l+1)*52))
+            p = sum(vals['No_Inf'][index] > params['n_inf_sev'])/len(index)
+            a.append(p)
+
+        yearly_threshold_infs[i, :] = a
+
+    vals['Yearly_threshold_infs'] = yearly_threshold_infs
+    vals['True_Prev_Disease_children_1_9'] = prevalence # save the prevalence in children aged 1-9
+    vals['True_Infections_Disease_children_1_9'] = infections # save the infections in children aged 1-9
+    vals['State'] = np.random.get_state() # save the state of the simulations
+
+    return vals
+
+
+
 
 
 def returnSurveyPrev(vals, TestSensitivity, TestSpecificity):
