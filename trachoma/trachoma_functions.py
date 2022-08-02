@@ -344,7 +344,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
 
     prevalence = []
     infections = []
-    yearly_threshold_infs = np.zeros(( sim_params['timesim']+1, int(demog['max_age']/52)))
+    yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
@@ -377,6 +377,8 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
     vals['State'] = np.random.get_state() # save the state of the simulations
 
     return vals
+
+
 
 ##########################################################################################
 ##########################################################################################
