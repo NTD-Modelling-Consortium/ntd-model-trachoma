@@ -380,6 +380,29 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
 
 
 
+
+
+def returnSurveyPrev(vals, TestSensitivity, TestSpecificity):
+    '''
+    Function to run a return the tested prevalence of 1-9 year olds.
+    This includes sensitivity and specificity of the test.
+    Will be used in surveying to decide if we should do MDA, and how many MDAs before next test
+    '''
+    # survey 1-9 year olds
+    children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
+    
+    # calculate true number of diseased 1-9 year olds
+    Diseased = vals['IndD'][children_ages_1_9].sum()
+    
+    # how many 1-9 year olds are not diseased
+    NonDiseased = children_ages_1_9.sum() - Diseased
+    
+    # perform test with given sensitivity and specificity to get test positives
+    positive = int(np.random.binomial(n=Diseased, size=1, p = TestSensitivity)) + int(np.random.binomial(n=NonDiseased, size=1, p = 1- TestSpecificity)) 
+    
+    # return prevalence,calculated as number who tested positive divided by number of 1-9 year olds
+    return positive/children_ages_1_9.sum()
+
 ##########################################################################################
 ##########################################################################################
 ##########################################################################################
