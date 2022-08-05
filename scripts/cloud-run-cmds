@@ -1,7 +1,0 @@
-sudo apt-get update -y
-sudo apt-get install -y pipenv
-git clone git@github.com:ArtRabbitStudio/ntd-model-trachoma.git
-cd ntd-model-trachoma
-pipenv install .
-pipenv shell
-pip install .
