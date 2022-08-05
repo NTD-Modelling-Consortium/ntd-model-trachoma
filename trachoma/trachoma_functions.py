@@ -215,10 +215,10 @@ def D_period_function(Ind_D_period_base, No_Inf, params, Age):
     '''
     Function to give duration of disease only period.
     '''
+    ag = 0.00179
+    aq = 0.0368
+    T_ID = np.round( params['min_D'] + ( Ind_D_period_base - params['min_D'] ) * np.exp( -aq * ( No_Inf-1 ) -ag * Age ) )
 
-    ag = params['ag']
-    minAq = params['min_D']+(Ind_D_period_base - params['min_D']) * params['prop_age']
-    T_ID = np.round((Ind_D_period_base - minAq) * np.exp(-params['dis_red'] * (No_Inf-1)) + (minAq-params['min_D']) * np.exp(-ag*(Age-1)) + params['min_D'])
     return T_ID
 
 def bacterialLoad(No_Inf):
