@@ -217,7 +217,7 @@ def D_period_function(Ind_D_period_base, No_Inf, params, Age):
     '''
     ag = 0.00179
     aq = 0.0368
-    T_ID = np.round( params['min_D'] + ( Ind_D_period_base - params['min_D'] * np.exp( -aq * ( No_Inf - 1) -ag * ( Age-1 ) ) ) )
+    T_ID = np.round( params['min_D'] + ( Ind_D_period_base - params['min_D'] ) * np.exp( -aq * ( No_Inf-1 ) -ag * Age ) )
 
     return T_ID
 
