@@ -117,10 +117,13 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     # scales mixing with other groups
     social_mixing = (params['epsilon'] * np.diag(np.ones(3)) + (1 - params['epsilon'])) * demog_matrix
-    positions = list(map(assign_age_group, Age))
 
-    # removed 'scaling parameter'
-    return np.dot(social_mixing, prevLambda)[positions]
+    A = np.dot(social_mixing, prevLambda)
+    returned = np.ones(params['N'])
+    returned[y_children] = A[0]
+    returned[o_children] = A[1]
+    returned[adults] = A[2]
+    return returned
 
 def Reset(Age, demog, params):
 
