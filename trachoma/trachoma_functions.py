@@ -111,14 +111,17 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     totalLoad = np.array([np.sum(bact_load[y_children]) / len(y_children),
     np.sum(bact_load[o_children]) / len(o_children), np.sum(bact_load[adults]) / len(adults)])
-
     prevLambda = bet * (params['v_1'] * totalLoad + params['v_2'] * (totalLoad ** (params['phi'] + 1)))
-    demog_matrix = np.array([len(y_children), len(o_children), len(adults)] * 3).reshape(3, 3) / params['N']
 
-    # scales mixing with other groups
-    social_mixing = (params['epsilon'] * np.diag(np.ones(3)) + (1 - params['epsilon'])) * demog_matrix
-
-    A = np.dot(social_mixing, prevLambda)
+    a = len(y_children)
+    b = len(o_children)
+    c = len(adults)
+    epsm = 1 - params['epsilon']
+    A = [
+        prevLambda[0]*a + prevLambda[1]*epsm*b + prevLambda[2]*epsm*c,
+        prevLambda[0]*a*epsm + prevLambda[1]*b + prevLambda[2]*epsm*c,
+        prevLambda[0]*a*epsm + prevLambda[1]*epsm*b + prevLambda[2]*c,
+    ]
     returned = np.ones(params['N'])
     returned[y_children] = A[0]
     returned[o_children] = A[1]
