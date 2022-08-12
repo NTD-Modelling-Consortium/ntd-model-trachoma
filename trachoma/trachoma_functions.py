@@ -96,13 +96,6 @@ def get_MDA_times(MDA_dates, Start_date, burnin):
         MDA_times.append(burnin + int((MDA_dates[i] - Start_date).days/7))
     return np.array(MDA_times)
 
-def assign_age_group(age):
-    if age >= 15*52:
-        return 2
-    if age >= 9*52:
-        return 1
-    return 0
-
 def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     y_children = np.where(np.logical_and(Age >= 0, Age < 9 * 52))[0]  # Young children
