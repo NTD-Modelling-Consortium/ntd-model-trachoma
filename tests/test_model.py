@@ -2,8 +2,8 @@ from trachoma import Trachoma_Simulation
 import numpy.testing
 
 def main():
-    Trachoma_Simulation("data/beta_values.csv",
-                        "data/mda_input_2008_2017.csv",
+    Trachoma_Simulation("tests/data/beta_values.csv",
+                        "tests/data/mda_input_2008_2017.csv",
                         "prevalence_job.csv",
                         "infection_job.csv",
                         SaveOutput = True,
