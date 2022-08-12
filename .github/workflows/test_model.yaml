@@ -26,4 +26,5 @@ jobs:
           pip install .
       - name: Run test script
         run: |
+          mkdir results
           python tests/test_model.py
