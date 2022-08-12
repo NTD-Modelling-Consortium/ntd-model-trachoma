@@ -3,7 +3,7 @@ name: Very minimal testing
 on:
   push:
     branches:
-      - 'tests_check_output_values'
+      - 'master'
 
 jobs:
   build:
