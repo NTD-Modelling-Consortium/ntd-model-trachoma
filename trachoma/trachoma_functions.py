@@ -113,9 +113,9 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
     np.sum(bact_load[o_children]) / len(o_children), np.sum(bact_load[adults]) / len(adults)])
     prevLambda = bet * (params['v_1'] * totalLoad + params['v_2'] * (totalLoad ** (params['phi'] + 1)))
 
-    a = len(y_children)
-    b = len(o_children)
-    c = len(adults)
+    a = len(y_children)/params['N']
+    b = len(o_children)/params['N']
+    c = len(adults)/params['N']
     epsm = 1 - params['epsilon']
     A = [
         prevLambda[0]*a + prevLambda[1]*epsm*b + prevLambda[2]*epsm*c,
