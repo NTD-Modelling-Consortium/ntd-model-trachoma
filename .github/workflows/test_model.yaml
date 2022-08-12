@@ -3,7 +3,7 @@ name: Very minimal testing
 on:
   push:
     branches:
-      - 'master'
+      - 'tests_check_output_values'
 
 jobs:
   build:
@@ -26,4 +26,5 @@ jobs:
           pip install .
       - name: Run test script
         run: |
+          mkdir results
           python tests/test_model.py
