@@ -196,7 +196,9 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
         # Parameters relating to MDA
         MDA_Cov=MDA_Cov,   # MDA coverage
         MDA_Eff=0.85,  # Efficacy of treatment
-        rho=rho        # Correlation parameter for systematic non-compliance function
+        rho=rho,        # Correlation parameter for systematic non-compliance function
+
+        n_inf_sev = 30,
     )
 
     # Demography parameters
