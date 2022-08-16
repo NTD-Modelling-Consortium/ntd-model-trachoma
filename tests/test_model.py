@@ -22,6 +22,7 @@ if __name__ == "__main__":
     for i, vals in enumerate(sim_outputs):
         expected_final_pop_state = numpy.loadtxt(f'tests/reference_output/final_pop_state_{i}.txt', delimiter=',').reshape(1000, 3)
         expected_yearly_infect_prev = numpy.loadtxt(f'tests/reference_output/yearly_infect_prev_{i}.txt', delimiter=',').reshape(2704, 2)
+        expected_yearly_threshold_infs = numpy.loadtxt(f'tests/reference_output/yearly_threshold_infs_{i}.txt', delimiter=',').reshape(2705, 60)
 
         expected = {}
         expected['IndI'] = expected_final_pop_state[:,0]
@@ -29,9 +30,11 @@ if __name__ == "__main__":
         expected['No_Inf'] = expected_final_pop_state[:,2]
         expected['True_Prev_Disease_children_1_9'] = expected_yearly_infect_prev[:,0]
         expected['True_Infections_Disease_children_1_9'] = expected_yearly_infect_prev[:,1]
+        expected['Yearly_threshold_infs'] = expected_yearly_threshold_infs
 
         numpy.testing.assert_array_equal(vals['IndI'], expected['IndI'])
         numpy.testing.assert_array_equal(vals['IndD'], expected['IndD'])
         numpy.testing.assert_array_equal(vals['No_Inf'], expected['No_Inf'])
         numpy.testing.assert_allclose(vals['True_Prev_Disease_children_1_9'], expected['True_Prev_Disease_children_1_9'], atol=5.e-7, rtol=2.e-4)
         numpy.testing.assert_allclose(vals['True_Infections_Disease_children_1_9'], expected['True_Infections_Disease_children_1_9'], atol=5.e-7, rtol=2.e-4)
+        numpy.testing.assert_allclose(vals['Yearly_threshold_infs'], expected['Yearly_threshold_infs'], atol=5.e-7, rtol=2.e-4)

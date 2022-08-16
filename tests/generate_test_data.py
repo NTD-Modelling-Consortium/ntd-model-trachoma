@@ -24,7 +24,10 @@ if __name__ == "__main__":
         final_pop_state[:,2] = vals['No_Inf']
         yearly_infect_prev[:,0] = vals['True_Prev_Disease_children_1_9']
         yearly_infect_prev[:,1] = vals['True_Infections_Disease_children_1_9']
+        yearly_threshold_infs = vals['Yearly_threshold_infs']
         with open(f"results/final_pop_state_{i}.txt", "w") as f:
             final_pop_state.tofile(f, sep=',', format='%i')
         with open(f"results/yearly_infect_prev_{i}.txt", "w") as f:
             yearly_infect_prev.tofile(f, sep=',', format='%f')
+        with open(f"results/yearly_threshold_infs_{i}.txt", "w") as f:
+            yearly_threshold_infs.tofile(f, sep=',', format='%f')
