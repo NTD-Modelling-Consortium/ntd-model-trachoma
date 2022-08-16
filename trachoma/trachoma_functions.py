@@ -359,9 +359,9 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
 
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
-        n_children_ages_1_9 = children_ages_1_9.sum()
-        n_true_diseased_children_1_9 = vals['IndD'][children_ages_1_9].sum()
-        n_true_infected_children_1_9 = vals['IndI'][children_ages_1_9].sum()
+        n_children_ages_1_9 = np.count_nonzero(children_ages_1_9)
+        n_true_diseased_children_1_9 = np.count_nonzero(vals['IndD'][children_ages_1_9])
+        n_true_infected_children_1_9 = np.count_nonzero(vals['IndI'][children_ages_1_9])
         prevalence.append(n_true_diseased_children_1_9 / n_children_ages_1_9)
         infections.append(n_true_infected_children_1_9 / n_children_ages_1_9)
 
