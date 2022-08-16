@@ -1,7 +1,6 @@
 import numpy as np
 from datetime import date
 import matplotlib.pyplot as plt
-from numpy.testing import assert_array_equal
 
 def stepF_fixed(vals, params, demog, bet):
 
@@ -10,12 +9,7 @@ def stepF_fixed(vals, params, demog, bet):
     '''
     # Step 1: Identify individuals available for infection.
     # Susceptible individuals available for infection.
-    Ss = np.where(np.logical_and(vals['IndI'] == 0,vals['IndD'] == 0))[0]
-    # Diseased individuals suitable for reinfection (ie not individuals who have recently been reinfected)
-    Ds = np.where(np.logical_and(vals['IndI'] == 0, vals['IndD'] == 1, vals['T_latent']==0))[0]
-    SDs = np.sort(np.concatenate((Ss, Ds)))
-    not_I = np.where(vals['IndI'] == 0)[0]
-    assert_array_equal(SDs, not_I) # Raise error if not equal
+    Ss = np.where(vals['IndI'] == 0)[0]
 
     # Step 2: Calculate infection pressure from previous time step and choose infected individuals
     # Susceptible individuals acquiring new infections. This gives a lambda
@@ -24,7 +18,6 @@ def stepF_fixed(vals, params, demog, bet):
     IndD=vals['IndD'], bet=bet, demog=demog))
     # New infections
     newInf = Ss[np.random.uniform(size=len(Ss)) < lambda_step[Ss]]
-    newReInf = Ds[np.random.uniform(size=len(Ds)) < lambda_step[Ds]]
 
     # Step 3: Identify transitions
     newDis = np.where(vals['T_latent'] == 1)[0]  # Designated latent period for that individual is about to expire
@@ -61,17 +54,15 @@ def stepF_fixed(vals, params, demog, bet):
     # Step 6: implement infections
     # Transition: become infected
     vals['IndI'][newInf] = 1  # if they've become infected, become I=1
-    vals['IndI'][newReInf] = 1
     # When individual becomes infected, set their latent period;
     # this is how long they remain in category I (infected but not diseased)
     vals['T_latent'][newInf] = vals['Ind_latent'][newInf]
-    vals['T_latent'][newReInf] = vals['Ind_latent'][newReInf]
-    vals['T_D'][newReInf] = 0
-    vals['T_ID'][newReInf] = 0
+    # New infected can be D and have nonzero T_D/T_ID
+    vals['T_D'][newInf] = 0
+    vals['T_ID'][newInf] = 0
 
     # Tracking infection history
     vals['No_Inf'][newInf] += 1
-    vals['No_Inf'][newReInf] += 1
 
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
@@ -88,7 +79,6 @@ def stepF_fixed(vals, params, demog, bet):
     vals['T_D'][reset_indivs] = 0
     #me = 2
     #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
-    #print(newReInf)
 
     return vals
 
