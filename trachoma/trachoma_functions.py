@@ -97,9 +97,9 @@ def get_MDA_times(MDA_dates, Start_date, burnin):
     return np.array(MDA_times)
 
 def assign_age_group(age):
-    if age > 15*52:
+    if age >= 15*52:
         return 2
-    if age > 9*52:
+    if age >= 9*52:
         return 1
     return 0
 
