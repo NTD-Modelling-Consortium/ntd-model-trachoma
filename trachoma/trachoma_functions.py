@@ -1,6 +1,7 @@
 import numpy as np
 from datetime import date
 import matplotlib.pyplot as plt
+from numpy.testing import assert_array_equal
 
 def stepF_fixed(vals, params, demog, bet):
 
@@ -12,6 +13,9 @@ def stepF_fixed(vals, params, demog, bet):
     Ss = np.where(np.logical_and(vals['IndI'] == 0,vals['IndD'] == 0))[0]
     # Diseased individuals suitable for reinfection (ie not individuals who have recently been reinfected)
     Ds = np.where(np.logical_and(vals['IndI'] == 0, vals['IndD'] == 1, vals['T_latent']==0))[0]
+    SDs = np.sort(np.concatenate((Ss, Ds)))
+    not_I = np.where(vals['IndI'] == 0)[0]
+    assert_array_equal(SDs, not_I) # Raise error if not equal
 
     # Step 2: Calculate infection pressure from previous time step and choose infected individuals
     # Susceptible individuals acquiring new infections. This gives a lambda
