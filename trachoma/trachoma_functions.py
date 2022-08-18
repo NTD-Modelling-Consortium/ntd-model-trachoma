@@ -96,13 +96,6 @@ def get_MDA_times(MDA_dates, Start_date, burnin):
         MDA_times.append(burnin + int((MDA_dates[i] - Start_date).days/7))
     return np.array(MDA_times)
 
-def assign_age_group(age):
-    if age >= 15*52:
-        return 2
-    if age >= 9*52:
-        return 1
-    return 0
-
 def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     y_children = np.where(np.logical_and(Age >= 0, Age < 9 * 52))[0]  # Young children
@@ -111,16 +104,22 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     totalLoad = np.array([np.sum(bact_load[y_children]) / len(y_children),
     np.sum(bact_load[o_children]) / len(o_children), np.sum(bact_load[adults]) / len(adults)])
-
     prevLambda = bet * (params['v_1'] * totalLoad + params['v_2'] * (totalLoad ** (params['phi'] + 1)))
-    demog_matrix = np.array([len(y_children), len(o_children), len(adults)] * 3).reshape(3, 3) / params['N']
 
-    # scales mixing with other groups
-    social_mixing = (params['epsilon'] * np.diag(np.ones(3)) + (1 - params['epsilon'])) * demog_matrix
-    positions = list(map(assign_age_group, Age))
-
-    # removed 'scaling parameter'
-    return np.dot(social_mixing, prevLambda)[positions]
+    a = len(y_children)/params['N']
+    b = len(o_children)/params['N']
+    c = len(adults)/params['N']
+    epsm = 1 - params['epsilon']
+    A = [
+        prevLambda[0]*a + prevLambda[1]*epsm*b + prevLambda[2]*epsm*c,
+        prevLambda[0]*a*epsm + prevLambda[1]*b + prevLambda[2]*epsm*c,
+        prevLambda[0]*a*epsm + prevLambda[1]*epsm*b + prevLambda[2]*c,
+    ]
+    returned = np.ones(params['N'])
+    returned[y_children] = A[0]
+    returned[o_children] = A[1]
+    returned[adults] = A[2]
+    return returned
 
 def Reset(Age, demog, params):
 
