@@ -1,6 +1,41 @@
 import numpy as np
 from datetime import date
 import matplotlib.pyplot as plt
+import pandas as pd
+import copy
+import pkg_resources
+from numpy import ndarray
+from numpy.typing import NDArray
+from dataclasses import dataclass
+from typing import Callable, List, Optional
+
+
+@dataclass
+class Result:
+    time: float
+    IndI: ndarray
+    IndD: ndarray
+    Age:ndarray
+    NoInf: ndarray
+    nMDA:Optional[int] = None
+    nMDADoses: Optional[int] = None
+    nSurvey: Optional[int] = None
+    surveyPass: Optional[int] = None
+    elimination: Optional[int] = None
+    propMDA: Optional[ndarray] = None
+    
+def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elimination):
+    return (Result(time = i,
+                          IndI = vals['IndI'], 
+                          IndD = vals['IndD'], 
+                          Age = vals['Age'], 
+                          NoInf = vals['No_Inf'],
+                          nMDADoses = nDoses, 
+                          nSurvey = nSurvey,
+                          surveyPass = surveyPass,
+                          elimination = true_elimination,
+                          propMDA = coverage,
+                          nMDA = nMDA))
 
 def stepF_fixed(vals, params, demog, bet):
 
