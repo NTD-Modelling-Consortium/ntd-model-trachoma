@@ -193,7 +193,7 @@ def MDA_timestep(vals, params, MDA_round, Tx_mat):
     vals['IndI'][treated_cured] = 0       # clear infection they become I=0
     vals['bact_load'][treated_cured] = 0  # stop being infectious
 
-    return vals
+    return vals, len(treated_cured)
 
 def ID_period_function(Ind_ID_period_base, No_Inf, params):
 
@@ -345,7 +345,10 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
 
             MDA_round = np.where(MDA_times == i)[0][0]
 
-            vals = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat)
+            out = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat)
+            vals = out[0]
+            nDoses = out[1]
+            coverage = nDoses/ len(vals['IndI'])
 
         #else:  removed and deleted one indent in the line below to correct mistake.
 
@@ -417,7 +420,10 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
 
             MDA_round = np.where(MDA_times == i)[0][0]
 
-            vals = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat)
+            out = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat)
+            vals = out[0]
+            nDoses = out[1]
+            coverage = nDoses/ len(vals['IndI'])
 
         #else:  removed and deleted one indent in the line below to correct mistake.
 
