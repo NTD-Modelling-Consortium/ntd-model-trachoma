@@ -125,6 +125,19 @@ def get_MDA_times(MDA_dates, Start_date, burnin):
         MDA_times.append(burnin + int((MDA_dates[i] - Start_date).days/7))
     return np.array(MDA_times)
 
+
+def getOutputTimes(outputTimes):
+    for i in range(len(outputTimes)):
+        d = outputTimes[i]
+        y = int(d)
+        m = 6
+        day = 1
+        if i == 0:
+            modOutputTimes = [date(y, m, day)]
+        else:
+            modOutputTimes.append(date(y, m, day))
+    return modOutputTimes
+
 def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
 
     y_children = np.where(np.logical_and(Age >= 0, Age < 9 * 52))[0]  # Young children
