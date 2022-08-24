@@ -228,6 +228,29 @@ def doMDA(params, Age, MDA_round, Tx_mat):
     #print('MDA:',cured_babies,cured_older)
     return np.append(cured_babies, cured_older)
 
+
+def doMDAAgeRange(params, Age, MDA_round, Tx_mat, ageStart, ageEnd):
+
+    '''
+    Decide who is cured during MDA based on treatment matrix
+    and probability of clearance given treated.
+    '''
+    if ageStart*52 <= 26:
+        babies = np.where(Age <= 26)[0]
+        treated_babies = babies[Tx_mat[babies, MDA_round] == 1]
+        cured_babies = treated_babies[np.random.uniform(size=len(treated_babies)) < (params['MDA_Eff'] * 0.5)]
+    
+        older = np.where(np.logical_and(Age > 26, Age <= ageEnd *52))[0]
+        treated_older = older[Tx_mat[older, MDA_round] == 1]
+        cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
+    else:
+        older = np.where(np.logical_and(Age > ageStart * 52, Age <= ageEnd *52))[0]
+        treated_older = older[Tx_mat[older, MDA_round] == 1]
+        cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
+        cured_babies = []
+    #print('MDA:',cured_babies,cured_older)
+    return np.append(cured_babies, cured_older)
+
 def MDA_timestep(vals, params, MDA_round, Tx_mat):
 
     '''
@@ -242,6 +265,22 @@ def MDA_timestep(vals, params, MDA_round, Tx_mat):
     vals['bact_load'][treated_cured] = 0  # stop being infectious
 
     return vals, len(treated_cured)
+
+def MDA_timestep_Age_range(vals, params, MDA_round, Tx_mat, ageStart, ageEnd):
+
+    '''
+    This is time step in which MDA occurs
+    '''
+
+    # Id who is treated and cured
+    treated_cured = doMDAAgeRange(params=params, Age=vals['Age'], MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart = ageStart, ageEnd = ageEnd)
+
+    # Set treated/cured indivs infection status and bacterial load to 0
+    vals['IndI'][treated_cured] = 0       # clear infection they become I=0
+    vals['bact_load'][treated_cured] = 0  # stop being infectious
+
+    return vals, len(treated_cured)
+
 
 def ID_period_function(Ind_ID_period_base, No_Inf, params):
 
