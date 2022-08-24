@@ -108,6 +108,5 @@ results = Parallel(n_jobs=num_cores)(
 
 
 outs = getResults(results, demog, params, outputYear)
-outs
 outs.to_csv('outs1.csv',index=False)
 
