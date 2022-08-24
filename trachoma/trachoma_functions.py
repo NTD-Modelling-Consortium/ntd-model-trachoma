@@ -479,64 +479,130 @@ def numMDAsBeforeNextSurvey(surveyPrev):
         
     return nextSurvey
 
-def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, state=None):
+def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData, outputTimes, seed, state=None):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
     Output is true prevalence of infection/disease in children aged 1-9.
     '''
-
-    # when we are starting new simulations
-    # we use the provided random seed
+    outputTimes2 = copy.deepcopy(outputTimes)
+   # when we are starting new simulations
+   # we use the provided random seed
     if state is None:
 
         np.random.seed(seed)
 
-    # when we are resuming previous simulations
-    # we use the provided random state
+   # when we are resuming previous simulations
+   # we use the provided random state
     else:
 
         np.random.set_state(state)
 
     prevalence = []
     infections = []
+    max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
+    TestSensitivity = 0.96
+    TestSpecificity = 0.93
+   # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
+    surveyPrev  = 0.5
+    surveyPrev = returnSurveyPrev(vals, TestSensitivity, TestSpecificity)
+   # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
+    surveyPass = 1 if surveyPrev <= 0.05 else 0
+  
+   # if the prevalence is > 5%, then we will do another survey after given number of MDAs
+   # call this value nextSurvey    
+    nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
+  
+   # initialize count of MDAs
+    numMDA = 0
+   # initialize time for next survey (until after the simulation ends)
+    surveyTime = timesim + 10
+    nextOutputTime = min(outputTimes2)
+    w = np.where(outputTimes2 == nextOutputTime)
+    outputTimes2[w] = timesim + 10
+    results = []
+    nSurvey = 0
+    nDoses = 0
+    coverage = 0
+    prevNSurvey = 0
+    prevNMDA = 0
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
-
-            MDA_round = np.where(MDA_times == i)[0][0]
-
-            out = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat)
-            vals = out[0]
-            nDoses = out[1]
-            coverage = nDoses/ len(vals['IndI'])
-
+            if surveyPass == 0:
+                MDA_round = np.where(MDA_times == i)[0][0]
+                ageStart = MDAData[MDA_round][1]
+                ageEnd = MDAData[MDA_round][2]
+                out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
+                vals = out[0]
+                nDoses += out[1]
+                # increment number of MDAs
+                numMDA += 1
+                coverage = nDoses/ len(vals['IndI'])
+                # if the number of MDAs is the same as the number for the next survey then set survey time
+            if numMDA == nextSurvey:
+                surveyTime = i + 6
         #else:  removed and deleted one indent in the line below to correct mistake.
-
+        if i == surveyTime:     
+            surveyPrev = returnSurveyPrev(vals, TestSensitivity, TestSpecificity)
+               
+            # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
+            surveyPass = 1 if surveyPrev <= 0.05 else 0
+            
+            # if the prevalence is > 5%, then we will do another survey after given number of MDAs
+            # call this value nextSurvey    
+            nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
+               
+            # add the number of MDAs already done to the number of MDAs to be done before the next survey
+            nextSurvey += numMDA
+            nSurvey += 1
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
 
-        a = []
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
         n_children_ages_1_9 = children_ages_1_9.sum()
-        n_true_diseased_children_1_9 = vals['IndD'][children_ages_1_9].sum()
+        n_True_diseased_children_1_9 = vals['IndD'][children_ages_1_9].sum()
         n_true_infected_children_1_9 = vals['IndI'][children_ages_1_9].sum()
-        prevalence.append(n_true_diseased_children_1_9 / n_children_ages_1_9)
+        prevalence.append(n_True_diseased_children_1_9 / n_children_ages_1_9)
         infections.append(n_true_infected_children_1_9 / n_children_ages_1_9)
-        for l in range(0, int(demog['max_age']/52)):
-            index = np.logical_and(vals['Age'] >= (l*52), vals['Age'] < ((l+1)*52))
-            p = sum(vals['No_Inf'][index] > params['n_inf_sev'])/len(index)
-            a.append(p)
-
-        yearly_threshold_infs[i, :] = a
-
+        
+        large_infection_count = (vals['No_Inf'] > params['n_inf_sev'])
+        # Cast weights to integer to be able to count
+        a, _ = np.histogram(vals['Age'], bins=max_age, weights=large_infection_count.astype(int))
+        yearly_threshold_infs[i, :] = a / params['N']
+        # check if time to save variables to make Endgame outputs
+        if i == nextOutputTime:
+            # has the disease truly eliminated in the population
+            true_elimination = 1 if (sum(vals['IndI']) + sum(vals['IndD'])) == 0 else 0
+            # append the results to results variable
+            results.append(outputResult(copy.deepcopy(vals), i, nDoses, coverage, numMDA-prevNMDA, nSurvey - prevNSurvey, surveyPass, true_elimination))
+            # when will next Endgame output time be
+            nextOutputTime = min(outputTimes2)
+            # change next output time location in the all output variable to be after the end of the simulation
+            # then the next output will be done at the correct time
+            w = np.where(outputTimes2 == nextOutputTime)
+            outputTimes2[w] = timesim + 10
+            # save current num surveys, num MDAS as previous num surveys/MDAs, so next output we can tell how many were performed
+            # since last output
+            prevNSurvey = nSurvey 
+            prevNMDA = numMDA
+            # set coverage and nDoses to 0, so that if these are non-zero, we know that they occured since last output
+            
+            # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            
+            # FOR COVERAGE THIS DOESN'T TAKE INTO ACCOUNT THAT WE CAN HAVE MULTIPLE MDAS A YEAR AND IN DIFFERENT AGE GROUPS
+            
+            # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            
+            coverage = 0
+            nDoses = 0
+            
     vals['Yearly_threshold_infs'] = yearly_threshold_infs
     vals['True_Prev_Disease_children_1_9'] = prevalence # save the prevalence in children aged 1-9
     vals['True_Infections_Disease_children_1_9'] = infections # save the infections in children aged 1-9
     vals['State'] = np.random.get_state() # save the state of the simulations
 
-    return vals
-
+    return vals, results
 
 
 
