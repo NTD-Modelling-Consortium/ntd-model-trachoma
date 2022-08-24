@@ -470,15 +470,12 @@ def numMDAsBeforeNextSurvey(surveyPrev):
     '''
     
     if surveyPrev >= 0.3:
-        nextSurvey = 5
-    elif surveyPrev >= 0.1 & surveyPrev < 0.3:
-        nextSurvey = 3
-    elif surveyPrev >= 0.05 & surveyPrev < 0.1:
-        nextSurvey = 1
-    else:
-        nextSurvey = 0
-        
-    return nextSurvey
+        return 5 
+    if surveyPrev >= 0.1:
+        return 3
+    if surveyPrev >= 0.05: 
+        return 1
+    return 0
 
 def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, state=None):
 
