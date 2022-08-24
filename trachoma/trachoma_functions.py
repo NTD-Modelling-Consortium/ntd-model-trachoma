@@ -628,6 +628,103 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity):
     # return prevalence,calculated as number who tested positive divided by number of 1-9 year olds
     return positive/children_ages_1_9.sum()
 
+
+
+def getResults(results, demog, params, outputYear):
+    max_age = demog['max_age'] // 52 # max_age in weeks
+    for i in range(len(results)):
+        count = 0
+        d = copy.deepcopy(results[i][1])
+        for j in range(len(d)):
+            year = outputYear[j]
+            large_infection_count = (d[j].NoInf > params['n_inf_sev'])
+            infection_count = (d[j].IndI > 0)
+            Age = d[j].Age
+            # Cast weights to integer to be able to count
+            manyInfs, _ = np.histogram(Age, bins=max_age, weights=large_infection_count.astype(int))
+            Infs, _ = np.histogram(Age, bins=max_age, weights=infection_count.astype(int))
+            nums, _ = np.histogram(Age, bins=max_age)
+            if i == 0:
+                if count == 0:
+                    df = pd.DataFrame(
+                        {
+                            "Time": np.repeat(year,max_age),
+                            "age_start": range(0, max_age),
+                            "age_end": range(1, max_age + 1),
+                            "measure": np.repeat("prevalence", max_age),
+                            "draw_0": Infs/nums,
+                        }
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": np.repeat(year,max_age),
+                                "age_start": range(0, max_age),
+                                "age_end": range(1, max_age + 1),
+                                "measure": np.repeat("heavyInfections", max_age),
+                                "draw_0": manyInfs/nums,
+                            }
+                        )
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": np.repeat(year,max_age),
+                                "age_start": range(0, max_age),
+                                "age_end": range(1, max_age + 1),
+                                "measure": np.repeat("number", max_age),
+                                "draw_0": nums,
+                            }
+                        )
+                    )
+                    count += 1
+                else:
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": np.repeat(year,max_age),
+                                "age_start": range(0, max_age),
+                                "age_end": range(1, max_age + 1),
+                                "measure": np.repeat("prevalence", max_age),
+                                "draw_0": Infs/nums,
+                            }
+                        )
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": np.repeat(year,max_age),
+                                "age_start": range(0, max_age),
+                                "age_end": range(1, max_age + 1),
+                                "measure": np.repeat("heavyInfections", max_age),
+                                "draw_0": manyInfs/nums,
+                            }
+                        )
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": np.repeat(year,max_age),
+                                "age_start": range(0, max_age),
+                                "age_end": range(1, max_age + 1),
+                                "measure": np.repeat("number", max_age),
+                                "draw_0": nums,
+                            }
+                        )
+                    )
+            else:
+                if count == 0:
+                    df2 = []
+                    df2 = pd.DataFrame({"draw"+str(i):Infs/nums})
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):manyInfs/nums}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):nums}))
+                    count += 1
+                else:
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):Infs/nums}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):manyInfs/nums}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):nums}))
+        
+        if i > 0:
+            df["draw"+str(i)] = copy.deepcopy(df2)
+        
+    return df
+
+
 ##########################################################################################
 ##########################################################################################
 ##########################################################################################
