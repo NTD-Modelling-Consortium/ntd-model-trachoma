@@ -380,8 +380,9 @@ def doMDAAgeRange(params, Age, MDA_round, Tx_mat, ageStart, ageEnd):
         treated_older = older[Tx_mat[older, MDA_round] == 1]
         cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
         cured_babies = []
+        treated_babies = []
     #print('MDA:',cured_babies,cured_older)
-    return np.append(cured_babies, cured_older)
+    return np.append(cured_babies, cured_older), np.append(treated_babies, treated_older)
 
 def MDA_timestep(vals, params, MDA_round, Tx_mat):
 
@@ -408,10 +409,10 @@ def MDA_timestep_Age_range(vals, params, MDA_round, Tx_mat, ageStart, ageEnd):
     treated_cured = doMDAAgeRange(params=params, Age=vals['Age'], MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart = ageStart, ageEnd = ageEnd)
 
     # Set treated/cured indivs infection status and bacterial load to 0
-    vals['IndI'][treated_cured] = 0       # clear infection they become I=0
-    vals['bact_load'][treated_cured] = 0  # stop being infectious
+    vals['IndI'][treated_cured[0]] = 0       # clear infection they become I=0
+    vals['bact_load'][treated_cured[0]] = 0  # stop being infectious
 
-    return vals, len(treated_cured)
+    return vals, len(treated_cured[1])
 
 
 def ID_period_function(Ind_ID_period_base, No_Inf, params):
@@ -632,13 +633,13 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
-    TestSensitivity = 0.96
-    TestSpecificity = 0.93
+   # TestSensitivity = 0.96
+   # TestSpecificity = 0.99
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
     surveyPrev  = 0.5
-    surveyPrev = returnSurveyPrev(vals, TestSensitivity, TestSpecificity)
+    surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
    # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
-    surveyPass = 1 if surveyPrev <= 0.05 else 0
+    surveyPass = 0
   
    # if the prevalence is > 5%, then we will do another survey after given number of MDAs
    # call this value nextSurvey    
@@ -675,7 +676,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
                 surveyTime = i + 6
         #else:  removed and deleted one indent in the line below to correct mistake.
         if np.logical_and(i == surveyTime, surveyPass==0):     
-            surveyPrev = returnSurveyPrev(vals, TestSensitivity, TestSpecificity)
+            surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
                
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
             surveyPass = 1 if surveyPrev <= 0.05 else 0
