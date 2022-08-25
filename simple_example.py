@@ -100,7 +100,7 @@ results = Parallel(n_jobs=num_cores)(
          delayed(sim_Ind_MDA_Include_Survey)(params=params, Tx_mat = Tx_mat, 
                                              vals = vals, timesim = sim_params['timesim'],
                                              demog=demog, bet=beta, MDA_times = MDA_times, 
-                                             MDAData=MDAData,moutputTimes= outputTimes, 
+                                             MDAData=MDAData, outputTimes= outputTimes, 
                                              seed = i) for i in range(numSims))
 
 
