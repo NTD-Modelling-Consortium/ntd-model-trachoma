@@ -674,7 +674,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             if numMDA == nextSurvey:
                 surveyTime = i + 6
         #else:  removed and deleted one indent in the line below to correct mistake.
-        if (i == surveyTime & surveyPass == 0):     
+        if np.logical_and(i == surveyTime, surveyPass==0):     
             surveyPrev = returnSurveyPrev(vals, TestSensitivity, TestSpecificity)
                
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
@@ -760,7 +760,7 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity):
 
 
 
-def getResults(results, demog, params, outputYear):
+def getResultsIHME(results, demog, params, outputYear):
     max_age = demog['max_age'] // 52 # max_age in weeks
     for i in range(len(results)):
         count = 0
@@ -848,6 +848,122 @@ def getResults(results, demog, params, outputYear):
                     df2 = df2.append(pd.DataFrame({"draw"+str(i):Infs/nums}))
                     df2 = df2.append(pd.DataFrame({"draw"+str(i):manyInfs/nums}))
                     df2 = df2.append(pd.DataFrame({"draw"+str(i):nums}))
+        
+        if i > 0:
+            df["draw"+str(i)] = copy.deepcopy(df2)
+        
+    return df
+
+def getResultsIPM(results, demog, params, outputYear):
+   
+    for i in range(len(results)):
+        count = 0
+        d = copy.deepcopy(results[i][1])
+        for j in range(len(d)):
+            year = outputYear[j]
+            
+            # Cast weights to integer to be able to count
+            
+            if i == 0:
+                if count == 0:
+                    df = pd.DataFrame(
+                        {
+                            "Time": [year],
+                            "measure": "nDoses",
+                            "draw_0": d[j].nMDADoses,
+                        }
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                               "Time": [year],
+                               "measure": "MDAcoverage",
+                               "draw_0": d[j].propMDA,
+                            }
+                        )
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": [year],
+                                "measure": "nSurvey",
+                                "draw_0": d[j].nSurvey,
+                            }
+                        )
+                    )
+                    
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": [year],
+                                "measure": "surveyPass",
+                                "draw_0": d[j].surveyPass,
+                            }
+                        )
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": [year],
+                                "measure": "trueElimination",
+                                "draw_0": d[j].elimination,
+                            }
+                        )
+                    )
+                    count += 1
+                else:
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": [year],
+                                "measure": "nDoses",
+                                "draw_0": d[j].nMDADoses,
+                            }
+                        )
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                               "Time": [year],
+                               "measure": "MDAcoverage",
+                               "draw_0": d[j].propMDA,
+                            }
+                        )
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": [year],
+                                "measure": "nSurvey",
+                                "draw_0": d[j].nSurvey,
+                            }
+                        )
+                    )
+                    
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": [year],
+                                "measure": "surveyPass",
+                                "draw_0": d[j].surveyPass,
+                            }
+                        )
+                    )
+                    df = df.append(pd.DataFrame(
+                            {
+                                "Time": [year],
+                                "measure": "trueElimination",
+                                "draw_0": d[j].elimination,
+                            }
+                        )
+                    )
+            else:
+                if count == 0:
+                    df2 = []
+                    df2 = pd.DataFrame({"draw"+str(i): [d[j].nMDADoses]})
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].propMDA]}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].nSurvey]}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].surveyPass]}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].elimination]}))
+                    count += 1
+                else:
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].nMDADoses]}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].propMDA]}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].nSurvey]}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].surveyPass]}))
+                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].elimination]}))
         
         if i > 0:
             df["draw"+str(i)] = copy.deepcopy(df2)
