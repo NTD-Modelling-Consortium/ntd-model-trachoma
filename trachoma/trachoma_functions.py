@@ -640,7 +640,8 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
    # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
     surveyPass = 0
-  
+   
+    # surveyPass = 1 if surveyPrev <= 0.05 else 0
    # if the prevalence is > 5%, then we will do another survey after given number of MDAs
    # call this value nextSurvey    
     nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
