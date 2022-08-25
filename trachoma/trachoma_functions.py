@@ -638,7 +638,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             if numMDA == nextSurvey:
                 surveyTime = i + 6
         #else:  removed and deleted one indent in the line below to correct mistake.
-        if i == surveyTime:     
+        if (i == surveyTime & surveyPass == 0):     
             surveyPrev = returnSurveyPrev(vals, TestSensitivity, TestSpecificity)
                
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
