@@ -463,21 +463,16 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
 
 def numMDAsBeforeNextSurvey(surveyPrev):
     '''
-    Function to return the number of MDAs before the next survey. Based on WHO guidelines
-    dependent on the prevalence in the population, we will do a certain number of MDAs
-    before checking the prevalence again
+    Function to return the number of surveys before the next survey
     '''
     
     if surveyPrev >= 0.3:
-        nextSurvey = 5
-    elif surveyPrev >= 0.1 & surveyPrev < 0.3:
-        nextSurvey = 3
-    elif surveyPrev >= 0.05 & surveyPrev < 0.1:
-        nextSurvey = 1
-    else:
-        nextSurvey = 0
-        
-    return nextSurvey
+        return 5 
+    if surveyPrev >= 0.1:
+        return 3
+    if surveyPrev >= 0.05: 
+        return 1
+    return 0
 
 def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData, outputTimes, seed, state=None):
 
