@@ -37,6 +37,92 @@ def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elim
                           propMDA = coverage,
                           nMDA = nMDA))
 
+
+def readCoverageData(coverageFileName):
+    # read coverage data file
+    PlatCov = pd.read_excel(
+         "trachoma/" + coverageFileName, sheet_name="Sheet1"
+    )
+    
+     # we want to find which is the first year specified in the coverage data, along with which
+     # column of the data set this corresponds to
+    fy = 10000
+    fy_index = 10000
+    for i in range(len(PlatCov.columns)):
+        if type(PlatCov.columns[i]) == int:
+            fy = min(fy, PlatCov.columns[i])
+            fy_index = min(fy_index, i)
+    count = 0
+    minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
+    maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
+    for i in range(fy_index, len(PlatCov.columns)):
+        dd = PlatCov.iloc[:, i]
+        MDAS = np.where(dd>0)[0]
+        if len(MDAS)>0:
+            for k in range(len(MDAS)):
+                j = MDAS[k]
+                if count == 0:
+                    MDAData = [[PlatCov.columns[i], PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i]]]
+                    count += 1
+                else:
+                    MDAData.append([PlatCov.columns[i], PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i]])
+                    count +=1
+    return MDAData
+                
+                
+
+def Tx_matrix_2(MDAData, previous_rounds):
+
+    '''
+    Create matrix to determine who gets treated at each MDA round,
+    allowing for systematic non-compliance as specified by Dyson.
+    '''
+
+    np.random.seed(0)
+
+    if previous_rounds == 0:
+        
+        ind_treat = np.zeros((params['N'], len(MDAData)))
+
+        # Assign first treatment
+        MDA_Cov = MDAData[0][3]
+        ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
+
+        for k in range(1, len(MDAData)):
+            MDA_Cov = MDAData[k][3]
+            # Subsequent treatment probs function of previous treatments
+            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
+            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
+
+    else:
+        MDA_Cov = MDAData[0][3]
+        ind_treat = np.zeros((params['N'], previous_rounds + len(MDAData)))
+
+        # Assign first treatment
+        ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
+
+        for k in range(1, previous_rounds + len(MDAData)):
+            MDA_Cov = MDAData[k][3]
+            # Subsequent treatment probs function of previous treatments
+            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
+            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
+
+        ind_treat = ind_treat[:, - len(MDAData):]
+
+    return ind_treat
+
+def getMDADates(MDAData):
+    for i in range(len(MDAData)):
+        d = MDAData[i][0]
+        y = int(d)
+        m = int(12*(d - int(d)) + 1)
+        day = 1
+        if i == 0:
+            MDA_dates = [date(y, m, day)]
+        else:
+            MDA_dates.append(date(y, m, day))
+    return MDA_dates
+
 def stepF_fixed(vals, params, demog, bet):
 
     '''
