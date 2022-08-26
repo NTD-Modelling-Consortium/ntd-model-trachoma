@@ -3,9 +3,13 @@ import multiprocessing
 import time
 from joblib import Parallel, delayed
 num_cores = multiprocessing.cpu_count()
+import pickle
 
 
-coverageFileName = 'scen2a.xlsx'
+#############################################################################################################################
+#############################################################################################################################
+
+# initialize parameters, sim_params, and demography
 
 params = {'N': 2500,
           'av_I_duration' : 2,
@@ -30,13 +34,12 @@ params = {'N': 2500,
           'olderChildMaxAge':15, #Note this is years, need to check it converts to weeks later
           'b1':1,#this relates to bacterial load function
           'ep2':0.114,
-          'n_inf_sev':30}
+          'n_inf_sev':30,
+          'TestSensitivity': 1,
+          'TestSpecificity': 1}
 
-                       
-
-
-sim_params = {'timesim':4787, 
-              'burnin': 3900,
+sim_params = {'timesim':1500, 
+              'burnin': 26,
               'N_MDA':5,
               'nsim':10}
 
@@ -44,69 +47,84 @@ sim_params = {'timesim':4787,
 demog = {'tau': 0.0004807692, 
          'max_age': 3120,
          'mean_age': 1040}
+
+
+
 previous_rounds = 0
-vals = Set_inits(params, demog, sim_params)
-vals = Seed_infection(params, vals)
 
 
-MDAData = readCoverageData(coverageFileName)
-TX_Mat = Tx_matrix_2(MDAData, params, previous_rounds)
-MDA_dates = getMDADates(MDAData)
-
-
-
-Start_date = date(2014, 1, 1)
+Start_date = date(2016, 1, 1)
 End_date = date(2030,12,31)
-MDA_times = get_MDA_times(MDA_dates, Start_date, sim_params['burnin'])
-MDA_dates = [date(2015,5,1),date(2016,5,1),date(2017,5,1),date(2018,5,1),date(2019,5,1),date(2020,5,1),date(2021,5,1)]
+#############################################################################################################################
+#############################################################################################################################
+# import pickle file and beta values. 
 
-MDA_times = get_MDA_times(MDA_dates, Start_date, sim_params['burnin'])
-sim_params = {'timesim':5307, 
-                   'burnin': 3900,
-                   'N_MDA':len(MDA_times),
-                   'nsim':10}
+# begin by specifying the name of the IU
+IUID = 'BDI06375'
+# path to pickle file
+PickleFilePath = 'OutputVals_' + IUID + '.p'
+# load pickle file
+pickleData =  pickle.load(open(PickleFilePath, 'rb'))
+# load beta file
+BetaFilePath = 'InputBet_' + IUID + '.csv'
+# read in parameters
+allBetas = pd.read_csv(BetaFilePath)
+#############################################################################################################################
+#############################################################################################################################
 
-
-# year to make endgame output
+# which years to make endgame output specify and convert these to simulation time
 outputYear = range(2017, 2041)
 outputTimes = getOutputTimes(outputYear)
 outputTimes = get_MDA_times(outputTimes, Start_date, sim_params['burnin'])
+
 #############################################################################################################################
-######################################################################################################################################################
+#############################################################################################################################
 
-# do sims
-MDAData = readCoverageData(coverageFileName = 'scen1.xlsx')
-
+# generate MDA data from coverage file
+scenario = '1'
+coverageFileName = 'scen' + scenario + '.xlsx'
+MDAData = readCoverageData(coverageFileName)
 MDA_dates = getMDADates(MDAData)
 MDA_times = get_MDA_times(MDA_dates, Start_date, sim_params['burnin'])
+sim_params['N_MDA'] = len(MDA_times)
 
+#############################################################################################################################
+#############################################################################################################################
 
-
-numSims = 15
+# decide how many sims we will run
+numSims = 200
 print( f'Running {numSims} simulations on {num_cores} cores' )
+start = time.time()
 
-
-# randomly pick indices for number of simulations
-# indices = np.random.choice(a=range(200), size = numSims, replace=False)
-# indices = range(200)
-start_time = time.time()
-
-beta = 0.14
-vals = Set_inits(params, demog, sim_params)
-vals = Seed_infection(params, vals)
-Tx_mat = Tx_matrix_2(MDAData, params, 0)
-# run simulations in parallel
+#############################################################################################################################
+#############################################################################################################################
+# run as many simulations as specified
 results = Parallel(n_jobs=num_cores)(
-         delayed(sim_Ind_MDA_Include_Survey)(params=params, Tx_mat = Tx_mat, 
-                                             vals = vals, timesim = sim_params['timesim'],
-                                             demog=demog, bet=beta, MDA_times = MDA_times, 
-                                             MDAData=MDAData, outputTimes= outputTimes, 
-                                             seed = i) for i in range(numSims))
+         delayed(run_single_simulation)(pickleData = pickleData[i], 
+                                        params = params, 
+                                        timesim = sim_params['timesim'],
+                                        demog=demog, 
+                                        beta = allBetas.bet[i], 
+                                        MDA_times = MDA_times, 
+                                        MDAData=MDAData, 
+                                        outputTimes= outputTimes, 
+                                        index = i) for i in range(numSims))
+
+
+print(time.time()- start)
+#############################################################################################################################
+#############################################################################################################################
+# collate and output IHME data
+
+outsIHME = getResultsIHME(results, demog, params, outputYear)
+outsIHME.to_csv('outsIHME'+ scenario +'.csv',index=False)
 
 
 
+#############################################################################################################################
+#############################################################################################################################
+# collate and output IPM data
 
-
-outs = getResults(results, demog, params, outputYear)
-outs.to_csv('outs1.csv',index=False)
+outsIPM = getResultsIPM(results, demog, params, outputYear)
+outsIPM.to_csv('outsIPM'+ scenario +'.csv',index=False)
 
