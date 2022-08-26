@@ -114,7 +114,7 @@ def getMDADates(MDAData):
     for i in range(len(MDAData)):
         d = MDAData[i][0]
         y = int(d)
-        m = int(12*(d - int(d)) + 1)
+        m = round(12*(d - int(d))) + 1
         day = 1
         if i == 0:
             MDA_dates = [date(y, m, day)]
@@ -409,8 +409,8 @@ def MDA_timestep_Age_range(vals, params, MDA_round, Tx_mat, ageStart, ageEnd):
     treated_cured = doMDAAgeRange(params=params, Age=vals['Age'], MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart = ageStart, ageEnd = ageEnd)
 
     # Set treated/cured indivs infection status and bacterial load to 0
-    vals['IndI'][treated_cured[0]] = 0       # clear infection they become I=0
-    vals['bact_load'][treated_cured[0]] = 0  # stop being infectious
+    vals['IndI'][treated_cured[0].astype(int)] = 0       # clear infection they become I=0
+    vals['bact_load'][treated_cured[0].astype(int)] = 0  # stop being infectious
 
     return vals, len(treated_cured[1])
 
@@ -640,8 +640,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
    # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
     surveyPass = 0
-   
-    # surveyPass = 1 if surveyPrev <= 0.05 else 0
+   # surveyPass = 1 if surveyPrev <= 0.05 else 0
    # if the prevalence is > 5%, then we will do another survey after given number of MDAs
    # call this value nextSurvey    
     nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
@@ -663,15 +662,28 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
 
         if i in MDA_times:
             if surveyPass == 0:
-                MDA_round = np.where(MDA_times == i)[0][0]
-                ageStart = MDAData[MDA_round][1]
-                ageEnd = MDAData[MDA_round][2]
-                out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
-                vals = out[0]
-                nDoses += out[1]
-                # increment number of MDAs
-                numMDA += 1
-                coverage = nDoses/ len(vals['IndI'])
+                MDA_round = np.where(MDA_times == i)[0]
+                if(len(MDA_round) == 1):
+                    MDA_round = MDA_round[0]
+                    ageStart = MDAData[MDA_round][1]
+                    ageEnd = MDAData[MDA_round][2]
+                    out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
+                    vals = out[0]
+                    nDoses += out[1]
+                    # increment number of MDAs
+                    numMDA += 1
+                    coverage = nDoses/ len(vals['IndI'])
+                else:
+                    for l in range(len(MDA_round)):
+                        MDA_round2 = copy.deepcopy(MDA_round[l])
+                        ageStart = MDAData[MDA_round2][1]
+                        ageEnd = MDAData[MDA_round2][2]
+                        out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round2, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
+                        vals = out[0]
+                        nDoses += out[1]
+                        # increment number of MDAs
+                        numMDA += 1
+                        coverage = nDoses/ len(vals['IndI'])
                 # if the number of MDAs is the same as the number for the next survey then set survey time
             if numMDA == nextSurvey:
                 surveyTime = i + 6
@@ -763,6 +775,9 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity):
 
 
 def getResultsIHME(results, demog, params, outputYear):
+    '''
+    Function to collate results for IHME
+    '''
     max_age = demog['max_age'] // 52 # max_age in weeks
     for i in range(len(results)):
         count = 0
@@ -857,7 +872,9 @@ def getResultsIHME(results, demog, params, outputYear):
     return df
 
 def getResultsIPM(results, demog, params, outputYear):
-   
+    '''
+    Function to collate results for IPM
+    '''
     for i in range(len(results)):
         count = 0
         d = copy.deepcopy(results[i][1])
@@ -972,6 +989,27 @@ def getResultsIPM(results, demog, params, outputYear):
         
     return df
 
+
+
+def run_single_simulation(pickleData, params, 
+                                    timesim,
+                                    demog, beta, MDA_times, 
+                                    MDAData, outputTimes, 
+                                    index ):
+    
+    '''
+    Function to run a single instance of the simulation. The starting point for these simulations
+    is
+    '''
+    vals = pickleData
+    params['N'] = len(vals['IndI'])
+    Tx_mat = Tx_matrix_2(MDAData, params, 0)
+    results = sim_Ind_MDA_Include_Survey(params=params, Tx_mat = Tx_mat, 
+                                        vals = vals, timesim = timesim,
+                                        demog=demog, bet=beta, MDA_times = MDA_times, 
+                                        MDAData=MDAData, outputTimes= outputTimes, 
+                                        seed = index)
+    return results
 
 ##########################################################################################
 ##########################################################################################
