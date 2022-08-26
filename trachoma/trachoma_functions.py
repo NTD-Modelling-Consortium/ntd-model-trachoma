@@ -779,8 +779,12 @@ def getResultsIHME(results, demog, params, outputYear):
     Function to collate results for IHME
     '''
     max_age = demog['max_age'] // 52 # max_age in weeks
+
+    df = pd.DataFrame(0, range(len(outputYear)*3*60), columns= range(len(results)+4))
+    df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
+    
     for i in range(len(results)):
-        count = 0
+        ind = 0
         d = copy.deepcopy(results[i][1])
         for j in range(len(d)):
             year = outputYear[j]
@@ -792,201 +796,85 @@ def getResultsIHME(results, demog, params, outputYear):
             Infs, _ = np.histogram(Age, bins=max_age, weights=infection_count.astype(int))
             nums, _ = np.histogram(Age, bins=max_age)
             if i == 0:
-                if count == 0:
-                    df = pd.DataFrame(
-                        {
-                            "Time": np.repeat(year,max_age),
-                            "age_start": range(0, max_age),
-                            "age_end": range(1, max_age + 1),
-                            "measure": np.repeat("prevalence", max_age),
-                            "draw_0": Infs/nums,
-                        }
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": np.repeat(year,max_age),
-                                "age_start": range(0, max_age),
-                                "age_end": range(1, max_age + 1),
-                                "measure": np.repeat("heavyInfections", max_age),
-                                "draw_0": manyInfs/nums,
-                            }
-                        )
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": np.repeat(year,max_age),
-                                "age_start": range(0, max_age),
-                                "age_end": range(1, max_age + 1),
-                                "measure": np.repeat("number", max_age),
-                                "draw_0": nums,
-                            }
-                        )
-                    )
-                    count += 1
-                else:
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": np.repeat(year,max_age),
-                                "age_start": range(0, max_age),
-                                "age_end": range(1, max_age + 1),
-                                "measure": np.repeat("prevalence", max_age),
-                                "draw_0": Infs/nums,
-                            }
-                        )
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": np.repeat(year,max_age),
-                                "age_start": range(0, max_age),
-                                "age_end": range(1, max_age + 1),
-                                "measure": np.repeat("heavyInfections", max_age),
-                                "draw_0": manyInfs/nums,
-                            }
-                        )
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": np.repeat(year,max_age),
-                                "age_start": range(0, max_age),
-                                "age_end": range(1, max_age + 1),
-                                "measure": np.repeat("number", max_age),
-                                "draw_0": nums,
-                            }
-                        )
-                    )
+                df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
+                df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
+                df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
+                df.iloc[range(ind, ind+max_age), 3] = np.repeat("prevalence", max_age)
+                df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
+                ind += max_age
+                df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
+                df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
+                df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
+                df.iloc[range(ind, ind+max_age), 3] = np.repeat("heavyInfections", max_age)
+                df.iloc[range(ind, ind+max_age), i+4] = manyInfs/nums
+                ind += max_age
+                df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
+                df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
+                df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
+                df.iloc[range(ind, ind+max_age), 3] = np.repeat("number", max_age)
+                df.iloc[range(ind, ind+max_age), i+4] = nums
+                ind += max_age
             else:
-                if count == 0:
-                    df2 = []
-                    df2 = pd.DataFrame({"draw"+str(i):Infs/nums})
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):manyInfs/nums}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):nums}))
-                    count += 1
-                else:
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):Infs/nums}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):manyInfs/nums}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):nums}))
-        
-        if i > 0:
-            df["draw"+str(i)] = copy.deepcopy(df2)
-        
+                df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
+                ind += max_age
+                df.iloc[range(ind, ind+max_age), i+4] = manyInfs/nums
+                ind += max_age
+                df.iloc[range(ind, ind+max_age), i+4] = nums
+                ind += max_age
+    for i in range(len(results)):
+        df = df.rename(columns={i+4: "draw_"+ str(i)}) 
     return df
+
+
 
 def getResultsIPM(results, demog, params, outputYear):
     '''
-    Function to collate results for IPM
+    Function to collate results for IHME
     '''
+    max_age = demog['max_age'] // 52 # max_age in weeks
+
+    df = pd.DataFrame(0, range(len(outputYear)*5), columns= range(len(results)+2))
+    df = df.rename(columns={0: "Time", 1:  "measure"}) 
+    
     for i in range(len(results)):
-        count = 0
+        ind = 0
         d = copy.deepcopy(results[i][1])
         for j in range(len(d)):
             year = outputYear[j]
-            
-            # Cast weights to integer to be able to count
-            
             if i == 0:
-                if count == 0:
-                    df = pd.DataFrame(
-                        {
-                            "Time": [year],
-                            "measure": "nDoses",
-                            "draw_0": d[j].nMDADoses,
-                        }
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                               "Time": [year],
-                               "measure": "MDAcoverage",
-                               "draw_0": d[j].propMDA,
-                            }
-                        )
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": [year],
-                                "measure": "nSurvey",
-                                "draw_0": d[j].nSurvey,
-                            }
-                        )
-                    )
-                    
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": [year],
-                                "measure": "surveyPass",
-                                "draw_0": d[j].surveyPass,
-                            }
-                        )
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": [year],
-                                "measure": "trueElimination",
-                                "draw_0": d[j].elimination,
-                            }
-                        )
-                    )
-                    count += 1
-                else:
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": [year],
-                                "measure": "nDoses",
-                                "draw_0": d[j].nMDADoses,
-                            }
-                        )
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                               "Time": [year],
-                               "measure": "MDAcoverage",
-                               "draw_0": d[j].propMDA,
-                            }
-                        )
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": [year],
-                                "measure": "nSurvey",
-                                "draw_0": d[j].nSurvey,
-                            }
-                        )
-                    )
-                    
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": [year],
-                                "measure": "surveyPass",
-                                "draw_0": d[j].surveyPass,
-                            }
-                        )
-                    )
-                    df = df.append(pd.DataFrame(
-                            {
-                                "Time": [year],
-                                "measure": "trueElimination",
-                                "draw_0": d[j].elimination,
-                            }
-                        )
-                    )
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 1] = "nDoses"
+                df.iloc[ind, i+2] = d[j].nMDADoses
+                ind += 1
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 1] = "MDAcoverage"
+                df.iloc[ind, i+2] = d[j].propMDA
+                ind += 1
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 1] = "nSurvey"
+                df.iloc[ind, i+2] = d[j].nSurvey
+                ind += 1
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 1] = "surveyPass"
+                df.iloc[ind, i+2] = d[j].surveyPass
+                ind += 1
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 1] = "trueElimination"
+                df.iloc[ind, i+2] = d[j].elimination
+                ind += 1
             else:
-                if count == 0:
-                    df2 = []
-                    df2 = pd.DataFrame({"draw"+str(i): [d[j].nMDADoses]})
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].propMDA]}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].nSurvey]}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].surveyPass]}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].elimination]}))
-                    count += 1
-                else:
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].nMDADoses]}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].propMDA]}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].nSurvey]}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].surveyPass]}))
-                    df2 = df2.append(pd.DataFrame({"draw"+str(i):[d[j].elimination]}))
-        
-        if i > 0:
-            df["draw"+str(i)] = copy.deepcopy(df2)
-        
+                df.iloc[ind, i+2] = d[j].nMDADoses
+                ind += 1
+                df.iloc[ind, i+2] = d[j].propMDA
+                ind += 1
+                df.iloc[ind, i+2] = d[j].nSurvey
+                ind += 1
+                df.iloc[ind, i+2] = d[j].surveyPass
+                ind += 1
+                df.iloc[ind, i+2] = d[j].elimination
+                ind += 1
+    for i in range(len(results)):
+        df = df.rename(columns={i+2: "draw_"+ str(i)}) 
     return df
 
 
