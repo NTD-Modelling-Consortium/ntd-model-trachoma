@@ -19,7 +19,8 @@ params = {'N': 2500,
           'av_D_duration':300/7,
           'dis_red':0.3,
           'min_D':1, #Parameters relating to duration of disease period
-          'v_1':1,'v_2':2.6,
+          'v_1':1,
+          'v_2':2.6,
           'phi':1.4,
           'epsilon':0.5,#Parameters relating to lambda function- calculating force of infection
           'ag':0.0016, #Decay rate for age component of decline in D duration
@@ -35,8 +36,8 @@ params = {'N': 2500,
           'b1':1,#this relates to bacterial load function
           'ep2':0.114,
           'n_inf_sev':30,
-          'TestSensitivity': 1,
-          'TestSpecificity': 1}
+          'TestSensitivity': 0.96,
+          'TestSpecificity': 0.93}
 
 sim_params = {'timesim':1500, 
               'burnin': 26,
@@ -85,7 +86,7 @@ outputTimes = get_MDA_times(outputTimes, Start_date, sim_params['burnin'])
 #############################################################################################################################
 
 # generate MDA data from coverage file
-scenario = '1'
+scenario = '2b'
 coverageFileName = 'scen' + scenario + '.xlsx'
 MDAData = readCoverageData(coverageFileName)
 MDA_dates = getMDADates(MDAData)
