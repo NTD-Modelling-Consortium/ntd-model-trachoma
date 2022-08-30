@@ -698,12 +698,12 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
 
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
-        n_children_ages_1_9 = children_ages_1_9.sum()
-        n_True_diseased_children_1_9 = vals['IndD'][children_ages_1_9].sum()
-        n_true_infected_children_1_9 = vals['IndI'][children_ages_1_9].sum()
-        prevalence.append(n_True_diseased_children_1_9 / n_children_ages_1_9)
+        n_children_ages_1_9 = np.count_nonzero(children_ages_1_9)
+        n_true_diseased_children_1_9 = np.count_nonzero(vals['IndD'][children_ages_1_9])
+        n_true_infected_children_1_9 = np.count_nonzero(vals['IndI'][children_ages_1_9])
+        prevalence.append(n_true_diseased_children_1_9 / n_children_ages_1_9)
         infections.append(n_true_infected_children_1_9 / n_children_ages_1_9)
-        
+
         large_infection_count = (vals['No_Inf'] > params['n_inf_sev'])
         # Cast weights to integer to be able to count
         a, _ = np.histogram(vals['Age'], bins=max_age, weights=large_infection_count.astype(int))
@@ -789,6 +789,8 @@ def getResultsIHME(results, demog, params, outputYear):
             manyInfs, _ = np.histogram(Age, bins=max_age, weights=large_infection_count.astype(int))
             Infs, _ = np.histogram(Age, bins=max_age, weights=infection_count.astype(int))
             nums, _ = np.histogram(Age, bins=max_age)
+            k = np.where(nums == 0)
+            nums[k] = 1
             if i == 0:
                 df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
                 df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
@@ -802,6 +804,7 @@ def getResultsIHME(results, demog, params, outputYear):
                 df.iloc[range(ind, ind+max_age), 3] = np.repeat("heavyInfections", max_age)
                 df.iloc[range(ind, ind+max_age), i+4] = manyInfs/nums
                 ind += max_age
+                nums[k] = 0
                 df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
                 df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
                 df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
