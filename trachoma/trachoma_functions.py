@@ -69,47 +69,6 @@ def readCoverageData(coverageFileName):
     return MDAData
                 
                 
-
-def Tx_matrix_2(MDAData, params, previous_rounds):
-
-    '''
-    Create matrix to determine who gets treated at each MDA round,
-    allowing for systematic non-compliance as specified by Dyson.
-    '''
-
-    np.random.seed(0)
-
-    if previous_rounds == 0:
-        
-        ind_treat = np.zeros((params['N'], len(MDAData)))
-
-        # Assign first treatment
-        MDA_Cov = MDAData[0][3]
-        ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
-
-        for k in range(1, len(MDAData)):
-            MDA_Cov = MDAData[k][3]
-            # Subsequent treatment probs function of previous treatments
-            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
-            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
-
-    else:
-        MDA_Cov = MDAData[0][3]
-        ind_treat = np.zeros((params['N'], previous_rounds + len(MDAData)))
-
-        # Assign first treatment
-        ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
-
-        for k in range(1, previous_rounds + len(MDAData)):
-            MDA_Cov = MDAData[k][3]
-            # Subsequent treatment probs function of previous treatments
-            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
-            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
-
-        ind_treat = ind_treat[:, - len(MDAData):]
-
-    return ind_treat
-
 def getMDADates(MDAData):
     for i in range(len(MDAData)):
         d = MDAData[i][0]
