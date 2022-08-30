@@ -71,7 +71,11 @@ BetaFilePath = 'InputBet_' + IUID + '.csv'
 allBetas = pd.read_csv(BetaFilePath)
 #############################################################################################################################
 #############################################################################################################################
-
+# make sure the N parameter is the same as the number of people in the pickle file
+a = pickleData[1]
+params['N'] = len(a['IndI'])
+#############################################################################################################################
+#############################################################################################################################
 # which years to make endgame output specify and convert these to simulation time
 outputYear = range(2017, 2041)
 outputTimes = getOutputTimes(outputYear)
