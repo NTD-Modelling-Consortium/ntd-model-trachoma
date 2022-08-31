@@ -17,12 +17,12 @@ class Result:
     IndD: ndarray
     Age:ndarray
     NoInf: ndarray
-    nMDA:Optional[int] = None
-    nMDADoses: Optional[int] = None
+    nMDA:Optional[ndarray] = None
+    nMDADoses: Optional[ndarray] = None
     nSurvey: Optional[int] = None
     surveyPass: Optional[int] = None
     elimination: Optional[int] = None
-    propMDA: Optional[ndarray] = None
+    propMDA: Optional[ndarray] = None    
     
 def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elimination):
     return (Result(time = i,
@@ -61,10 +61,10 @@ def readCoverageData(coverageFileName):
             for k in range(len(MDAS)):
                 j = MDAS[k]
                 if count == 0:
-                    MDAData = [[PlatCov.columns[i], PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i]]]
+                    MDAData = [[PlatCov.columns[i], PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
                     count += 1
                 else:
-                    MDAData.append([PlatCov.columns[i], PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i]])
+                    MDAData.append([PlatCov.columns[i], PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
                     count +=1
     return MDAData
                 
@@ -599,7 +599,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
   
    # initialize count of MDAs
-    numMDA = 0
+    numMDA = np.zeros(MDAData[0][-1], dtype=object)
    # initialize time for next survey (until after the simulation ends)
     surveyTime = timesim + 10
     nextOutputTime = min(outputTimes2)
@@ -607,10 +607,10 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     outputTimes2[w] = timesim + 10
     results = []
     nSurvey = 0
-    nDoses = 0
-    coverage = 0
+    nDoses = np.zeros(MDAData[0][-1], dtype=object)
+    coverage = np.zeros(MDAData[0][-1], dtype=object)
     prevNSurvey = 0
-    prevNMDA = 0
+    prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
@@ -622,10 +622,10 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
                     ageEnd = MDAData[MDA_round][2]
                     out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
                     vals = out[0]
-                    nDoses += out[1]
+                    nDoses[MDAData[MDA_round][-2]] += out[1]
                     # increment number of MDAs
-                    numMDA += 1
-                    coverage = nDoses/ len(vals['IndI'])
+                    numMDA[MDAData[MDA_round][-2]] += 1
+                    coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                 else:
                     for l in range(len(MDA_round)):
                         MDA_round2 = copy.deepcopy(MDA_round[l])
@@ -633,12 +633,12 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
                         ageEnd = MDAData[MDA_round2][2]
                         out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round2, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
                         vals = out[0]
-                        nDoses += out[1]
+                        nDoses[MDAData[MDA_round][-2]] += out[1]
                         # increment number of MDAs
-                        numMDA += 1
-                        coverage = nDoses/ len(vals['IndI'])
+                        numMDA[MDAData[MDA_round][-2]] += 1
+                        coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                 # if the number of MDAs is the same as the number for the next survey then set survey time
-            if numMDA == nextSurvey:
+            if sum(numMDA) == nextSurvey:
                 surveyTime = i + 6
         #else:  removed and deleted one indent in the line below to correct mistake.
         if np.logical_and(i == surveyTime, surveyPass==0):     
@@ -652,7 +652,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
                
             # add the number of MDAs already done to the number of MDAs to be done before the next survey
-            nextSurvey += numMDA
+            nextSurvey += sum(numMDA)
             nSurvey += 1
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
 
@@ -669,6 +669,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
         yearly_threshold_infs[i, :] = a / params['N']
         # check if time to save variables to make Endgame outputs
         if i == nextOutputTime:
+            
             # has the disease truly eliminated in the population
             true_elimination = 1 if (sum(vals['IndI']) + sum(vals['IndD'])) == 0 else 0
             # append the results to results variable
@@ -682,7 +683,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             # save current num surveys, num MDAS as previous num surveys/MDAs, so next output we can tell how many were performed
             # since last output
             prevNSurvey = nSurvey 
-            prevNMDA = numMDA
+            prevNMDA = copy.deepcopy(numMDA)
             # set coverage and nDoses to 0, so that if these are non-zero, we know that they occured since last output
             
             # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -691,8 +692,9 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             
             # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
             
-            coverage = 0
-            nDoses = 0
+            nDoses = np.zeros(MDAData[0][-1], dtype=object)
+            coverage = np.zeros(MDAData[0][-1], dtype=object)
+           
             
     vals['Yearly_threshold_infs'] = yearly_threshold_infs
     vals['True_Prev_Disease_children_1_9'] = prevalence # save the prevalence in children aged 1-9
@@ -733,7 +735,7 @@ def getResultsIHME(results, demog, params, outputYear):
     '''
     max_age = demog['max_age'] // 52 # max_age in weeks
 
-    df = pd.DataFrame(0, range(len(outputYear)*3*60), columns= range(len(results)+4))
+    df = pd.DataFrame(0, range(len(outputYear)*3*60 ), columns= range(len(results)+4))
     df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
     
     for i in range(len(results)):
@@ -782,55 +784,89 @@ def getResultsIHME(results, demog, params, outputYear):
     return df
 
 
+def getMDAAgeRanges(coverageFileName):
+    PlatCov = pd.read_excel(
+         "trachoma/" + coverageFileName, sheet_name="Sheet1"
+    )
+    MDAAgeRanges = np.zeros([PlatCov.shape[0],2], dtype = object)
+    minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
+    maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
+    for i in range(PlatCov.shape[0]):
+        MDAAgeRanges[i, 0] = PlatCov.iloc[i, minAgeIndex]
+        MDAAgeRanges[i, 1] = PlatCov.iloc[i, maxAgeIndex]
+        
+    return MDAAgeRanges
 
-def getResultsIPM(results, demog, params, outputYear):
+def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
     '''
     Function to collate results for IHME
     '''
-    max_age = demog['max_age'] // 52 # max_age in weeks
-
-    df = pd.DataFrame(0, range(len(outputYear)*5), columns= range(len(results)+2))
-    df = df.rename(columns={0: "Time", 1:  "measure"}) 
+   
+    df = pd.DataFrame(0, range(len(outputYear)*3 + len(outputYear) * 3 * len(MDAAgeRanges)), columns= range(len(results)+4))
+    df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
     
     for i in range(len(results)):
         ind = 0
         d = copy.deepcopy(results[i][1])
         for j in range(len(d)):
             year = outputYear[j]
+            
             if i == 0:
+                
+                for k in range(len(MDAAgeRanges)):
+                    df.iloc[ind, 0] = year
+                    df.iloc[ind, 3] = "nDoses"
+                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
+                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, i+4] = d[j].nMDADoses[k]
+                    ind += 1
+                    df.iloc[ind, 0] = year
+                    df.iloc[ind, 3] = "MDAcoverage"
+                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
+                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, i+4] = d[j].propMDA[k]
+                    ind += 1
+                    df.iloc[ind, 0] = year
+                    df.iloc[ind, 3] = "numMDAs"
+                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
+                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, i+4] = d[j].nMDA[k]
+                    ind += 1
+                    
                 df.iloc[ind, 0] = year
-                df.iloc[ind, 1] = "nDoses"
-                df.iloc[ind, i+2] = d[j].nMDADoses
+                df.iloc[ind, 3] = "nSurvey"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].nSurvey
                 ind += 1
                 df.iloc[ind, 0] = year
-                df.iloc[ind, 1] = "MDAcoverage"
-                df.iloc[ind, i+2] = d[j].propMDA
+                df.iloc[ind, 3] = "surveyPass"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].surveyPass
                 ind += 1
                 df.iloc[ind, 0] = year
-                df.iloc[ind, 1] = "nSurvey"
-                df.iloc[ind, i+2] = d[j].nSurvey
-                ind += 1
-                df.iloc[ind, 0] = year
-                df.iloc[ind, 1] = "surveyPass"
-                df.iloc[ind, i+2] = d[j].surveyPass
-                ind += 1
-                df.iloc[ind, 0] = year
-                df.iloc[ind, 1] = "trueElimination"
-                df.iloc[ind, i+2] = d[j].elimination
+                df.iloc[ind, 3] = "trueElimination"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].elimination
                 ind += 1
             else:
-                df.iloc[ind, i+2] = d[j].nMDADoses
+                for k in range(len(MDAAgeRanges)):               
+                    df.iloc[ind, i+4] = d[j].nMDADoses[k]
+                    ind += 1   
+                    df.iloc[ind, i+4] = d[j].propMDA[k]
+                    ind += 1
+                    df.iloc[ind, i+4] = d[j].nMDA[k]
+                    ind += 1
+                df.iloc[ind, i+4] = d[j].nSurvey
                 ind += 1
-                df.iloc[ind, i+2] = d[j].propMDA
+                df.iloc[ind, i+4] = d[j].surveyPass
                 ind += 1
-                df.iloc[ind, i+2] = d[j].nSurvey
-                ind += 1
-                df.iloc[ind, i+2] = d[j].surveyPass
-                ind += 1
-                df.iloc[ind, i+2] = d[j].elimination
+                df.iloc[ind, i+4] = d[j].elimination
                 ind += 1
     for i in range(len(results)):
-        df = df.rename(columns={i+2: "draw_"+ str(i)}) 
+        df = df.rename(columns={i+4: "draw_"+ str(i)}) 
     return df
 
 
