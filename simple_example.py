@@ -129,7 +129,7 @@ outsIHME.to_csv('outsIHME'+ scenario +'.csv',index=False)
 #############################################################################################################################
 #############################################################################################################################
 # collate and output IPM data
-
-outsIPM = getResultsIPM(results, demog, params, outputYear)
+MDAAgeRanges = getMDAAgeRanges(coverageFileName)
+outsIPM = getResultsIPM(results, demog, params, outputYear, MDAAgeRanges)
 outsIPM.to_csv('outsIPM'+ scenario +'.csv',index=False)
 
