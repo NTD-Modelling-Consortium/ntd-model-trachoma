@@ -768,7 +768,7 @@ def getResultsIHME(results, demog, params, outputYear):
                 df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
                 df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
                 df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
-                df.iloc[range(ind, ind+max_age), 3] = np.repeat("prevalence", max_age)
+                df.iloc[range(ind, ind+max_age), 3] = np.repeat("TruePrevalence", max_age)
                 df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
                 ind += max_age
                 df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
