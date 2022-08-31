@@ -1,1 +1,1 @@
-include trachoma/data/coverage/*
+include trachoma/data/coverage/*.xlsx
