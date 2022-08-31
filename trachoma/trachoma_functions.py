@@ -735,7 +735,7 @@ def getResultsIHME(results, demog, params, outputYear):
     '''
     max_age = demog['max_age'] // 52 # max_age in weeks
 
-    df = pd.DataFrame(0, range(len(outputYear)*3*60 ), columns= range(len(results)+4))
+    df = pd.DataFrame(0, range(len(outputYear)*4*60 ), columns= range(len(results)+4))
     df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
     
     for i in range(len(results)):
@@ -745,11 +745,23 @@ def getResultsIHME(results, demog, params, outputYear):
             year = outputYear[j]
             large_infection_count = (d[j].NoInf > params['n_inf_sev'])
             infection_count = (d[j].IndI > 0)
+            Diseased = np.where(d[j].IndD == 1)
+            NonDiseased = np.where(d[j].IndD == 0)
+            pos = np.zeros(len(d[j].Age), dtype = object)
+            if(len(Diseased) > 0):
+                TruePositive = np.random.binomial(n=1, size=int(len(Diseased[0])), p = params['TestSensitivity'])
+                pos[Diseased] = TruePositive
+            if(len(NonDiseased) > 0):
+                FalsePositive = np.random.binomial(n=1, size=int(len(NonDiseased[0])), p = 1- params['TestSpecificity'])
+                pos[NonDiseased] = FalsePositive
+            
+ 
             Age = d[j].Age
             # Cast weights to integer to be able to count
             manyInfs, _ = np.histogram(Age, bins=max_age, weights=large_infection_count.astype(int))
             Infs, _ = np.histogram(Age, bins=max_age, weights=infection_count.astype(int))
             nums, _ = np.histogram(Age, bins=max_age)
+            observedDis, _ = np.histogram(Age, bins=max_age, weights=pos.astype(int))
             k = np.where(nums == 0)
             nums[k] = 1
             if i == 0:
@@ -758,6 +770,12 @@ def getResultsIHME(results, demog, params, outputYear):
                 df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
                 df.iloc[range(ind, ind+max_age), 3] = np.repeat("prevalence", max_age)
                 df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
+                ind += max_age
+                df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
+                df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
+                df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
+                df.iloc[range(ind, ind+max_age), 3] = np.repeat("ObservedTF", max_age)
+                df.iloc[range(ind, ind+max_age), i+4] = observedDis/nums
                 ind += max_age
                 df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
                 df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
@@ -774,6 +792,8 @@ def getResultsIHME(results, demog, params, outputYear):
                 ind += max_age
             else:
                 df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
+                ind += max_age
+                df.iloc[range(ind, ind+max_age), i+4] = observedDis/nums
                 ind += max_age
                 df.iloc[range(ind, ind+max_age), i+4] = manyInfs/nums
                 ind += max_age

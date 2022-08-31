@@ -97,7 +97,7 @@ sim_params['N_MDA'] = len(MDA_times)
 #############################################################################################################################
 
 # decide how many sims we will run
-numSims = 200
+numSims = 8
 print( f'Running {numSims} simulations on {num_cores} cores' )
 start = time.time()
 
