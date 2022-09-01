@@ -559,7 +559,7 @@ def numMDAsBeforeNextSurvey(surveyPrev):
         return 3
     if surveyPrev >= 0.05: 
         return 1
-    return 0
+    return 100
 
 
 
@@ -602,6 +602,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     numMDA = np.zeros(MDAData[0][-1], dtype=object)
    # initialize time for next survey (until after the simulation ends)
     surveyTime = timesim + 10
+    impactSurveyTime = timesim + 10
     nextOutputTime = min(outputTimes2)
     w = np.where(outputTimes2 == nextOutputTime)
     outputTimes2[w] = timesim + 10
@@ -639,13 +640,16 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
                         coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                 # if the number of MDAs is the same as the number for the next survey then set survey time
             if sum(numMDA) == nextSurvey:
-                surveyTime = i + 6
+                surveyTime = i + 26
         #else:  removed and deleted one indent in the line below to correct mistake.
-        if np.logical_and(i == surveyTime, surveyPass==0):     
+        #if np.logical_and(i == surveyTime, surveyPass==0):     
+        if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
             surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
                
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
             surveyPass = 1 if surveyPrev <= 0.05 else 0
+            if surveyPass == 1:
+                impactSurveyTime = i + 104
             
             # if the prevalence is > 5%, then we will do another survey after given number of MDAs
             # call this value nextSurvey    
@@ -682,16 +686,9 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             outputTimes2[w] = timesim + 10
             # save current num surveys, num MDAS as previous num surveys/MDAs, so next output we can tell how many were performed
             # since last output
-            prevNSurvey = nSurvey 
+            prevNSurvey = copy.deepcopy(nSurvey) 
             prevNMDA = copy.deepcopy(numMDA)
             # set coverage and nDoses to 0, so that if these are non-zero, we know that they occured since last output
-            
-            # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            
-            # FOR COVERAGE THIS DOESN'T TAKE INTO ACCOUNT THAT WE CAN HAVE MULTIPLE MDAS A YEAR AND IN DIFFERENT AGE GROUPS
-            
-            # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            
             nDoses = np.zeros(MDAData[0][-1], dtype=object)
             coverage = np.zeros(MDAData[0][-1], dtype=object)
            
@@ -749,10 +746,10 @@ def getResultsIHME(results, demog, params, outputYear):
             NonDiseased = np.where(d[j].IndD == 0)
             pos = np.zeros(len(d[j].Age), dtype = object)
             if(len(Diseased) > 0):
-                TruePositive = np.random.binomial(n=1, size=int(len(Diseased[0])), p = params['TestSensitivity'])
+                TruePositive = np.random.binomial(n=1, size=len(Diseased[0]), p = params['TestSensitivity'])
                 pos[Diseased] = TruePositive
             if(len(NonDiseased) > 0):
-                FalsePositive = np.random.binomial(n=1, size=int(len(NonDiseased[0])), p = 1- params['TestSpecificity'])
+                FalsePositive = np.random.binomial(n=1, size=len(NonDiseased[0]), p = 1- params['TestSpecificity'])
                 pos[NonDiseased] = FalsePositive
             
  
@@ -819,7 +816,7 @@ def getMDAAgeRanges(coverageFileName):
 
 def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
     '''
-    Function to collate results for IHME
+    Function to collate results for IPM
     '''
    
     df = pd.DataFrame(0, range(len(outputYear)*3 + len(outputYear) * 3 * len(MDAAgeRanges)), columns= range(len(results)+4))
