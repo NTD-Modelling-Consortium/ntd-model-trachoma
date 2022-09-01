@@ -109,7 +109,7 @@ results = Parallel(n_jobs=num_cores)(
                                         params = params, 
                                         timesim = sim_params['timesim'],
                                         demog=demog, 
-                                        beta = allBetas.bet[i], 
+                                        beta = allBetas.beta[i], 
                                         MDA_times = MDA_times, 
                                         MDAData=MDAData, 
                                         outputTimes= outputTimes, 
