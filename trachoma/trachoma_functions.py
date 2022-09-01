@@ -40,18 +40,18 @@ def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elim
 def readCoverageData(coverageFileName):
     # read coverage data file
     modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
-    PlatCov = pd.read_excel(
-         f"{modelDataDir}/{coverageFileName}", sheet_name="Sheet1"
+    PlatCov = pd.read_csv(
+         f"{modelDataDir}/{coverageFileName}"
     )
-    
      # we want to find which is the first year specified in the coverage data, along with which
      # column of the data set this corresponds to
-    fy = 10000
-    fy_index = 10000
-    for i in range(len(PlatCov.columns)):
-        if type(PlatCov.columns[i]) == int:
-            fy = min(fy, PlatCov.columns[i])
-            fy_index = min(fy_index, i)
+    #fy = 10000
+    fy_index = np.where(PlatCov.columns == "2020")[0][0]
+    # for i in range(len(PlatCov.columns)):
+    #     if type(PlatCov.columns[i]) == int:
+    #         fy = min(fy, PlatCov.columns[i])
+    #         fy_index = min(fy_index, i)
+    # print(fy_index)
     count = 0
     minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
     maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
@@ -62,10 +62,10 @@ def readCoverageData(coverageFileName):
             for k in range(len(MDAS)):
                 j = MDAS[k]
                 if count == 0:
-                    MDAData = [[PlatCov.columns[i], PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
+                    MDAData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
                     count += 1
                 else:
-                    MDAData.append([PlatCov.columns[i], PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
+                    MDAData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
                     count +=1
     return MDAData
                 
@@ -651,7 +651,8 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             surveyPass = 1 if surveyPrev <= 0.05 else 0
             if surveyPass == 1:
                 impactSurveyTime = i + 104
-            
+        
+                
             # if the prevalence is > 5%, then we will do another survey after given number of MDAs
             # call this value nextSurvey    
             nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
@@ -805,8 +806,8 @@ def getResultsIHME(results, demog, params, outputYear):
 def getMDAAgeRanges(coverageFileName):
 
     modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
-    PlatCov = pd.read_excel(
-         f"{modelDataDir}/{coverageFileName}", sheet_name="Sheet1"
+    PlatCov = pd.read_csv(
+         f"{modelDataDir}/{coverageFileName}"
     )
 
     MDAAgeRanges = np.zeros([PlatCov.shape[0],2], dtype = object)
@@ -833,7 +834,24 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
             year = outputYear[j]
             
             if i == 0:
-                
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 3] = "nSurvey"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].nSurvey
+                ind += 1
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 3] = "surveyPass"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].surveyPass
+                ind += 1
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 3] = "trueElimination"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].elimination
+                ind += 1
                 for k in range(len(MDAAgeRanges)):
                     df.iloc[ind, 0] = year
                     df.iloc[ind, 3] = "nDoses"
@@ -854,25 +872,14 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
                     df.iloc[ind, i+4] = d[j].nMDA[k]
                     ind += 1
                     
-                df.iloc[ind, 0] = year
-                df.iloc[ind, 3] = "nSurvey"
-                df.iloc[ind, 1] = "None"
-                df.iloc[ind, 2] = "None"
+                
+            else:
                 df.iloc[ind, i+4] = d[j].nSurvey
                 ind += 1
-                df.iloc[ind, 0] = year
-                df.iloc[ind, 3] = "surveyPass"
-                df.iloc[ind, 1] = "None"
-                df.iloc[ind, 2] = "None"
                 df.iloc[ind, i+4] = d[j].surveyPass
                 ind += 1
-                df.iloc[ind, 0] = year
-                df.iloc[ind, 3] = "trueElimination"
-                df.iloc[ind, 1] = "None"
-                df.iloc[ind, 2] = "None"
                 df.iloc[ind, i+4] = d[j].elimination
                 ind += 1
-            else:
                 for k in range(len(MDAAgeRanges)):               
                     df.iloc[ind, i+4] = d[j].nMDADoses[k]
                     ind += 1   
@@ -880,12 +887,7 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
                     ind += 1
                     df.iloc[ind, i+4] = d[j].nMDA[k]
                     ind += 1
-                df.iloc[ind, i+4] = d[j].nSurvey
-                ind += 1
-                df.iloc[ind, i+4] = d[j].surveyPass
-                ind += 1
-                df.iloc[ind, i+4] = d[j].elimination
-                ind += 1
+                
     for i in range(len(results)):
         df = df.rename(columns={i+4: "draw_"+ str(i)}) 
     return df
