@@ -39,8 +39,9 @@ def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elim
 
 def readCoverageData(coverageFileName):
     # read coverage data file
+    modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
     PlatCov = pd.read_excel(
-         "trachoma/" + coverageFileName, sheet_name="Sheet1"
+         f"{modelDataDir}/{coverageFileName}", sheet_name="Sheet1"
     )
     
      # we want to find which is the first year specified in the coverage data, along with which
@@ -802,9 +803,12 @@ def getResultsIHME(results, demog, params, outputYear):
 
 
 def getMDAAgeRanges(coverageFileName):
+
+    modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
     PlatCov = pd.read_excel(
-         "trachoma/" + coverageFileName, sheet_name="Sheet1"
+         f"{modelDataDir}/{coverageFileName}", sheet_name="Sheet1"
     )
+
     MDAAgeRanges = np.zeros([PlatCov.shape[0],2], dtype = object)
     minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
     maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
