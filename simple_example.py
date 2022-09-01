@@ -37,7 +37,7 @@ params = {'N': 2500,
           'ep2':0.114,
           'n_inf_sev':30,
           'TestSensitivity': 0.96,
-          'TestSpecificity': 0.93}
+          'TestSpecificity': 0.965}
 
 sim_params = {'timesim':1500, 
               'burnin': 26,
