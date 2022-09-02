@@ -587,23 +587,24 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
-   # TestSensitivity = 0.96
-   # TestSpecificity = 0.99
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
     surveyPrev  = 0.5
     surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
    # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
-    surveyPass = 0
-   # surveyPass = 1 if surveyPrev <= 0.05 else 0
+    #surveyPass = 0
+    surveyPass = 1 if surveyPrev <= 0.05 else 0
    # if the prevalence is > 5%, then we will do another survey after given number of MDAs
    # call this value nextSurvey    
     nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
-  
+    # initialize time for next survey 
+    surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
    # initialize count of MDAs
     numMDA = np.zeros(MDAData[0][-1], dtype=object)
-   # initialize time for next survey (until after the simulation ends)
-    surveyTime = timesim + 10
-    impactSurveyTime = timesim + 10
+   # initialize time for impact survey dependent on surveyed prevalence
+    if surveyPrev <= 0.05:
+        impactSurveyTime = min(MDA_times) + 104
+    else:
+        impactSurveyTime = timesim + 10
     nextOutputTime = min(outputTimes2)
     w = np.where(outputTimes2 == nextOutputTime)
     outputTimes2[w] = timesim + 10
@@ -613,8 +614,8 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     coverage = np.zeros(MDAData[0][-1], dtype=object)
     prevNSurvey = 0
     prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
+    
     for i in range(1, 1 + timesim):
-
         if i in MDA_times:
             if surveyPass == 0:
                 MDA_round = np.where(MDA_times == i)[0]
@@ -640,8 +641,8 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
                         numMDA[MDAData[MDA_round][-2]] += 1
                         coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                 # if the number of MDAs is the same as the number for the next survey then set survey time
-            if sum(numMDA) == nextSurvey:
-                surveyTime = i + 26
+          #  if sum(numMDA) == nextSurvey:
+          #      surveyTime = i + 26
         #else:  removed and deleted one indent in the line below to correct mistake.
         #if np.logical_and(i == surveyTime, surveyPass==0):     
         if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
@@ -650,15 +651,13 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
             surveyPass = 1 if surveyPrev <= 0.05 else 0
             if surveyPass == 1:
-                impactSurveyTime = i + 104
-        
-                
+                impactSurveyTime = i + 104  
             # if the prevalence is > 5%, then we will do another survey after given number of MDAs
             # call this value nextSurvey    
             nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
-               
             # add the number of MDAs already done to the number of MDAs to be done before the next survey
-            nextSurvey += sum(numMDA)
+            nextSurvey = i + (nextSurvey * 52) + 26
+            
             nSurvey += 1
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
 
