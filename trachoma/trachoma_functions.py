@@ -656,7 +656,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             # call this value nextSurvey    
             nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
             # add the number of MDAs already done to the number of MDAs to be done before the next survey
-            nextSurvey = i + (nextSurvey * 52) + 26
+            surveyTime = i + (nextSurvey * 52) + 26
             
             nSurvey += 1
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
