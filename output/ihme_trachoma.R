@@ -5,6 +5,7 @@ source("analyze_ihme_ipm_data.R")
 # set the path for where the simulations are stored
 path_header <- '/Users/user/Documents/'
 
+
 # full set of IUs
 trachomaIUs <- read.csv("trachomaIUs.csv")
 # select subset of IUs to test plot with
@@ -73,9 +74,11 @@ for(i in 1:nrow(trachomaIUs)){
 # infer max age from files
 age_groups = 0:max(ihme1$age_end)
 
+# group_pop <- 300000
+# trachomaIUs_scen3 <- data.frame(pop = rep(1000, nrow(trachomaIUs)))
 group_pop = sum(trachomaIUs_scen3$pop)
 
-total_infs1 = trachomaIUs_scen3$pop*prop_inf_0
+total_infs1 = trachomaIUs_scen3$pop*prop_inf_1
 total_infs2a = trachomaIUs_scen3$pop*prop_inf_2a
 total_infs2b = trachomaIUs_scen3$pop*prop_inf_2b
 total_infs2c = trachomaIUs_scen3$pop*prop_inf_2c
