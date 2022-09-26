@@ -70,10 +70,50 @@ for(i in 1:nrow(trachomaIUs)){
   
   
 ############ code runs to here no errors ############ 
-  
-  
-  
-age_groups = 0:79
+# infer max age from files
+age_groups = 0:max(ihme1$age_end)
+
+group_pop = sum(trachomaIUs_scen3$pop)
+
+total_infs1 = trachomaIUs_scen3$pop*prop_inf_0
+total_infs2a = trachomaIUs_scen3$pop*prop_inf_2a
+total_infs2b = trachomaIUs_scen3$pop*prop_inf_2b
+total_infs2c = trachomaIUs_scen3$pop*prop_inf_2c
+
+total_infs1 = colSums(total_infs1/group_pop)
+total_infs2a = colSums(total_infs2a/group_pop)
+total_infs2b = colSums(total_infs2b/group_pop)
+total_infs2c = colSums(total_infs2c/group_pop)
+
+
+cols = c("#0098FF", "#1b9e77", "#d95f02","#7570b3", '#d4d133')
+png("trachoma_Group_trajectory.png", height = 8, width = 12, res = 300, units = "in")
+plot(2020:2040, total_infs1, type = 'l', lwd = 4, 
+     xlab = 'year', ylab = 'prevalence all infections',
+     col = cols[1],
+     bty = 'n', ylim = c(0, max(total_infs1)),
+     
+     cex = 1.7, cex.axis = 1.7, cex.lab = 1.7,cex.main = 1.7,
+     main = 'trachoma Group 1')
+
+
+lines(2020:2040,total_infs2a, type = 'l', lwd = 4, col = cols[2])
+
+lines(2020:2040,total_infs2b, type = 'l', lwd = 4, col = cols[3])
+
+lines(2020:2040,total_infs2c, type = 'l', lwd = 4, 
+      col = cols[4],
+      bty = 'n')
+
+
+legend('topright',  legend = c("Scenario 1", "Scenario 2a", "Scenario 2b", "Scenario 2c"),
+       col = cols, lwd = c(4,4,4,4),
+       bty = 'n', cex = 1.7)
+dev.off()
+
+
+###############################################################################
+
 
 group1_pop = sum(trachomaIUs_scen3$pop[which(trachomaIUs_scen3$CoverageGroup == 1)])
 group2_pop = sum(trachomaIUs_scen3$pop[which(trachomaIUs_scen3$CoverageGroup == 2)])
