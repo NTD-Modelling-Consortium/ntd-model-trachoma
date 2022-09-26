@@ -1,6 +1,17 @@
 library(readr)
 library("RColorBrewer")
+source("analyze_ihme_ipm_data.R")
 
+# set the path for where the simulations are stored
+path_header <- '/Users/user/Documents/'
+
+# full set of IUs
+trachomaIUs <- read.csv("trachomaIUs.csv")
+# select subset of IUs to test plot with
+which_IUs <- c("BDI06385","BDI06386","BDI06388","BDI06392",
+               "BEN03235","BEN03236","BEN03237","BEN03238","BEN03239",
+               "COD14320","COD14321","COD14324","COD14330")
+trachomaIUs <- trachomaIUs[which(trachomaIUs$IU_ID2 %in% which_IUs),]  
 
 # do scenario 3's
 count_1 = 0
@@ -9,21 +20,18 @@ count_2b = 0
 count_2c = 0
 
 
-IUs = c("BDI06385","BDI06386","BDI06388","BDI06392",
-        "BEN03235","BEN03236","BEN03237","BEN03238","BEN03239",
-        "COD14320","COD14321","COD14324","COD14330")
 
-for(i in 1:length(IUs)){
+
+for(i in 1:nrow(trachomaIUs)){
+
   
-  
-  
-  ihme_name = paste0('endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',IUs[i],"-trachoma-scenario_1-200_simulations.csv")
+  ihme_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_1-200_simulations.csv")
   if(file.exists(ihme_name)){
     ihme1 = read.csv(ihme_name)
 
     if(count_1 == 0){
       
-      prop_inf_1 = matrix(0, length(IUs),  length(get_data_over_years_trachoma(ihme1, 2020:2040)/1000))
+      prop_inf_1 = matrix(0, nrow(trachomaIUs),  length(get_data_over_years_trachoma(ihme1, 2020:2040)/1000))
       prop_inf_2a = prop_inf_1
       prop_inf_2b = prop_inf_1
       prop_inf_2c = prop_inf_1
@@ -35,21 +43,21 @@ for(i in 1:length(IUs)){
   }
   
   
-  ihme_name = paste0('endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',IUs[i],"-trachoma-scenario_2a-200_simulations.csv")
+  ihme_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2a-200_simulations.csv")
   if(file.exists(ihme_name)){
     ihme1 = read.csv(ihme_name)
     prop_inf_2a[i,] = get_data_over_years_trachoma(ihme1, 2020:2040)/1000
     
   }
   
-  ihme_name = paste0('endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',IUs[i],"-trachoma-scenario_2b-200_simulations.csv")
+  ihme_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2b-200_simulations.csv")
   if(file.exists(ihme_name)){
     ihme1 = read.csv(ihme_name)
     prop_inf_2b[i,] = get_data_over_years_trachoma(ihme1, 2020:2040)/1000
     
   }
   
-  ihme_name = paste0('endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',IUs[i],"-trachoma-scenario_2c-200_simulations.csv")
+  ihme_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2c-200_simulations.csv")
   if(file.exists(ihme_name)){
     ihme1 = read.csv(ihme_name)
     prop_inf_2c[i,] = get_data_over_years_trachoma(ihme1, 2020:2040)/1000
@@ -57,11 +65,11 @@ for(i in 1:length(IUs)){
   }
 
   
-  print(paste("Done", i,"of", length(IUs)))
+  print(paste("Done", i,"of", nrow(trachomaIUs)))
   }
   
   
-  
+############ code runs to here no errors ############ 
   
   
   

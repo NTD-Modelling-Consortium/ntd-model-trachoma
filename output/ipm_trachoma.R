@@ -1,11 +1,27 @@
-#trachomaIUs <- read.csv("trachomaIUs.csv")
+library(readr)
+library("RColorBrewer")
+source("analyze_ihme_ipm_data.R")
+
+# set the path for where the simulations are stored
+path_header <- '/Users/user/Documents/'
+
+# full set of IUs
+trachomaIUs <- read.csv("trachomaIUs.csv")
+# select subset of IUs to test plot with
+which_IUs <- c("BDI06385","BDI06386","BDI06388","BDI06392",
+               "BEN03235","BEN03236","BEN03237","BEN03238","BEN03239",
+               "COD14320","COD14321","COD14324","COD14330")
+trachomaIUs <- trachomaIUs[which(trachomaIUs$IU_ID2 %in% which_IUs),]  
+
+
 cumPop = 0
 totalIUS = 0
-count = count + 1
+count = 0
+
 for (i in 1:nrow(trachomaIUs)){
   
 
-  ipm_name = paste0('endgame-ihme-ipm-outputs-trachoma-export-20220908a/ipm-',IUs[i],"-trachoma-scenario_1-200_simulations.csv")
+  ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_1-200_simulations.csv")
   if(file.exists(ipm_name)){
     ipm1 = read.csv(ipm_name)
     
@@ -19,7 +35,7 @@ for (i in 1:nrow(trachomaIUs)){
         rowMeans(ipm1[sPass,k:ncol(ipm1)])
     }
     
-    ipm_name = paste0('endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_2-group_", kk,"-200_simulations.csv")
+    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_2-group_", kk,"-200_simulations.csv")
     
     ipm1 = read.csv(ipm_name)
     
@@ -33,7 +49,7 @@ for (i in 1:nrow(trachomaIUs)){
         rowMeans(ipm1[sPass,k:ncol(ipm1)]) * trachomaIUs$num_ius[i]
     }
     
-    ipm_name = paste0('endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_3a-group_", kk,"-200_simulations.csv")
+    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_3a-group_", kk,"-200_simulations.csv")
     
     ipm1 = read.csv(ipm_name)
     
@@ -48,7 +64,7 @@ for (i in 1:nrow(trachomaIUs)){
     }
     
     
-    ipm_name = paste0('endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_3b-group_", kk,"-200_simulations.csv")
+    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_3b-group_", kk,"-200_simulations.csv")
     
     ipm1 = read.csv(ipm_name)
     
