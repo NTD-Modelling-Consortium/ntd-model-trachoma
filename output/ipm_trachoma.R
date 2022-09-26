@@ -13,6 +13,8 @@ which_IUs <- c("BDI06385","BDI06386","BDI06388","BDI06392",
                "COD14320","COD14321","COD14324","COD14330")
 trachomaIUs <- trachomaIUs[which(trachomaIUs$IU_ID2 %in% which_IUs),]  
 
+# add dummy column so code can be tested
+trachomaIUs$num_ius <-1
 
 cumPop = 0
 totalIUS = 0
@@ -82,6 +84,8 @@ for (i in 1:nrow(trachomaIUs)){
   }
   print(paste("Done", i,"of", nrow(trachomaIUs)))
 }
+
+
 
 
 cols = c("#0098FF", "#1b9e77", "#d95f02","#7570b3")
