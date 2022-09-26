@@ -13,8 +13,8 @@ which_IUs <- c("BDI06385","BDI06386","BDI06388","BDI06392",
                "COD14320","COD14321","COD14324","COD14330")
 trachomaIUs <- trachomaIUs[which(trachomaIUs$IU_ID2 %in% which_IUs),]  
 
-# add dummy column so code can be tested
-trachomaIUs$num_ius <-1
+# # add dummy column so code can be tested
+# trachomaIUs$num_ius <-1
 
 cumPop = 0
 totalIUS = 0
@@ -45,7 +45,7 @@ for (i in 1:nrow(trachomaIUs)){
     k = which(colnames(ipm2a) == 'draw_0')
     ipm2a[sPass,k:ncol(ipm2a)]
     if(i == 1){
-      num_mda_finished_2a = rowMeans(ipm1[sPass,k:ncol(ipm2a)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2a = rowMeans(ipm2a[sPass,k:ncol(ipm2a)]) * trachomaIUs$num_ius[i]
     }else{
       num_mda_finished_2a = num_mda_finished_2a + 
         rowMeans(ipm2a[sPass,k:ncol(ipm2a)]) * trachomaIUs$num_ius[i]
@@ -59,7 +59,7 @@ for (i in 1:nrow(trachomaIUs)){
     k = which(colnames(ipm2b) == 'draw_0')
     ipm2b[sPass,k:ncol(ipm2b)]
     if(i == 1){
-      num_mda_finished_2b = rowMeans(ipm1[sPass,k:ncol(ipm2b)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2b = rowMeans(ipm2b[sPass,k:ncol(ipm2b)]) * trachomaIUs$num_ius[i]
     }else{
       num_mda_finished_2b = num_mda_finished_2b + 
         rowMeans(ipm2b[sPass,k:ncol(ipm2b)]) * trachomaIUs$num_ius[i]
@@ -74,7 +74,7 @@ for (i in 1:nrow(trachomaIUs)){
     k = which(colnames(ipm2c) == 'draw_0')
     ipm2c[sPass,k:ncol(ipm2c)]
     if(i == 1){
-      num_mda_finished_2c = rowMeans(ipm1[sPass,k:ncol(ipm2c)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2c = rowMeans(ipm2c[sPass,k:ncol(ipm2c)]) * trachomaIUs$num_ius[i]
     }else{
       num_mda_finished_2c = num_mda_finished_2c + 
         rowMeans(ipm2c[sPass,k:ncol(ipm2c)]) * trachomaIUs$num_ius[i]
@@ -95,24 +95,24 @@ prop_finished_2b = num_mda_finished_2b/totalIUS
 prop_finished_2c = num_mda_finished_2c/totalIUS
 png("trachoma_mda_stopping.png", units = "in",
     width = 12, height = 8, res = 300)
-plot(2018:2041, prop_finished_1 , type = 'l', lwd = 4, 
+plot(2020:2040, prop_finished_1 , type = 'l', lwd = 4, 
      xlab = 'year', ylab = 'proportion IUs stopped MDA',
      col = cols[1],
      bty = 'n', ylim = c(0, 1),
      cex = 1.7, cex.axis = 1.7, cex.lab = 1.7,
      cex.main = 1.7, main = "trachoma")
 
-lines(2018:2041, prop_finished_2a, type = 'l', lwd = 4, 
+lines(2020:2040, prop_finished_2a, type = 'l', lwd = 4, 
       xlab = 'year', ylab = 'proportion IUs stop MDA',
       col = cols[2],
       bty = 'n')
 
-lines(2018:2041, prop_finished_2b , type = 'l', lwd = 4, 
+lines(2020:2040, prop_finished_2b , type = 'l', lwd = 4, 
       xlab = 'year', ylab = 'proportion IUs stop MDA',
       col = cols[3],
       bty = 'n')
 
-lines(2018:2041, prop_finished_2c , type = 'l', lwd = 4, 
+lines(2020:2040, prop_finished_2c , type = 'l', lwd = 4, 
       xlab = 'year', ylab = 'proportion IUs stop MDA',
       col = cols[4],
       bty = 'n')
