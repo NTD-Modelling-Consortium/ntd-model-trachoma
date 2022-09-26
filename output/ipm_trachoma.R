@@ -36,46 +36,46 @@ for (i in 1:nrow(trachomaIUs)){
     }
     
     ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2a-200_simulations.csv")
-    ipm1 = read.csv(ipm_name)
+    ipm2a = read.csv(ipm_name)
     
-    sPass = which(ipm1$measure == "surveyPass")
+    sPass = which(ipm2a$measure == "surveyPass")
     
-    k = which(colnames(ipm) == 'draw_0')
-    ipm1[sPass,k:ncol(ipm1)]
+    k = which(colnames(ipm2a) == 'draw_0')
+    ipm2a[sPass,k:ncol(ipm2a)]
     if(i == 1){
-      num_mda_finished_2 = rowMeans(ipm1[sPass,k:ncol(ipm1)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2a = rowMeans(ipm1[sPass,k:ncol(ipm2a)]) * trachomaIUs$num_ius[i]
     }else{
-      num_mda_finished_2 = num_mda_finished_2 + 
-        rowMeans(ipm1[sPass,k:ncol(ipm1)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2a = num_mda_finished_2a + 
+        rowMeans(ipm2a[sPass,k:ncol(ipm2a)]) * trachomaIUs$num_ius[i]
     }
     
     ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2b-200_simulations.csv")
     
-    ipm1 = read.csv(ipm_name)
+    ipm2b = read.csv(ipm_name)
     
-    sPass = which(ipm1$measure == "surveyPass")
-    k = which(colnames(ipm) == 'draw_0')
-    ipm1[sPass,k:ncol(ipm1)]
+    sPass = which(ipm2b$measure == "surveyPass")
+    k = which(colnames(ipm2b) == 'draw_0')
+    ipm2b[sPass,k:ncol(ipm2b)]
     if(i == 1){
-      num_mda_finished_3a = rowMeans(ipm1[sPass,k:ncol(ipm1)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2b = rowMeans(ipm1[sPass,k:ncol(ipm2b)]) * trachomaIUs$num_ius[i]
     }else{
-      num_mda_finished_3a = num_mda_finished_3a + 
-        rowMeans(ipm1[sPass,k:ncol(ipm1)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2b = num_mda_finished_2b + 
+        rowMeans(ipm2b[sPass,k:ncol(ipm2b)]) * trachomaIUs$num_ius[i]
     }
     
     
     ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2c-200_simulations.csv")
     
-    ipm1 = read.csv(ipm_name)
+    ipm2c = read.csv(ipm_name)
     
-    sPass = which(ipm1$measure == "surveyPass")
-    k = which(colnames(ipm) == 'draw_0')
-    ipm1[sPass,k:ncol(ipm1)]
+    sPass = which(ipm2c$measure == "surveyPass")
+    k = which(colnames(ipm2c) == 'draw_0')
+    ipm2c[sPass,k:ncol(ipm2c)]
     if(i == 1){
-      num_mda_finished_3b = rowMeans(ipm1[sPass,k:ncol(ipm1)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2c = rowMeans(ipm1[sPass,k:ncol(ipm2c)]) * trachomaIUs$num_ius[i]
     }else{
-      num_mda_finished_3b = num_mda_finished_3b + 
-        rowMeans(ipm1[sPass,k:ncol(ipm1)]) * trachomaIUs$num_ius[i]
+      num_mda_finished_2c = num_mda_finished_2c + 
+        rowMeans(ipm2c[sPass,k:ncol(ipm2c)]) * trachomaIUs$num_ius[i]
     }
     count = count + 1
     totalIUS = totalIUS + trachomaIUs$num_ius[i]
@@ -83,11 +83,12 @@ for (i in 1:nrow(trachomaIUs)){
   print(paste("Done", i,"of", nrow(trachomaIUs)))
 }
 
+
 cols = c("#0098FF", "#1b9e77", "#d95f02","#7570b3")
 prop_finished_1 = num_mda_finished_1/totalIUS
-prop_finished_2 = num_mda_finished_2/totalIUS
-prop_finished_3a = num_mda_finished_3a/totalIUS
-prop_finished_3b = num_mda_finished_3b/totalIUS
+prop_finished_2a = num_mda_finished_2a/totalIUS
+prop_finished_2b = num_mda_finished_2b/totalIUS
+prop_finished_2c = num_mda_finished_2c/totalIUS
 png("trachoma_mda_stopping.png", units = "in",
     width = 12, height = 8, res = 300)
 plot(2018:2041, prop_finished_1 , type = 'l', lwd = 4, 
@@ -97,22 +98,22 @@ plot(2018:2041, prop_finished_1 , type = 'l', lwd = 4,
      cex = 1.7, cex.axis = 1.7, cex.lab = 1.7,
      cex.main = 1.7, main = "trachoma")
 
-lines(2018:2041, prop_finished_2 , type = 'l', lwd = 4, 
+lines(2018:2041, prop_finished_2a, type = 'l', lwd = 4, 
       xlab = 'year', ylab = 'proportion IUs stop MDA',
       col = cols[2],
       bty = 'n')
 
-lines(2018:2041, prop_finished_3a , type = 'l', lwd = 4, 
+lines(2018:2041, prop_finished_2b , type = 'l', lwd = 4, 
       xlab = 'year', ylab = 'proportion IUs stop MDA',
       col = cols[3],
       bty = 'n')
 
-lines(2018:2041, prop_finished_3b , type = 'l', lwd = 4, 
+lines(2018:2041, prop_finished_2c , type = 'l', lwd = 4, 
       xlab = 'year', ylab = 'proportion IUs stop MDA',
       col = cols[4],
       bty = 'n')
 
-legend('bottomright', title = "Scenario", legend = c("Scenario 1", "Scenario 2", "Scenario 3a", "Scenario 3b"),
+legend('bottomright', title = "Scenario", legend = c("Scenario 1", "Scenario 2a", "Scenario 2b", "Scenario 2c"),
        col = cols, lwd = c(3,3,3, 3),
        bty = 'n',cex = 1.7)
 dev.off()
