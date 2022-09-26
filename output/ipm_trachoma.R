@@ -35,11 +35,11 @@ for (i in 1:nrow(trachomaIUs)){
         rowMeans(ipm1[sPass,k:ncol(ipm1)])
     }
     
-    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_2-group_", kk,"-200_simulations.csv")
-    
+    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2a-200_simulations.csv")
     ipm1 = read.csv(ipm_name)
     
     sPass = which(ipm1$measure == "surveyPass")
+    
     k = which(colnames(ipm) == 'draw_0')
     ipm1[sPass,k:ncol(ipm1)]
     if(i == 1){
@@ -49,7 +49,7 @@ for (i in 1:nrow(trachomaIUs)){
         rowMeans(ipm1[sPass,k:ncol(ipm1)]) * trachomaIUs$num_ius[i]
     }
     
-    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_3a-group_", kk,"-200_simulations.csv")
+    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2b-200_simulations.csv")
     
     ipm1 = read.csv(ipm_name)
     
@@ -64,7 +64,7 @@ for (i in 1:nrow(trachomaIUs)){
     }
     
     
-    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-export-20220816/trachoma/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-group_",kk,"-scenario_3b-group_", kk,"-200_simulations.csv")
+    ipm_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ipm-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2c-200_simulations.csv")
     
     ipm1 = read.csv(ipm_name)
     
