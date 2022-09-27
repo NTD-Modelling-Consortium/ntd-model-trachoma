@@ -5,16 +5,25 @@ source("analyze_ihme_ipm_data.R")
 # set the path for where the simulations are stored
 path_header <- '/Users/user/Documents/'
 
+# population sizes of  IUs
+population_all_IUs <- read.csv("population_all_IUs.csv")
+
 # full set of IUs
 trachomaIUs <- read.csv("trachomaIUs.csv")
 # select subset of IUs to test plot with
-which_IUs <- c("BDI06385","BDI06386","BDI06388","BDI06392",
-               "BEN03235","BEN03236","BEN03237","BEN03238","BEN03239",
-               "COD14320","COD14321","COD14324","COD14330")
+# which_IUs <- c("BDI06385","BDI06386","BDI06388","BDI06392",
+#                "BEN03235","BEN03236","BEN03237","BEN03238","BEN03239",
+#                "COD14320","COD14321","COD14324","COD14330")
+# find which IUs exist in IUs run and the population IUs
+common_IUs <- intersect(trachomaIUs$IU_ID2,population_all_IUs$IU_full_code)
+length(common_IUs)
+which_IUs <- sample(common_IUs, 2380, replace = F)
+
+# subset trachoma IU data set 
 trachomaIUs <- trachomaIUs[which(trachomaIUs$IU_ID2 %in% which_IUs),]  
 
-# # add dummy column so code can be tested
-# trachomaIUs$num_ius <-1
+# all IUs are size 1
+trachomaIUs$num_ius <-1
 
 cumPop = 0
 totalIUS = 0
