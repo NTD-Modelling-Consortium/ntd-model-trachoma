@@ -109,7 +109,7 @@ plot(2020:2040, prop_finished_1 , type = 'l', lwd = 4,
      col = cols[1],
      bty = 'n', ylim = c(0, 1),
      cex = 1.7, cex.axis = 1.7, cex.lab = 1.7,
-     cex.main = 1.7, main = "trachoma")
+     cex.main = 1.7, main = "Trachoma")
 
 lines(2020:2040, prop_finished_2a, type = 'l', lwd = 4, 
       xlab = 'year', ylab = 'proportion IUs stop MDA',
