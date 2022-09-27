@@ -126,7 +126,7 @@ lines(2020:2040, prop_finished_2c , type = 'l', lwd = 4,
       col = cols[4],
       bty = 'n')
 
-legend('bottomright', title = "Scenario", legend = c("Scenario 1", "Scenario 2a", "Scenario 2b", "Scenario 2c"),
+legend('topright', title = "Scenario", legend = c("Scenario 1", "Scenario 2a", "Scenario 2b", "Scenario 2c"),
        col = cols, lwd = c(3,3,3, 3),
        bty = 'n',cex = 1.7)
 dev.off()
