@@ -53,12 +53,19 @@ get_number_infecteds <- function(ihme1, years){
 
 
 
-get_data_over_years_trachoma<- function(d, years){
+get_data_over_years_trachoma<- function(d, years, measure = "TruePrevalence"){
   k = which(colnames(ihme1) == 'draw_0')
   for(i in 1:length(years)){
     year =  years[i]
     ks1 = (1 + (year-min(years))*240) :  (60 + (year-min(years))*240)
-    ks2 = (181+ (year-min(years))*240) :  (240 + (year-min(years))*240)
+    if(measure == "TruePrevalence"){
+      ks2 = (181+ (year-min(years))*240) :  (240 + (year-min(years))*240)
+    }
+    else if(measure == "ObservedTF"){
+      ks2 <- (61 + (year-min(years))*240) :  (120 + (year-min(years))*240)
+    }else if(measure == "heavyInfections"){
+      ks2 <- (121 + (year-min(years))*240) :  (180 + (year-min(years))*240)
+    }
     all_years_prev = d[ks1, k:ncol(d)]
     all_years_number = d[ks2, k:ncol(d)]
     if(i == 1){

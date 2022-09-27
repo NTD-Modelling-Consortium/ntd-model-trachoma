@@ -17,7 +17,7 @@ trachomaIUs <- read.csv("trachomaIUs.csv")
 # find which IUs exist in IUs run and the population IUs
 common_IUs <- intersect(trachomaIUs$IU_ID2,population_all_IUs$IU_full_code)
 length(common_IUs)
-which_IUs <- sample(common_IUs, 2380, replace = F)
+which_IUs <- sample(common_IUs, 20, replace = F)
 
 # subset trachoma IU data set 
 trachomaIUs <- trachomaIUs[which(trachomaIUs$IU_ID2 %in% which_IUs),]  
@@ -33,7 +33,7 @@ count_2b = 0
 count_2c = 0
 
 
-
+which_measure <- "ObservedTF"
 
 for(i in 1:nrow(trachomaIUs)){
 
@@ -44,14 +44,14 @@ for(i in 1:nrow(trachomaIUs)){
 
     if(count_1 == 0){
       
-      prop_inf_1 = matrix(0, nrow(trachomaIUs),  length(get_data_over_years_trachoma(ihme1, 2020:2040)/1000))
+      prop_inf_1 = matrix(0, nrow(trachomaIUs),  length(get_data_over_years_trachoma(ihme1, 2020:2040, which_measure)/1000))
       prop_inf_2a = prop_inf_1
       prop_inf_2b = prop_inf_1
       prop_inf_2c = prop_inf_1
       count_1 = 1
                           
     }
-    prop_inf_1[i,] = get_data_over_years_trachoma(ihme1, 2020:2040)/1000
+    prop_inf_1[i,] = get_data_over_years_trachoma(ihme1, 2020:2040, measure = which_measure)/1000
     
   }
   
@@ -59,21 +59,21 @@ for(i in 1:nrow(trachomaIUs)){
   ihme_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2a-200_simulations.csv")
   if(file.exists(ihme_name)){
     ihme1 = read.csv(ihme_name)
-    prop_inf_2a[i,] = get_data_over_years_trachoma(ihme1, 2020:2040)/1000
+    prop_inf_2a[i,] = get_data_over_years_trachoma(ihme1, 2020:2040, measure = which_measure)/1000
     
   }
   
   ihme_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2b-200_simulations.csv")
   if(file.exists(ihme_name)){
     ihme1 = read.csv(ihme_name)
-    prop_inf_2b[i,] = get_data_over_years_trachoma(ihme1, 2020:2040)/1000
+    prop_inf_2b[i,] = get_data_over_years_trachoma(ihme1, 2020:2040, measure = which_measure)/1000
     
   }
   
   ihme_name = paste0(path_header,'endgame-ihme-ipm-outputs-trachoma-export-20220908a/ihme-',trachomaIUs$IU_ID2[i],"-trachoma-scenario_2c-200_simulations.csv")
   if(file.exists(ihme_name)){
     ihme1 = read.csv(ihme_name)
-    prop_inf_2c[i,] = get_data_over_years_trachoma(ihme1, 2020:2040)/1000
+    prop_inf_2c[i,] = get_data_over_years_trachoma(ihme1, 2020:2040, measure = which_measure)/1000
     
   }
 
@@ -98,11 +98,14 @@ total_infs2a = colSums(total_infs2a/group_pop)
 total_infs2b = colSums(total_infs2b/group_pop)
 total_infs2c = colSums(total_infs2c/group_pop)
 
+res <- data.frame(total_infs1 ,total_infs2a ,total_infs2b ,total_infs2c)
+
+write.csv(res, paste0(which_measure,"_res.csv"))
 
 cols = c("#0098FF", "#1b9e77", "#d95f02","#7570b3", '#d4d133')
 png("trachoma_Group_trajectory.png", height = 8, width = 12, res = 300, units = "in")
 plot(2020:2040, total_infs1, type = 'l', lwd = 4, 
-     xlab = 'year', ylab = 'prevalence all infections',
+     xlab = 'year', ylab = which_measure,
      col = cols[1],
      bty = 'n', ylim = c(0, max(total_infs1)),
      
