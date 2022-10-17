@@ -199,6 +199,8 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
         rho=rho,        # Correlation parameter for systematic non-compliance function
 
         n_inf_sev = 30,
+        TestSensitivity = 1,
+        TestSpecificity = 1,
     )
 
     # Demography parameters
