@@ -297,70 +297,48 @@ def Tx_matrix(params, sim_params, previous_rounds):
 
     return ind_treat
 
-def doMDA(params, Age, MDA_round, Tx_mat):
+def doMDA(params, Age, MDA_round, Tx_mat, ageStart = None, ageEnd = None):
 
     '''
     Decide who is cured during MDA based on treatment matrix
     and probability of clearance given treated.
     '''
-
-    babies = np.where(Age <= 26)[0]
-    treated_babies = babies[Tx_mat[babies, MDA_round] == 1]
-    cured_babies = treated_babies[np.random.uniform(size=len(treated_babies)) < (params['MDA_Eff'] * 0.5)]
-
-    older = np.where(Age > 26)[0]
-    treated_older = older[Tx_mat[older, MDA_round] == 1]
-    cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
-    #print('MDA:',cured_babies,cured_older)
-    return np.append(cured_babies, cured_older)
-
-
-def doMDAAgeRange(params, Age, MDA_round, Tx_mat, ageStart, ageEnd):
-
-    '''
-    Decide who is cured during MDA based on treatment matrix
-    and probability of clearance given treated.
-    '''
-    if ageStart*52 <= 26:
+    if ageStart is None:
         babies = np.where(Age <= 26)[0]
         treated_babies = babies[Tx_mat[babies, MDA_round] == 1]
         cured_babies = treated_babies[np.random.uniform(size=len(treated_babies)) < (params['MDA_Eff'] * 0.5)]
     
-        older = np.where(np.logical_and(Age > 26, Age <= ageEnd *52))[0]
+        older = np.where(Age > 26)[0]
         treated_older = older[Tx_mat[older, MDA_round] == 1]
         cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
     else:
-        older = np.where(np.logical_and(Age > ageStart * 52, Age <= ageEnd *52))[0]
-        treated_older = older[Tx_mat[older, MDA_round] == 1]
-        cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
-        cured_babies = []
-        treated_babies = []
+        if ageStart*52 <= 26:
+            babies = np.where(Age <= 26)[0]
+            treated_babies = babies[Tx_mat[babies, MDA_round] == 1]
+            cured_babies = treated_babies[np.random.uniform(size=len(treated_babies)) < (params['MDA_Eff'] * 0.5)]
+        
+            older = np.where(np.logical_and(Age > 26, Age <= ageEnd *52))[0]
+            treated_older = older[Tx_mat[older, MDA_round] == 1]
+            cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
+        else:
+            older = np.where(np.logical_and(Age > ageStart * 52, Age <= ageEnd *52))[0]
+            treated_older = older[Tx_mat[older, MDA_round] == 1]
+            cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
+            cured_babies = []
+            treated_babies = []
     #print('MDA:',cured_babies,cured_older)
     return np.append(cured_babies, cured_older), np.append(treated_babies, treated_older)
 
-def MDA_timestep(vals, params, MDA_round, Tx_mat):
+
+
+def MDA_timestep(vals, params, MDA_round, Tx_mat, ageStart = None, ageEnd = None):
 
     '''
     This is time step in which MDA occurs
     '''
 
     # Id who is treated and cured
-    treated_cured = doMDA(params=params, Age=vals['Age'], MDA_round=MDA_round, Tx_mat=Tx_mat)
-
-    # Set treated/cured indivs infection status and bacterial load to 0
-    vals['IndI'][treated_cured] = 0       # clear infection they become I=0
-    vals['bact_load'][treated_cured] = 0  # stop being infectious
-
-    return vals, len(treated_cured)
-
-def MDA_timestep_Age_range(vals, params, MDA_round, Tx_mat, ageStart, ageEnd):
-
-    '''
-    This is time step in which MDA occurs
-    '''
-
-    # Id who is treated and cured
-    treated_cured = doMDAAgeRange(params=params, Age=vals['Age'], MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart = ageStart, ageEnd = ageEnd)
+    treated_cured = doMDA(params=params, Age=vals['Age'], MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart = ageStart, ageEnd = ageEnd)
 
     # Set treated/cured indivs infection status and bacterial load to 0
     vals['IndI'][treated_cured[0].astype(int)] = 0       # clear infection they become I=0
@@ -564,13 +542,23 @@ def numMDAsBeforeNextSurvey(surveyPrev):
 
 
 
-def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData, outputTimes, seed, state=None):
+def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = None, outputTimes = None, 
+                               seed = 0, state = None, doSurvey = 0, outputRes = 0):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
     Output is true prevalence of infection/disease in children aged 1-9.
     '''
-    outputTimes2 = copy.deepcopy(outputTimes)
+    
+    if outputTimes is None:
+        outputTimes = []
+        outputTimes.append(1)
+        outputTimes.append(10)
+        outputTimes = np.array(outputTimes)
+        outputTimes2 = copy.deepcopy(outputTimes)    
+    else:
+        outputTimes2 = copy.deepcopy(outputTimes)    
+    
    # when we are starting new simulations
    # we use the provided random seed
     if state is None:
@@ -586,79 +574,119 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     prevalence = []
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
-    yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
+    yearly_threshold_infs = np.zeros((timesim + 1, int(demog['max_age']/52)))
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
-    surveyPrev  = 0.5
-    surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
-   # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
-    #surveyPass = 0
-    surveyPass = 1 if surveyPrev <= 0.05 else 0
-   # if the prevalence is > 5%, then we will do another survey after given number of MDAs
-   # call this value nextSurvey    
-    nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
-    # initialize time for next survey 
-    surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
+    surveyPass = 0
+   # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
+   
+    if doSurvey == 1:
+        surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
+       # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
+        #surveyPass = 0
+        surveyPass = 1 if surveyPrev <= 0.05 else 0
+       # if the prevalence is > 5%, then we will do another survey after given number of MDAs
+       # call this value nextSurvey    
+        nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
+        # initialize time for next survey 
+        surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
+        if surveyPrev <= 0.05:
+            impactSurveyTime = min(MDA_times) + 104
+        else:
+            impactSurveyTime = timesim + 10
+            
+    #if MDAData is None:
+        
    # initialize count of MDAs
-    numMDA = np.zeros(MDAData[0][-1], dtype=object)
-   # initialize time for impact survey dependent on surveyed prevalence
-    if surveyPrev <= 0.05:
-        impactSurveyTime = min(MDA_times) + 104
+    if MDAData is None:
+        numMDA = np.zeros(1, dtype=object)
     else:
-        impactSurveyTime = timesim + 10
+        numMDA = np.zeros(MDAData[0][-1], dtype=object)
+   # initialize time for impact survey dependent on surveyed prevalence
+    surveyPass = 0
+    
+    
     nextOutputTime = min(outputTimes2)
     w = np.where(outputTimes2 == nextOutputTime)
     outputTimes2[w] = timesim + 10
     results = []
     nSurvey = 0
-    nDoses = np.zeros(MDAData[0][-1], dtype=object)
-    coverage = np.zeros(MDAData[0][-1], dtype=object)
     prevNSurvey = 0
-    prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
+    if MDAData is None:
+        nDoses = np.zeros(1, dtype=object)
+        coverage = np.zeros(1, dtype=object)
+        prevNMDA = np.zeros(1, dtype=object)
+    else:
+        nDoses = np.zeros(MDAData[0][-1], dtype=object)
+        coverage = np.zeros(MDAData[0][-1], dtype=object)
+        prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
     
     for i in range(1, 1 + timesim):
         if i in MDA_times:
-            if surveyPass == 0:
+            if np.logical_or(surveyPass == 0, doSurvey == 0):
                 MDA_round = np.where(MDA_times == i)[0]
                 if(len(MDA_round) == 1):
                     MDA_round = MDA_round[0]
-                    ageStart = MDAData[MDA_round][1]
-                    ageEnd = MDAData[MDA_round][2]
-                    out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
+                    if MDAData is None:
+                        ageStart = 0
+                        ageEnd = 100
+                    else:
+                        ageStart = MDAData[MDA_round][1]
+                        ageEnd = MDAData[MDA_round][2]
+                    out = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
                     vals = out[0]
-                    nDoses[MDAData[MDA_round][-2]] += out[1]
-                    # increment number of MDAs
-                    numMDA[MDAData[MDA_round][-2]] += 1
-                    coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
-                else:
-                    for l in range(len(MDA_round)):
-                        MDA_round2 = copy.deepcopy(MDA_round[l])
-                        ageStart = MDAData[MDA_round2][1]
-                        ageEnd = MDAData[MDA_round2][2]
-                        out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round2, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
-                        vals = out[0]
+                    if MDAData is None:
+                        nDoses[0] += out[1]
+                        # increment number of MDAs
+                        numMDA[0] += 1
+                        coverage[0] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+                        
+                    else:
                         nDoses[MDAData[MDA_round][-2]] += out[1]
                         # increment number of MDAs
                         numMDA[MDAData[MDA_round][-2]] += 1
                         coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+                else:
+                    for l in range(len(MDA_round)):
+                        MDA_round2 = copy.deepcopy(MDA_round[l])
+                        if MDAData is None:
+                            ageStart = 0
+                            ageEnd = 100
+                        else:
+                            ageStart = MDAData[MDA_round2][1]
+                            ageEnd = MDAData[MDA_round2][2]
+                        out = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round2, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
+                        vals = out[0]
+                        if MDAData is None:
+                            nDoses[0] += out[1]
+                            # increment number of MDAs
+                            numMDA[0] += 1
+                            coverage[0] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+                            
+                        else:
+                            nDoses[MDAData[MDA_round][-2]] += out[1]
+                            # increment number of MDAs
+                            numMDA[MDAData[MDA_round][-2]] += 1
+                            coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                 # if the number of MDAs is the same as the number for the next survey then set survey time
           #  if sum(numMDA) == nextSurvey:
           #      surveyTime = i + 26
         #else:  removed and deleted one indent in the line below to correct mistake.
-        #if np.logical_and(i == surveyTime, surveyPass==0):     
-        if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
-            surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
-               
-            # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
-            surveyPass = 1 if surveyPrev <= 0.05 else 0
-            if surveyPass == 1:
-                impactSurveyTime = i + 104  
-            # if the prevalence is > 5%, then we will do another survey after given number of MDAs
-            # call this value nextSurvey    
-            nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
-            # add the number of MDAs already done to the number of MDAs to be done before the next survey
-            surveyTime = i + (nextSurvey * 52) + 26
-            
-            nSurvey += 1
+        #if np.logical_and(i == surveyTime, surveyPass==0):   
+        if doSurvey == 1:
+            if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
+                surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
+                   
+                # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
+                surveyPass = 1 if surveyPrev <= 0.05 else 0
+                if surveyPass == 1:
+                    impactSurveyTime = i + 104  
+                # if the prevalence is > 5%, then we will do another survey after given number of MDAs
+                # call this value nextSurvey    
+                nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
+                # add the number of MDAs already done to the number of MDAs to be done before the next survey
+                surveyTime = i + (nextSurvey * 52) + 26
+                
+                nSurvey += 1
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
 
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
@@ -690,16 +718,23 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             prevNSurvey = copy.deepcopy(nSurvey) 
             prevNMDA = copy.deepcopy(numMDA)
             # set coverage and nDoses to 0, so that if these are non-zero, we know that they occured since last output
-            nDoses = np.zeros(MDAData[0][-1], dtype=object)
-            coverage = np.zeros(MDAData[0][-1], dtype=object)
+            if MDAData is None:
+                nDoses = np.zeros(1, dtype=object)
+                coverage = np.zeros(1, dtype=object)
+            else:    
+                nDoses = np.zeros(MDAData[0][-1], dtype=object)
+                coverage = np.zeros(MDAData[0][-1], dtype=object)
            
             
     vals['Yearly_threshold_infs'] = yearly_threshold_infs
     vals['True_Prev_Disease_children_1_9'] = prevalence # save the prevalence in children aged 1-9
     vals['True_Infections_Disease_children_1_9'] = infections # save the infections in children aged 1-9
     vals['State'] = np.random.get_state() # save the state of the simulations
-
-    return vals, results
+    
+    if outputRes == 0:
+        return vals
+    else:
+        return vals, results
 
 
 
