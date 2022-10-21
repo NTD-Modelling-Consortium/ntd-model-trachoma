@@ -494,15 +494,13 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = 
     Output is true prevalence of infection/disease in children aged 1-9.
     '''
     
-    if outputTimes is None:
-        outputTimes = []
-        outputTimes.append(1)
-        outputTimes.append(10)
-        outputTimes = np.array(outputTimes)
+    if outputTimes is not None:
         outputTimes2 = copy.deepcopy(outputTimes)    
+        nextOutputTime = min(outputTimes2)
+        w = np.where(outputTimes2 == nextOutputTime)
+        outputTimes2[w] = timesim + 10
     else:
-        outputTimes2 = copy.deepcopy(outputTimes)    
-    
+        nextOutputTime = timesim + 10
    # when we are starting new simulations
    # we use the provided random seed
     if state is None:
@@ -549,9 +547,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = 
     surveyPass = 0
     
     
-    nextOutputTime = min(outputTimes2)
-    w = np.where(outputTimes2 == nextOutputTime)
-    outputTimes2[w] = timesim + 10
+    
     results = []
     nSurvey = 0
     prevNSurvey = 0
@@ -645,7 +641,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = 
         a, _ = np.histogram(vals['Age'], bins=max_age, weights=large_infection_count.astype(int))
         yearly_threshold_infs[i, :] = a / params['N']
         # check if time to save variables to make Endgame outputs
-        if i == nextOutputTime:
+        if np.logical_and(outputTimes is not None, i == nextOutputTime):
             
             # has the disease truly eliminated in the population
             true_elimination = 1 if (sum(vals['IndI']) + sum(vals['IndD'])) == 0 else 0
