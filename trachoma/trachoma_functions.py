@@ -45,13 +45,7 @@ def readCoverageData(coverageFileName):
     )
      # we want to find which is the first year specified in the coverage data, along with which
      # column of the data set this corresponds to
-    #fy = 10000
     fy_index = np.where(PlatCov.columns == "2020")[0][0]
-    # for i in range(len(PlatCov.columns)):
-    #     if type(PlatCov.columns[i]) == int:
-    #         fy = min(fy, PlatCov.columns[i])
-    #         fy_index = min(fy_index, i)
-    # print(fy_index)
     count = 0
     minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
     maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
@@ -169,9 +163,6 @@ def stepF_fixed(vals, params, demog, bet):
     vals['T_latent'][reset_indivs] = 0
     vals['T_ID'][reset_indivs] = 0
     vals['T_D'][reset_indivs] = 0
-    #me = 2
-    #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
-
     return vals
 
 
@@ -212,6 +203,56 @@ def Tx_matrix_2(MDAData, params, previous_rounds):
             (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
 
         ind_treat = ind_treat[:, - len(MDAData):]
+
+    return ind_treat
+
+
+def Tx_matrix(params, sim_params, previous_rounds, MDAData = None):
+
+    '''
+    Create matrix to determine who gets treated at each MDA round,
+    allowing for systematic non-compliance as specified by Dyson.
+    '''
+
+    np.random.seed(0)
+
+    if previous_rounds == 0:
+        if MDAData is None:
+            ind_treat = np.zeros((params['N'], sim_params['N_MDA']))
+            MDA_Cov = params['MDA_Cov']
+        else:
+            ind_treat = np.zeros((params['N'], len(MDAData)))
+            MDA_Cov = MDAData[0][3]
+        # Assign first treatment
+        ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
+
+        for k in range(1, sim_params['N_MDA']):
+            if MDAData is not None:
+                MDA_Cov = MDAData[k][3]
+            # Subsequent treatment probs function of previous treatments
+            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
+            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
+
+    else:
+        if MDAData is None:
+            ind_treat = np.zeros((params['N'], previous_rounds + sim_params['N_MDA']))
+            MDA_Cov = params['MDA_Cov']
+        else:
+            ind_treat = np.zeros((params['N'], previous_rounds + len(MDAData)))
+            MDA_Cov = MDAData[0][3]
+ 
+
+        # Assign first treatment
+        ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
+
+        for k in range(1, previous_rounds + sim_params['N_MDA']):
+            if MDAData is not None:
+                MDA_Cov = MDAData[k][3]
+            # Subsequent treatment probs function of previous treatments
+            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
+            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
+
+        ind_treat = ind_treat[:, - sim_params['N_MDA']:]
 
     return ind_treat
 
@@ -258,44 +299,7 @@ def Reset(Age, demog, params):
 
     return np.where(np.logical_or(np.random.uniform(size=params['N']) < 1 - np.exp(- demog['tau']), Age > demog['max_age']))[0]
 
-def Tx_matrix(params, sim_params, previous_rounds):
 
-    '''
-    Create matrix to determine who gets treated at each MDA round,
-    allowing for systematic non-compliance as specified by Dyson.
-    '''
-
-    np.random.seed(0)
-
-    if previous_rounds == 0:
-
-        ind_treat = np.zeros((params['N'], sim_params['N_MDA']))
-
-        # Assign first treatment
-        ind_treat[:, 0] = np.random.uniform(size=params['N']) < params['MDA_Cov']
-
-        for k in range(1, sim_params['N_MDA']):
-
-            # Subsequent treatment probs function of previous treatments
-            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(params['MDA_Cov'] * (1 - params['rho']) +
-            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
-
-    else:
-
-        ind_treat = np.zeros((params['N'], previous_rounds + sim_params['N_MDA']))
-
-        # Assign first treatment
-        ind_treat[:, 0] = np.random.uniform(size=params['N']) < params['MDA_Cov']
-
-        for k in range(1, previous_rounds + sim_params['N_MDA']):
-
-            # Subsequent treatment probs function of previous treatments
-            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(params['MDA_Cov'] * (1 - params['rho']) +
-            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
-
-        ind_treat = ind_treat[:, - sim_params['N_MDA']:]
-
-    return ind_treat
 
 def doMDA(params, Age, MDA_round, Tx_mat, ageStart = None, ageEnd = None):
 
@@ -326,7 +330,6 @@ def doMDA(params, Age, MDA_round, Tx_mat, ageStart = None, ageEnd = None):
             cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
             cured_babies = []
             treated_babies = []
-    #print('MDA:',cured_babies,cured_older)
     return np.append(cured_babies, cured_older), np.append(treated_babies, treated_older)
 
 
@@ -868,11 +871,16 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
 
 
 
-def run_single_simulation(pickleData, params, 
-                                    timesim,
-                                    demog, beta, MDA_times, 
-                                    MDAData, outputTimes, 
-                                    index ):
+def run_single_simulation(pickleData, 
+                          params, 
+                          sim_params,
+                          timesim,
+                          demog, 
+                          beta, 
+                          MDA_times, 
+                          MDAData, 
+                          outputTimes, 
+                          index ):
     
     '''
     Function to run a single instance of the simulation. The starting point for these simulations
@@ -880,7 +888,7 @@ def run_single_simulation(pickleData, params,
     '''
     vals = pickleData
     params['N'] = len(vals['IndI'])
-    Tx_mat = Tx_matrix_2(MDAData, params, 0)
+    Tx_mat = Tx_matrix(params, sim_params, 0, MDAData)
     results = sim_Ind_MDA(params=params, Tx_mat = Tx_mat, 
                                         vals = vals, timesim = timesim,
                                         demog=demog, bet=beta, MDA_times = MDA_times, 
