@@ -172,6 +172,11 @@ def Tx_matrix(params, sim_params, previous_rounds, MDAData = None):
     '''
     Create matrix to determine who gets treated at each MDA round,
     allowing for systematic non-compliance as specified by Dyson.
+    If we include the MDAData input, then this will have specifications
+    related to the MDAs and hence will be used to create the treatment 
+    matrix. If this isn't included, we will use more basic information 
+    related to treatment from the sim_params and params variables to
+    create the treatment matrix.
     '''
 
     np.random.seed(0)
@@ -840,7 +845,9 @@ def run_single_simulation(pickleData,
                           MDA_times, 
                           MDAData, 
                           outputTimes, 
-                          index ):
+                          index,
+                          doSurvey = 1,
+                          outputRes = 1):
     
     '''
     Function to run a single instance of the simulation. The starting point for these simulations
@@ -853,7 +860,8 @@ def run_single_simulation(pickleData,
                                         vals = vals, timesim = timesim,
                                         demog=demog, bet=beta, MDA_times = MDA_times, 
                                         MDAData=MDAData, outputTimes= outputTimes, 
-                                        seed = index, doSurvey = 1, outputRes = 1)
+                                        seed = index, doSurvey = doSurvey, 
+                                        outputRes = outputRes)
     return results
 
 ##########################################################################################
