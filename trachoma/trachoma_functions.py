@@ -191,7 +191,7 @@ def Tx_matrix(params, sim_params, previous_rounds, MDAData = None):
             MDA_Cov = MDAData[0][3]
             
         # Assign first treatment
-        ind_treat = np.zeros((params['N'], len(MDAData)))
+        ind_treat = np.zeros((params['N'], nMDA))
         ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
         
         for k in range(1, nMDA):
