@@ -183,15 +183,18 @@ def Tx_matrix(params, sim_params, previous_rounds, MDAData = None):
 
     if previous_rounds == 0:
         if MDAData is None:
-            ind_treat = np.zeros((params['N'], sim_params['N_MDA']))
+            nMDA = sim_params['N_MDA']
             MDA_Cov = params['MDA_Cov']
+            
         else:
-            ind_treat = np.zeros((params['N'], len(MDAData)))
+            nMDA = len(MDAData)
             MDA_Cov = MDAData[0][3]
+            
         # Assign first treatment
+        ind_treat = np.zeros((params['N'], len(MDAData)))
         ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
-
-        for k in range(1, sim_params['N_MDA']):
+        
+        for k in range(1, nMDA):
             if MDAData is not None:
                 MDA_Cov = MDAData[k][3]
             # Subsequent treatment probs function of previous treatments
@@ -200,17 +203,17 @@ def Tx_matrix(params, sim_params, previous_rounds, MDAData = None):
 
     else:
         if MDAData is None:
-            ind_treat = np.zeros((params['N'], previous_rounds + sim_params['N_MDA']))
+            nMDA = sim_params['N_MDA']
             MDA_Cov = params['MDA_Cov']
         else:
-            ind_treat = np.zeros((params['N'], previous_rounds + len(MDAData)))
+            nMDA = len(MDAData)
             MDA_Cov = MDAData[0][3]
  
-
+        ind_treat = np.zeros((params['N'], previous_rounds + nMDA))
         # Assign first treatment
         ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
 
-        for k in range(1, previous_rounds + sim_params['N_MDA']):
+        for k in range(1, previous_rounds + nMDA):
             if MDAData is not None:
                 MDA_Cov = MDAData[k][3]
             # Subsequent treatment probs function of previous treatments
@@ -460,6 +463,13 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
     Output is true prevalence of infection/disease in children aged 1-9.
+    The Tx_mat variable contains information for each individual about if they will be included in treatment.
+    In this function we have the option to run surveys of the population to decide if MDA should cease.
+    This is governed by the doSurvey argument defaults to 0, and should be switched to 1 if we want to
+    perform surveys.
+    We can also include MDAData, which gives the specification of MDAs to be performed. If this is included,
+    this will be used for age ranges of treatment. If not, then all individuals will be deemed as targets for 
+    treatment.
     '''
     
     if outputTimes is not None:
@@ -485,8 +495,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = 
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros((timesim + 1, int(demog['max_age']/52)))
-   # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
-    surveyPass = 0
+   
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
    
     if doSurvey == 1:
@@ -511,7 +520,8 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = 
         numMDA = np.zeros(1, dtype=object)
     else:
         numMDA = np.zeros(MDAData[0][-1], dtype=object)
-   # initialize time for impact survey dependent on surveyed prevalence
+
+    # initialize time for impact survey dependent on surveyed prevalence
     surveyPass = 0
     
     
@@ -546,13 +556,13 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = 
                         nDoses[0] += out[1]
                         # increment number of MDAs
                         numMDA[0] += 1
-                        coverage[0] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+                        coverage[0] += out[1]/len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                         
                     else:
                         nDoses[MDAData[MDA_round][-2]] += out[1]
                         # increment number of MDAs
                         numMDA[MDAData[MDA_round][-2]] += 1
-                        coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+                        coverage[MDAData[MDA_round][-2]] += out[1]/len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                 else:
                     for l in range(len(MDA_round)):
                         MDA_round2 = copy.deepcopy(MDA_round[l])
@@ -568,13 +578,13 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData = 
                             nDoses[0] += out[1]
                             # increment number of MDAs
                             numMDA[0] += 1
-                            coverage[0] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+                            coverage[0] += out[1]/len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                             
                         else:
                             nDoses[MDAData[MDA_round][-2]] += out[1]
                             # increment number of MDAs
                             numMDA[MDAData[MDA_round][-2]] += 1
-                            coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+                            coverage[MDAData[MDA_round][-2]] += out[1]/len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
                 # if the number of MDAs is the same as the number for the next survey then set survey time
           #  if sum(numMDA) == nextSurvey:
           #      surveyTime = i + 26
