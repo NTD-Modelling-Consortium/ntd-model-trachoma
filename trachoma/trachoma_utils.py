@@ -113,7 +113,7 @@ def Tx_matrix(params, sim_params, previous_rounds, MDAData = None):
             ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
             (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
 
-        ind_treat = ind_treat[:, - sim_params['N_MDA']:]
+        ind_treat = ind_treat[:, - nMDA:]
 
     return ind_treat
 
