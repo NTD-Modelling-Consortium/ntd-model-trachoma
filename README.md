@@ -94,7 +94,7 @@ demog = {'tau': 0.0004807692,
  |-------------------|---------|---------|----------------|
  | 2016.5            | 2       | 17      | 0.5            |
 
-- `outputTime` :: Date for which to output results?
+- `outputTime` :: Array of integers giving times to output results for the Endgame project. The entries correspond to simulation time, which counts the number of weeks since the beginning of the simulation.
 ```python
 outputYear = range(2020, 2041)
 outputTimes = getOutputTimes(outputYear)
