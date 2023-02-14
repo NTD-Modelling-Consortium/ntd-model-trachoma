@@ -106,14 +106,14 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
 
     # load the simulation years
     timeparams = pd.read_csv(MDAFilePath)
-    start_sim_year, end_sim_year = np.int(timeparams.iloc[0, 0]), np.int(timeparams.iloc[0, 1])
+    start_sim_year, end_sim_year = int(timeparams.iloc[0, 0]), int(timeparams.iloc[0, 1])
     nyears = end_sim_year - start_sim_year + 1
 
     # output the simulations every 2 months
     sim_start_date = pd.Timestamp(str(start_sim_year) + '-02-01')
     sim_end_date = pd.Timestamp(str(end_sim_year) + '-12-31')
     sim_dates = pd.date_range(start=sim_start_date, end=sim_end_date, freq='2M')
-    sim_times = [burnin + np.int(np.round(t)) for t in np.arange(52 / 6, 52 * nyears + 52 / 6, 52 / 6)]
+    sim_times = [burnin + int(np.round(t)) for t in np.arange(52 / 6, 52 * nyears + 52 / 6, 52 / 6)]
     sim_times = np.array(sim_times[:len(sim_dates)])
 
     try:
@@ -123,7 +123,7 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
         mda_vector = json.loads( timeparams.iloc[0, 4] )
 
         # [ [2021,1], [2021,6], [2022,1] ]
-        mda_date_ints = [ [ np.int( str( t )[0:4] ), np.int( str( t )[4:6]  ) ] for t in mda_vector ]
+        mda_date_ints = [ [ int( str( t )[0:4] ), int( str( t )[4:6]  ) ] for t in mda_vector ]
 
         # [ 2021-01-01 00:00:00, 2021-06-01 00:00:00, 2022-01-01 00:00:00 ]
         mda_dates = [ pd.Timestamp( str( t[0] ) + '-' + str(t[1]).zfill(2) + '-01' ) for t in mda_date_ints ]
@@ -142,13 +142,13 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
 
         try:
             # load the MDA years
-            first_mda, last_mda = np.int(timeparams.iloc[0, 2]), np.int(timeparams.iloc[0, 3])
+            first_mda, last_mda = int(timeparams.iloc[0, 2]), int(timeparams.iloc[0, 3])
 
             # apply the MDA every 12 months
             mda_start_date = pd.Timestamp(str(first_mda) + '-01-01')
             mda_end_date = pd.Timestamp(str(last_mda) + '-01-01')
             mda_dates = pd.date_range(start=mda_start_date, end=mda_end_date, freq='12MS', normalize=True)
-            mda_times = [burnin + np.int(np.round(t)) for t in np.arange(1 + 52 * (first_mda - start_sim_year), 52 * nyears + 52, 52)]
+            mda_times = [burnin + int(np.round(t)) for t in np.arange(1 + 52 * (first_mda - start_sim_year), 52 * nyears + 52, 52)]
             mda_times = np.array(mda_times[:len(mda_dates)])
 
         except:
