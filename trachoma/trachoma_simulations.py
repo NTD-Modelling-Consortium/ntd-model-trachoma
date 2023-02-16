@@ -19,7 +19,7 @@ def timer(func):
     def wrapper_timer(*args, **kwargs):
         run_uuid = uuid.uuid4()
         start_time = time.perf_counter()    # 1
-        print_function = kwargs[ 'logger' ].info if kwargs[ 'logger' ] is not None else print
+        print_function = kwargs[ 'logger' ].info if 'logger' in kwargs.keys() and kwargs[ 'logger' ] is not None else print
         print_function(f"-> Timer {run_uuid} running {func.__name__!r}, starting at {datetime.datetime.now()}")
         value = func(*args, **kwargs)
         end_time = time.perf_counter()      # 2
@@ -212,7 +212,7 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
 
 @timer
 def Trachoma_Simulation(
-    BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath,
+    BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath=None,
     SaveOutput=False, OutSimFilePath=None, InSimFilePath=None,
     rho=0.3, MDA_Cov=0.8, numReps=0,
     useCloudStorage=False, download_blob_to_file=None, logger=None
@@ -237,7 +237,7 @@ def Trachoma_Simulation(
         the simulated prevalence will be saved.
 
     InfectFilePath: str
-        This is the path where the output CSV file with
+        Optional path where the output CSV file with
         the simulated infection will be saved.
 
     SaveOutput: bool
@@ -272,7 +272,7 @@ def Trachoma_Simulation(
     print_function = logger.info if logger is not None else print
 
     # make sure that the user has provided all the necessary inputs
-    if '.csv' not in BetFilePath or '.csv' not in MDAFilePath or '.csv' not in PrevFilePath or '.csv' not in InfectFilePath:
+    if '.csv' not in BetFilePath or '.csv' not in MDAFilePath or '.csv' not in PrevFilePath or (InfectFilePath is not None and '.csv' not in InfectFilePath):
 
         message = 'Please provide the directory to the CSV files.'
 
@@ -376,8 +376,9 @@ def Trachoma_Simulation(
 
             idf.iloc[i, 2:] = [out[i]['True_Infections_Disease_children_1_9'][j - 1] for j in sim_params['Out_times']]
 
-        print_function( f"Writing InfectFile to path {InfectFilePath} ..." )
-        idf.to_csv(InfectFilePath, index=None)
+        if InfectFilePath is not None:
+            print_function( f"Writing InfectFile to path {InfectFilePath} ..." )
+            idf.to_csv(InfectFilePath, index=None)
 
         # save all the simulated values in a pickle file
         if SaveOutput:
