@@ -263,6 +263,20 @@ def Tx_matrix(params, sim_params, previous_rounds):
     '''
     Create matrix to determine who gets treated at each MDA round,
     allowing for systematic non-compliance as specified by Dyson.
+
+    Parameters
+    ----------
+    params : dict 
+        Demographic and infection related parameters
+    sim_params : dict
+        Parameters related to specific simulation including treatment
+    previous_rounds : int
+        Number of prior rounds of MDA
+
+    Returns
+    -------
+    list
+        Two-dimensional representing the assigned MDA treatments for each person by each round
     '''
 
     np.random.seed(0)
