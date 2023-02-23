@@ -1,0 +1,2 @@
+vaccination_date,coverage,prob_block_transmission,reduce_bacterial_load,reduce_duration,waning_length
+2015-01-01,0.8,0.8,0.5,0.5,260
