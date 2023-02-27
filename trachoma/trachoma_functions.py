@@ -274,6 +274,16 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
     returned[y_children] = A[0]
     returned[o_children] = A[1]
     returned[adults] = A[2]
+
+    # add reduction in lambda according to who has been vaccinated
+    prob_reduction = params["vacc_prob_block_transmission"]
+
+    # add impact of waning using a linear slope. After waning period assumed vaccine has zero impact.
+    prob_reduction = prob_reduction * (- time_since_vaccinated / params["vacc_waning"] + 1)
+    prob_reduction = np.maximum(prob_reduction,0)
+
+    returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
+
     return returned
 
 def Reset(Age, demog, params):
