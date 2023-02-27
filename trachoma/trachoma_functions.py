@@ -94,6 +94,31 @@ def getOutputTimes(outputTimes):
             modOutputTimes.append(date(y, m, day))
     return modOutputTimes
 
+def vaccinate_population(vals = None, params = None):
+    '''
+    Vaccinate population according to coverage provided in `params`
+
+    Parameters
+    ----------
+    params : dict 
+        Parameter dictionary with all parameters not associated with MDA
+
+    vals : dict
+        Contains current state of simulation
+
+    Returns
+    -------
+    dict
+        vals
+
+    '''
+    # randomly vaccinated population according to coverage
+    index_vaccinated = np.random.rand(params['N']) < params['vacc_coverage']
+    vals['vaccinated'][index_vaccinated] = True
+    vals['vac_time'][index_vaccinated] = 0
+
+    return vals
+
 def stepF_fixed(vals, params, demog, bet):
 
     '''
@@ -506,7 +531,7 @@ def Check_and_init_vaccination_state(params,vals):
     '''
 
     if not set(["vaccinated","time_since_vaccinated"]).issubset(vals.keys()):
-        vals["vaccinated"] = np.zeros(params['N'])
+        vals["vaccinated"] = np.zeros(params['N'],dtype=bool)
         vals["time_since_vaccinated"] = np.zeros(params['N'])
 
     return vals
@@ -536,6 +561,9 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
     Output is true prevalence of infection/disease in children aged 1-9.
     '''
 
+    # extract vaccination time
+    vacc_time = params["vacc_time"]
+
     # when we are starting new simulations
     # we use the provided random seed
     if state is None:
@@ -562,6 +590,9 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
             vals = out[0]
             nDoses = out[1]
             coverage = nDoses/ len(vals['IndI'])
+        
+        if i == vacc_time:
+            vals = vaccinate_population(vals = vals, params = params)
 
         #else:  removed and deleted one indent in the line below to correct mistake.
 
@@ -622,6 +653,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
 
         np.random.set_state(state)
 
+    vacc_time = params['vacc_time']
     prevalence = []
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
@@ -682,6 +714,8 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
                 # if the number of MDAs is the same as the number for the next survey then set survey time
           #  if sum(numMDA) == nextSurvey:
           #      surveyTime = i + 26
+        if i == vacc_time:
+            vals = vaccinate_population(vals = vals, params = params)
         #else:  removed and deleted one indent in the line below to correct mistake.
         #if np.logical_and(i == surveyTime, surveyPass==0):     
         if np.logical_or(i == surveyTime, i == impactSurveyTime) :     

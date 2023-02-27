@@ -212,8 +212,7 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
         n_sim=len(seed)                    # number of simulations
     )
 
-    # update sim params to include vaccination params
-    sim_params.update(vacc_params)
+
 
     # General parameters relating to transmission of infection
     params = dict(
@@ -245,6 +244,9 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
 
         n_inf_sev = 30,
     )
+
+    # update sim params to include vaccination params
+    params.update(vacc_params)
 
     # Demography parameters
     demog = dict(
