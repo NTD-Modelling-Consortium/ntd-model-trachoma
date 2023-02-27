@@ -132,7 +132,8 @@ def stepF_fixed(vals, params, demog, bet):
     # Susceptible individuals acquiring new infections. This gives a lambda
     # for each individual dependent on age and disease status.
     lambda_step = 1 - np.exp(- getlambdaStep(params=params, Age=vals['Age'], bact_load=vals['bact_load'],
-    IndD=vals['IndD'], bet=bet, demog=demog))
+    IndD=vals['IndD'], vaccinated=vals['vaccinated'],time_since_vaccinated=vals['time_since_vaccinated'],
+    bet=bet, demog=demog))
     # New infections
     newInf = Ss[np.random.uniform(size=len(Ss)) < lambda_step[Ss]]
 
@@ -249,7 +250,8 @@ def get_MDA_times(MDA_dates, Start_date, burnin):
 
 
 
-def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
+def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
+    vaccinated,time_since_vaccinated):
 
     y_children = np.where(np.logical_and(Age >= 0, Age < 9 * 52))[0]  # Young children
     o_children = np.where(np.logical_and(Age >= 9 * 52, Age < 15 * 52))[0]  # Older children
