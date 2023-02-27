@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - 'master'
-      - 'add_vaccination'
   pull_request:
     types:
       - opened
     branches:
       - 'master'
+      - 'add_vaccination'
 
 jobs:
   build:
