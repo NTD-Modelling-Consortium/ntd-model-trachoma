@@ -28,7 +28,9 @@ def timer(func):
         return value
     return wrapper_timer
 
-def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput, OutSimFilePath, InSimFilePath, rho, MDA_Cov, numReps, logger=None):
+def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput, OutSimFilePath, InSimFilePath, rho, MDA_Cov, numReps, 
+                   VaccFilePath = None,
+                   logger=None):
 
     '''
     Define all required input parameters.
@@ -75,6 +77,16 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
 
     MDA_Cov: float
         MDA Coverage
+
+    VaccFilePath: str
+        This is the path to the input CSV file with headers
+
+            - `vaccination_date`. Date of start of vaccination
+            - `coverage`. Coverage in whole population
+            - `prob_block_transmission`. Probability that vaccine will block transmission
+            - `reduce_bacterial_load`. Proportional reduction in bacterial load if infection occurs.
+            - `reduce_duration`.  Proportional reduction in duration of infectious state if infection occurs.
+            - `waning_length`. Length of waning in weeks.
 
     Returns:
     -----------
@@ -155,6 +167,37 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
             mda_dates = []
             mda_times = []
 
+    # load vaccination parameters
+    if VaccFilePath is not None:
+        # read first row of CSV and convert to a dictionary
+        vacc_params = pd.read_csv(VaccFilePath).to_dict("records")[0]
+
+        vacc_param_names = set(['time','coverage', 'prob_block_transmission', 
+                            'reduce_bacterial_load', 'reduce_duration',  
+                            'waning_length'])
+        
+        if not vacc_param_names.issubset(vacc_params.keys()):
+            raise ValueError("Malformed vaccination file does not contain following parameters",vacc_param_names)
+
+
+        # convert vaccination date to simulation time
+        start_vacc = pd.Timestamp(vacc_params["start_date"])
+        start_vacc_diff = start_vacc - sim_start_date
+        vacc_params['time'] = int(start_vacc_diff / np.timedelta64(1, 'W'))
+
+    if VaccFilePath is None:
+        vacc_params = {
+            'time' : 0,
+            'coverage' : 0, 
+            'prob_block_transmission' : 0, 
+            'reduce_bacterial_load' : 0, 
+            'reduce_duration' : 0,  
+            'waning_length' : 0
+        }
+    
+    # add 'vacc_' prefix to all keys for quicker referencing
+    vacc_params = {"vacc_" + str(key) : val for key, val in vacc_params.items()}
+
     # Decide how long simulation you want and when you want MDA to be carried out
     sim_params = dict(
         timesim=burnin + 52 * nyears,      # years total duration of simulation (*52 so in weeks) including burn-in
@@ -169,6 +212,9 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
         Seed=seed,                         # random seed
         n_sim=len(seed)                    # number of simulations
     )
+
+    # update sim params to include vaccination params
+    sim_params.update(vacc_params)
 
     # General parameters relating to transmission of infection
     params = dict(
