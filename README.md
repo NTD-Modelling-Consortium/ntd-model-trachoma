@@ -1,6 +1,6 @@
 # Trachoma Simulation Model
 
-A dummy change
+A dummy change2
 
 To run the trachoma simulation model, import the `Trachoma_Simulation()` function from the `trachoma_simulations` module in the `trachoma` package.
 
