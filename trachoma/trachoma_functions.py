@@ -167,7 +167,7 @@ def stepF_fixed(vals, params, demog, bet):
     # Transition: Clear disease
     vals['IndD'][newClearDis] = 0  # clear disease they become D=0
     # Transition: Become infectious
-    vals['bact_load'][newInfectious] = bacterialLoad(No_Inf=vals['No_Inf'][newInfectious])
+    vals['bact_load'][newInfectious] = bacterialLoad(newInfectious,params = params, vals = vals)
 
     # Step 6: implement infections
     # Transition: become infected
@@ -279,7 +279,7 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
     prob_reduction = params["vacc_prob_block_transmission"]
 
     # add impact of waning using a linear slope. After waning period assumed vaccine has zero impact.
-    prob_reduction = prob_reduction * (- time_since_vaccinated / params["vacc_waning"] + 1)
+    prob_reduction = prob_reduction * (- time_since_vaccinated / params["vacc_waning_length"] + 1)
     prob_reduction = np.maximum(prob_reduction,0)
 
     returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
@@ -439,16 +439,30 @@ def D_period_function(Ind_D_period_base, No_Inf, params, Age):
 
     return T_ID
 
-def bacterialLoad(No_Inf):
+def bacterialLoad(newInfectious,params,vals):
 
     '''
-    Function to scale bacterial load according to infection history
-    '''
+    Function to scale bacterial load according to infection history.
+    Add reduction in bacterial load if additionally been vaccinated
 
+    Parameters
+    ----------
+    newInfectious : np.array 
+        boolean array denoting which individuals are newly infected
+    '''
+    No_Inf = vals['No_Inf'][newInfectious]
     b1 = 1
     ep2 = 0.114
 
-    return b1 * np.exp((No_Inf - 1) * - ep2)
+    bacterial_loads = b1 * np.exp((No_Inf - 1) * - ep2)
+    
+    # If vaccinated reduce bacterial load by a fixed proportion
+    prob_reduction = params["vacc_reduce_bacterial_load"]
+    vaccinated = vals['vaccinated'][newInfectious]
+    
+    bacterial_loads[vaccinated] = (1 - prob_reduction) * bacterial_loads[vaccinated]
+
+    return bacterial_loads
 
 def Set_inits(params, demog, sim_params):
 
