@@ -181,6 +181,9 @@ def stepF_fixed(vals, params, demog, bet):
     # Tracking infection history
     vals['No_Inf'][newInf] += 1
 
+    # update vaccination history
+    vals['time_since_vaccinated'][vals['vaccinated']] += 1
+
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
     vals['Age'] += 1
@@ -194,6 +197,8 @@ def stepF_fixed(vals, params, demog, bet):
     vals['T_latent'][reset_indivs] = 0
     vals['T_ID'][reset_indivs] = 0
     vals['T_D'][reset_indivs] = 0
+    vals['vaccinated'][reset_indivs] = False
+    vals['time_since_vaccinated'][reset_indivs] = 0
     #me = 2
     #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
 
@@ -445,7 +450,7 @@ def ID_period_function(newDis, params, vals):
     prob_reduction = params["vacc_reduce_duration"]
     vaccinated = vals['vaccinated'][newDis]
 
-    bacterial_loads[vaccinated] = (1 - prob_reduction) * id_periods[vaccinated]
+    id_periods[vaccinated] = (1 - prob_reduction) * id_periods[vaccinated]
 
     # round to an integer
     id_periods = np.round(id_periods)
