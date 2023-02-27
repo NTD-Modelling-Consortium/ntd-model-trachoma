@@ -7,10 +7,6 @@ on:
   pull_request:
     types:
       - opened
-    branches:
-      - 'master'
-      - 'add_vaccination'
-
 jobs:
   build:
     runs-on: ubuntu-latest
