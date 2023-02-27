@@ -29,8 +29,7 @@ def timer(func):
     return wrapper_timer
 
 def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput, OutSimFilePath, InSimFilePath, rho, MDA_Cov, numReps, 
-                   VaccFilePath = None,
-                   logger=None):
+                   logger=None,VaccFilePath = None):
 
     '''
     Define all required input parameters.
@@ -261,7 +260,8 @@ def Trachoma_Simulation(
     BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath=None,
     SaveOutput=False, OutSimFilePath=None, InSimFilePath=None,
     rho=0.3, MDA_Cov=0.8, numReps=0,
-    useCloudStorage=False, download_blob_to_file=None, logger=None
+    useCloudStorage=False, download_blob_to_file=None, logger=None,
+    VaccFilePath=None
 ):
 
     '''
@@ -304,6 +304,16 @@ def Trachoma_Simulation(
         If this is not provided, the code will start new
         simulations from scratch, including the burnin.
 
+    VaccFilePath: str
+        This is the path to the input CSV file with headers
+
+            - `vaccination_date`. Date of start of vaccination
+            - `coverage`. Coverage in whole population
+            - `prob_block_transmission`. Probability that vaccine will block transmission
+            - `reduce_bacterial_load`. Proportional reduction in bacterial load if infection occurs.
+            - `reduce_duration`.  Proportional reduction in duration of infectious state if infection occurs.
+            - `waning_length`. Length of waning in weeks.
+
     rho: float
         Systematic Adherence. Defaults to 0.3.
 
@@ -330,7 +340,8 @@ def Trachoma_Simulation(
 
         # load all model parameters
         sim_params, params, demog = loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveOutput,
-        OutSimFilePath, InSimFilePath, rho, MDA_Cov, numReps, logger)
+        OutSimFilePath, InSimFilePath, rho, MDA_Cov, numReps, logger,
+        VaccFilePath=VaccFilePath)
 
         if InSimFilePath is None: # start new simulations
 
