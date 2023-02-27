@@ -486,6 +486,31 @@ def Seed_infection(params, vals):
 
     return vals
 
+def Check_and_init_vaccination_state(params,vals):
+    '''
+    Check if "vaccinated" and "time_since_vaccinated" keys are in `vals`. If they are
+    not then initialize for population
+    
+    Parameters
+    ----------
+    
+    params : dict 
+        Parameter dictionary with all parameters not associated with MDA
+
+    vals : dict
+        Contains current state of simulation
+    Returns
+    -------
+    dict 
+        vals dictionary modified with vaccination state
+    '''
+
+    if not set(["vaccinated","time_since_vaccinated"]).issubset(vals.keys()):
+        vals["vaccinated"] = np.zeros(params['N'])
+        vals["time_since_vaccinated"] = np.zeros(params['N'])
+
+    return vals
+
 def init_ages(params, demog):
 
     '''

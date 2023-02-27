@@ -347,6 +347,7 @@ def Trachoma_Simulation(
 
             vals = Set_inits(params=params, demog=demog, sim_params=sim_params)  # set initial conditions
             vals = Seed_infection(params=params, vals=vals)  # seed infection
+            vals = Check_and_init_vaccination_state(params=params,vals=vals)
 
             if sim_params['N_MDA'] != 0:  # create treatment matrix
 
