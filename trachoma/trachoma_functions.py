@@ -154,8 +154,7 @@ def stepF_fixed(vals, params, demog, bet):
     # Step 5: implement transitions
     # Transition: become diseased (and infected)
     vals['IndD'][newDis] = 1  # if they've become diseased they become D=1
-    vals['T_ID'][newDis] = ID_period_function(Ind_ID_period_base=vals['Ind_ID_period_base'][newDis],
-    No_Inf=vals['No_Inf'][newDis], params=params)
+    vals['T_ID'][newDis] = ID_period_function(newDis, params=params, vals = vals)
     #vals['T_D'][newDis] = 0  # SS Added to prevent transition of doom.
     # Transition: Clear infection
     vals['IndI'][newClearInf] = 0  # clear infection they become I=0
@@ -420,13 +419,38 @@ def MDA_timestep_Age_range(vals, params, MDA_round, Tx_mat, ageStart, ageEnd):
     return vals, len(treated_cured[1])
 
 
-def ID_period_function(Ind_ID_period_base, No_Inf, params):
+def ID_period_function(newDis, params, vals):
 
     '''
     Function to give duration of active infection.
-    '''
+    Add reduction in duration if additionally been vaccinated
 
-    return np.round((Ind_ID_period_base - params['min_ID']) * np.exp(-params['inf_red'] * (No_Inf - 1)) + params['min_ID'])
+    Parameters
+    ----------
+    newInfectious : np.array 
+        boolean array denoting which individuals are newly infected
+    params : dict
+    vals : dict
+
+    Returns
+    -------
+    np.array
+        array of duration of infections subsetted by newInfectious
+    '''
+    Ind_ID_period_base  =vals['Ind_ID_period_base'][newDis]
+    No_Inf = vals['No_Inf'][newDis]
+    id_periods = (Ind_ID_period_base - params['min_ID']) * np.exp(-params['inf_red'] * (No_Inf - 1)) + params['min_ID']
+
+    # If vaccinated reduce bacterial load by a fixed proportion
+    prob_reduction = params["vacc_reduce_duration"]
+    vaccinated = vals['vaccinated'][newDis]
+
+    bacterial_loads[vaccinated] = (1 - prob_reduction) * id_periods[vaccinated]
+
+    # round to an integer
+    id_periods = np.round(id_periods)
+
+    return id_periods
 
 def D_period_function(Ind_D_period_base, No_Inf, params, Age):
 
@@ -449,6 +473,13 @@ def bacterialLoad(newInfectious,params,vals):
     ----------
     newInfectious : np.array 
         boolean array denoting which individuals are newly infected
+    params : dict
+    vals : dict
+
+    Returns
+    -------
+    np.array
+        array of bacterial loads subsetted by newInfectious
     '''
     No_Inf = vals['No_Inf'][newInfectious]
     b1 = 1
@@ -459,7 +490,7 @@ def bacterialLoad(newInfectious,params,vals):
     # If vaccinated reduce bacterial load by a fixed proportion
     prob_reduction = params["vacc_reduce_bacterial_load"]
     vaccinated = vals['vaccinated'][newInfectious]
-    
+
     bacterial_loads[vaccinated] = (1 - prob_reduction) * bacterial_loads[vaccinated]
 
     return bacterial_loads
