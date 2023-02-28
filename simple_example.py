@@ -35,8 +35,12 @@ params = {'N': 2500,
           'n_inf_sev':38,
           'TestSensitivity': 0.96,
           'TestSpecificity': 0.965,
-          'SecularTrendIndicator': True,
-          'SecularTrendYearlyBetaDecrease': 0.05}
+          'SecularTrendIndicator': 1,
+          'SecularTrendYearlyBetaDecrease': 0.05,
+          'vacc_prob_block_transmission': 0.8, 
+          'vacc_reduce_bacterial_load': 0.5, 
+          'vacc_reduce_duration': 0.5,  
+          'vacc_waning_length': 52 * 5}
 
 sim_params = {'timesim':52*21, 
               'burnin': 26,
@@ -93,9 +97,9 @@ MDA_times = get_Intervention_times(MDA_dates, Start_date, sim_params['burnin'])
 sim_params['N_MDA'] = len(MDA_times)
 
 
-VaccineData = readVaccineData(coverageFileName)
-Vaccine_dates = getInterventionDates(VaccineData)
-Vaccine_times = get_Intervention_times(Vaccine_dates, Start_date, sim_params['burnin'])
+VaccData = readVaccineData(coverageFileName)
+Vaccine_dates = getInterventionDates(VaccData)
+vacc_times = get_Intervention_times(Vaccine_dates, Start_date, sim_params['burnin'])
 sim_params['N_Vaccines'] = len(Vaccine_times)
 #############################################################################################################################
 #############################################################################################################################
@@ -116,6 +120,8 @@ results = Parallel(n_jobs=num_cores)(
                                         beta = allBetas.beta[i], 
                                         MDA_times = MDA_times, 
                                         MDAData=MDAData, 
+                                        vacc_times = vacc_times, 
+                                        VaccData = VaccData,
                                         outputTimes= outputTimes, 
                                         index = i) for i in range(numSims))
 

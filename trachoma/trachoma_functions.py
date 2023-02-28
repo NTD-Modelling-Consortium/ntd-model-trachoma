@@ -80,31 +80,41 @@ def readVaccineData(coverageFileName):
     )
     
     VaccineRows = np.where(PlatCov.Platform == "Vaccine")[0]
-    PlatCov = PlatCov.iloc[VaccineRows, :]
-     # we want to find which is the first year specified in the coverage data, along with which
-     # column of the data set this corresponds to
-    fy = 10000
-    fy_index = 7
-    for i in range(len(PlatCov.columns)):
-        if type(PlatCov.columns[i]) == int:
-            fy = min(fy, PlatCov.columns[i])
-            fy_index = min(fy_index, i)
     
-    count = 0
-    minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
-    maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
-    for i in range(fy_index, len(PlatCov.columns)):
-        dd = PlatCov.iloc[:, i]
-        VaccineS = np.where(dd>0)[0]
-        if len(VaccineS)>0:
-            for k in range(len(VaccineS)):
-                j = VaccineS[k]
-                if count == 0:
-                    VaccineData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
-                    count += 1
-                else:
-                    VaccineData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
-                    count +=1
+    if(len(VaccineRows) >0):
+        PlatCov = PlatCov.iloc[VaccineRows, :]
+         # we want to find which is the first year specified in the coverage data, along with which
+         # column of the data set this corresponds to
+        fy = 10000
+        fy_index = 7
+        for i in range(len(PlatCov.columns)):
+            if type(PlatCov.columns[i]) == int:
+                fy = min(fy, PlatCov.columns[i])
+                fy_index = min(fy_index, i)
+        
+        count = 0
+        minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
+        maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
+        for i in range(fy_index, len(PlatCov.columns)):
+            dd = PlatCov.iloc[:, i]
+            VaccineS = np.where(dd>0)[0]
+            if len(VaccineS)>0:
+                for k in range(len(VaccineS)):
+                    j = VaccineS[k]
+                    if count == 0:
+                        VaccineData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
+                        count += 1
+                    else:
+                        VaccineData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
+                        count +=1
+        if count == 1:
+            VaccineData.append([3026.0, 2, 5, 0.6, 0, 2])
+        if count == 0:
+            VaccineData = [[3026.0, 2, 5, 0.6, 0, 2]]
+            VaccineData.append([3026.0, 2, 5, 0.6, 0, 2])
+    else:
+        VaccineData = [[3026.0, 2, 5, 0.6, 0, 2],
+                       [3026.0, 2, 5, 0.6, 0, 2]]
     return VaccineData
                 
 def getInterventionDates(InterventionData):
@@ -462,6 +472,39 @@ def MDA_timestep_Age_range(vals, params, MDA_round, Tx_mat, ageStart, ageEnd):
 
     return vals, len(treated_cured[1])
 
+def vacc_timestep_Age_range(params, vals, vacc_round, VaccData):
+
+    '''
+    This is time step in which MDA occurs
+    '''
+
+    # Do vaccination for this vaccine round
+    vals = doVaccAgeRange(params, vals, vacc_round, VaccData)
+    
+   
+    return vals
+
+
+def doVaccAgeRange(params, vals, vacc_round, VaccData):
+
+    '''
+    Decide who is cured during MDA based on treatment matrix
+    and probability of clearance given treated.
+    '''
+    Age = vals['Age']
+    ageStart = VaccData[vacc_round][1]
+    ageEnd = VaccData[vacc_round][2]
+    ageRange = np.logical_and(Age > ageStart * 52, Age <= ageEnd *52)
+    index_vaccinated = np.random.rand(params['N']) < VaccData[vacc_round][3]
+    vaccInAgeRange = np.logical_and(ageRange, index_vaccinated)
+    vals['vaccinated'][vaccInAgeRange] = True
+    vals['vac_time'][vaccInAgeRange] = 0
+    vals['nDosesVacc'][VaccData[vacc_round][-2]] += sum(vaccInAgeRange)
+    vals['numVacc'][VaccData[vacc_round][-2]] += 1
+    vals['coverageVacc'][VaccData[vacc_round][-2]] += sum(vaccInAgeRange)/sum(ageRange)
+    #print('MDA:',cured_babies,cured_older)
+    return vals
+
 
 def ID_period_function(newDis, params, vals):
 
@@ -587,7 +630,13 @@ def Set_inits(params, demog, sim_params):
 
         # Prevalence
         True_Prev_Disease_children_1_9=[],
-
+        
+        vaccinated = np.zeros(params['N']),
+        
+        vac_time = np.zeros(params['N']) ,
+        
+        time_since_vaccinated = np.zeros(params['N']) ,
+        
     )
 
     return vals
@@ -666,7 +715,7 @@ def SecularTrendBetaDecrease(timesim, bet, params):
                 simbeta[(j * 52) + i] = bet1 - (params['SecularTrendYearlyBetaDecrease'] * bet1 * i/52)
     return simbeta
 
-def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, state=None):
+def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, vacc_times, seed, state=None):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -674,7 +723,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
     '''
 
     # extract vaccination time
-    vacc_time = params["vacc_time"]
+    #vacc_time = params["vacc_time"]
 
     # when we are starting new simulations
     # we use the provided random seed
@@ -704,7 +753,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
             nDoses = out[1]
             coverage = nDoses/ len(vals['IndI'])
         
-        if i == vacc_time:
+        if i in vacc_times:
             vals = vaccinate_population(vals = vals, params = params)
 
         #else:  removed and deleted one indent in the line below to correct mistake.
@@ -748,7 +797,7 @@ def numMDAsBeforeNextSurvey(surveyPrev):
 
 
 
-def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData, outputTimes, seed, state=None):
+def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData, vacc_times, VaccData, outputTimes, seed, state=None):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -767,7 +816,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
 
         np.random.set_state(state)
 
-    vacc_time = params['vacc_time']
+    #vacc_time = params['vacc_time']
     prevalence = []
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
@@ -794,11 +843,21 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     w = np.where(outputTimes2 == nextOutputTime)
     outputTimes2[w] = timesim + 10
     results = []
-    nSurvey = 0
+    
+    vals['nSurvey'] = 0
+    vals['prevNSurvey'] = 0
+    
+    
     nDoses = np.zeros(MDAData[0][-1], dtype=object)
     coverage = np.zeros(MDAData[0][-1], dtype=object)
-    prevNSurvey = 0
     prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
+    
+    vals['numVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+    vals['nDosesVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+    vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+    vals['prevNVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+    
+    
     betas = SecularTrendBetaDecrease(timesim, bet, params)
     for i in range(1, 1 + timesim):
         if i in MDA_times:
@@ -828,8 +887,19 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
                 # if the number of MDAs is the same as the number for the next survey then set survey time
           #  if sum(numMDA) == nextSurvey:
           #      surveyTime = i + 26
-        if i == vacc_time:
-            vals = vaccinate_population(vals = vals, params = params)
+        if i in vacc_times:
+      
+            vacc_round = np.where(vacc_times == i)[0]
+            if(len(vacc_round) == 1):
+                vacc_round = vacc_round[0]
+                vals = vacc_timestep_Age_range(params, vals, vacc_round, VaccData)
+                
+            else:
+                for l in range(len(vacc_round)):
+                    vacc_round2 = copy.deepcopy(vacc_round[l])
+                    vals = vacc_timestep_Age_range(params, vals, vacc_round2, VaccData)
+                   
+            #vals = vaccinate_population(vals = vals, params = params)
         #else:  removed and deleted one indent in the line below to correct mistake.
         #if np.logical_and(i == surveyTime, surveyPass==0):     
         if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
@@ -845,7 +915,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             # add the number of MDAs already done to the number of MDAs to be done before the next survey
             surveyTime = i + (nextSurvey * 52) + 26
             
-            nSurvey += 1
+            vals['nSurvey'] += 1
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=betas[i])
 
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
@@ -865,7 +935,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             # has the disease truly eliminated in the population
             true_elimination = 1 if (sum(vals['IndI']) + sum(vals['IndD'])) == 0 else 0
             # append the results to results variable
-            results.append(outputResult(copy.deepcopy(vals), i, nDoses, coverage, numMDA-prevNMDA, nSurvey - prevNSurvey, surveyPass, true_elimination))
+            results.append(outputResult(copy.deepcopy(vals), i, nDoses, coverage, numMDA-prevNMDA, vals['nSurvey'] - vals['prevNSurvey'], surveyPass, true_elimination))
             # when will next Endgame output time be
             nextOutputTime = min(outputTimes2)
             # change next output time location in the all output variable to be after the end of the simulation
@@ -874,8 +944,9 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             outputTimes2[w] = timesim + 10
             # save current num surveys, num MDAS as previous num surveys/MDAs, so next output we can tell how many were performed
             # since last output
-            prevNSurvey = copy.deepcopy(nSurvey) 
+            vals['prevNSurvey'] = copy.deepcopy(vals['nSurvey']) 
             prevNMDA = copy.deepcopy(numMDA)
+            vals['prevNVacc'] = copy.deepcopy(vals['numVacc']) 
             # set coverage and nDoses to 0, so that if these are non-zero, we know that they occured since last output
             nDoses = np.zeros(MDAData[0][-1], dtype=object)
             coverage = np.zeros(MDAData[0][-1], dtype=object)
@@ -1080,11 +1151,17 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
 
 
 
-def run_single_simulation(pickleData, params, 
-                                    timesim,
-                                    demog, beta, MDA_times, 
-                                    MDAData, outputTimes, 
-                                    index ):
+def run_single_simulation(pickleData, 
+                          params, 
+                          timesim,
+                          demog, 
+                          beta, 
+                          MDA_times, 
+                          MDAData, 
+                          vacc_times, 
+                          VaccData,
+                          outputTimes, 
+                          index ):
     
     '''
     Function to run a single instance of the simulation. The starting point for these simulations
@@ -1096,7 +1173,8 @@ def run_single_simulation(pickleData, params,
     results = sim_Ind_MDA_Include_Survey(params=params, Tx_mat = Tx_mat, 
                                         vals = vals, timesim = timesim,
                                         demog=demog, bet=beta, MDA_times = MDA_times, 
-                                        MDAData=MDAData, outputTimes= outputTimes, 
+                                        MDAData=MDAData, vacc_times = vacc_times, VaccData = VaccData,
+                                        outputTimes= outputTimes, 
                                         seed = index)
     return results
 
