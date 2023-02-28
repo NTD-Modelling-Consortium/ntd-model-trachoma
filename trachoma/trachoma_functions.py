@@ -164,7 +164,7 @@ def vaccinate_population(vals = None, params = None):
     # randomly vaccinated population according to coverage
     index_vaccinated = np.random.rand(params['N']) < params['vacc_coverage']
     vals['vaccinated'][index_vaccinated] = True
-    vals['vac_time'][index_vaccinated] = 0
+    vals['time_since_vaccinated'][index_vaccinated] = 0
 
     return vals
 
@@ -488,8 +488,7 @@ def vacc_timestep_Age_range(params, vals, vacc_round, VaccData):
 def doVaccAgeRange(params, vals, vacc_round, VaccData):
 
     '''
-    Decide who is cured during MDA based on treatment matrix
-    and probability of clearance given treated.
+    Decide who is vaccinated based coverage and age range    
     '''
     Age = vals['Age']
     ageStart = VaccData[vacc_round][1]
@@ -498,11 +497,10 @@ def doVaccAgeRange(params, vals, vacc_round, VaccData):
     index_vaccinated = np.random.rand(params['N']) < VaccData[vacc_round][3]
     vaccInAgeRange = np.logical_and(ageRange, index_vaccinated)
     vals['vaccinated'][vaccInAgeRange] = True
-    vals['vac_time'][vaccInAgeRange] = 0
-    vals['nDosesVacc'][VaccData[vacc_round][-2]] += sum(vaccInAgeRange)
+    vals['time_since_vaccinated'][vaccInAgeRange] = 0
+    vals['nDosesVacc'][VaccData[vacc_round][-2]] += np.count_nonzero(vaccInAgeRange)
     vals['numVacc'][VaccData[vacc_round][-2]] += 1
-    vals['coverageVacc'][VaccData[vacc_round][-2]] += sum(vaccInAgeRange)/sum(ageRange)
-    #print('MDA:',cured_babies,cured_older)
+    vals['coverageVacc'][VaccData[vacc_round][-2]] += np.count_nonzero(vaccInAgeRange)/np.count_nonzero(ageRange)
     return vals
 
 
@@ -632,8 +630,6 @@ def Set_inits(params, demog, sim_params):
         True_Prev_Disease_children_1_9=[],
         
         vaccinated = np.zeros(params['N']),
-        
-        vac_time = np.zeros(params['N']) ,
         
         time_since_vaccinated = np.zeros(params['N']) ,
         
@@ -1167,7 +1163,8 @@ def run_single_simulation(pickleData,
     Function to run a single instance of the simulation. The starting point for these simulations
     is
     '''
-    vals = pickleData
+    vals = copy.deepcopy(pickleData)
+    vals = Check_and_init_vaccination_state(params,vals)
     params['N'] = len(vals['IndI'])
     Tx_mat = Tx_matrix_2(MDAData, params, 0)
     results = sim_Ind_MDA_Include_Survey(params=params, Tx_mat = Tx_mat, 
