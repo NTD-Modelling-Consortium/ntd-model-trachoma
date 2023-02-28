@@ -34,7 +34,9 @@ params = {'N': 2500,
           'ep2':0.114,
           'n_inf_sev':38,
           'TestSensitivity': 0.96,
-          'TestSpecificity': 0.965}
+          'TestSpecificity': 0.965,
+          'SecularTrendIndicator': 1,
+          'SecularTrendYearlyBetaDecrease': 0.05}
 
 sim_params = {'timesim':52*21, 
               'burnin': 26,
@@ -83,13 +85,18 @@ outputTimes = get_MDA_times(outputTimes, Start_date, sim_params['burnin'])
 #############################################################################################################################
 
 # generate MDA data from coverage file
-scenario = '1'
+scenario = '2c'
 coverageFileName = 'scen' + scenario + '.csv'
 MDAData = readCoverageData(coverageFileName)
-MDA_dates = getMDADates(MDAData)
-MDA_times = get_MDA_times(MDA_dates, Start_date, sim_params['burnin'])
+MDA_dates = getInterventionDates(MDAData)
+MDA_times = get_Intervention_times(MDA_dates, Start_date, sim_params['burnin'])
 sim_params['N_MDA'] = len(MDA_times)
 
+
+VaccineData = readVaccineData(coverageFileName)
+Vaccine_dates = getInterventionDates(VaccineData)
+Vaccine_times = get_Intervention_times(Vaccine_dates, Start_date, sim_params['burnin'])
+sim_params['N_Vaccines'] = len(Vaccine_times)
 #############################################################################################################################
 #############################################################################################################################
 

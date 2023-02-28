@@ -616,6 +616,17 @@ def init_ages(params, demog):
 
     return np.random.choice(a=ages, size=params['N'], replace=True, p=propAges)
 
+
+
+def SecularTrendBetaDecrease(timesim, bet, params):
+    simbeta = bet * np.ones(timesim + 1)
+    if params['SecularTrendIndicator'] == 1:
+        for j in range(round(len(simbeta)/52)):
+            bet1 = simbeta[j * 52] 
+            for i in range(52+1):
+                simbeta[(j * 52) + i] = bet1 - (params['SecularTrendYearlyBetaDecrease'] * bet1 * i/52)
+    return simbeta
+
 def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, state=None):
 
     '''
@@ -642,6 +653,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros((timesim+1, max_age))
+    betas = SecularTrendBetaDecrease(timesim, bet, params)
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
@@ -658,7 +670,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
 
         #else:  removed and deleted one indent in the line below to correct mistake.
 
-        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
+        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=betas[i])
 
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
         n_children_ages_1_9 = np.count_nonzero(children_ages_1_9)
@@ -693,6 +705,7 @@ def numMDAsBeforeNextSurvey(surveyPrev):
     if surveyPrev >= 0.05: 
         return 1
     return 100
+
 
 
 
@@ -747,7 +760,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     coverage = np.zeros(MDAData[0][-1], dtype=object)
     prevNSurvey = 0
     prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
-    
+    betas = SecularTrendBetaDecrease(timesim, bet, params)
     for i in range(1, 1 + timesim):
         if i in MDA_times:
             if surveyPass == 0:
@@ -794,7 +807,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             surveyTime = i + (nextSurvey * 52) + 26
             
             nSurvey += 1
-        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=bet)
+        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=betas[i])
 
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
         n_children_ages_1_9 = np.count_nonzero(children_ages_1_9)
