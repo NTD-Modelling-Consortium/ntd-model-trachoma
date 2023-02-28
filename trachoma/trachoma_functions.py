@@ -94,6 +94,31 @@ def getOutputTimes(outputTimes):
             modOutputTimes.append(date(y, m, day))
     return modOutputTimes
 
+def vaccinate_population(vals = None, params = None):
+    '''
+    Vaccinate population according to coverage provided in `params`
+
+    Parameters
+    ----------
+    params : dict 
+        Parameter dictionary with all parameters not associated with MDA
+
+    vals : dict
+        Contains current state of simulation
+
+    Returns
+    -------
+    dict
+        vals
+
+    '''
+    # randomly vaccinated population according to coverage
+    index_vaccinated = np.random.rand(params['N']) < params['vacc_coverage']
+    vals['vaccinated'][index_vaccinated] = True
+    vals['vac_time'][index_vaccinated] = 0
+
+    return vals
+
 def stepF_fixed(vals, params, demog, bet):
 
     '''
@@ -107,7 +132,8 @@ def stepF_fixed(vals, params, demog, bet):
     # Susceptible individuals acquiring new infections. This gives a lambda
     # for each individual dependent on age and disease status.
     lambda_step = 1 - np.exp(- getlambdaStep(params=params, Age=vals['Age'], bact_load=vals['bact_load'],
-    IndD=vals['IndD'], bet=bet, demog=demog))
+    IndD=vals['IndD'], vaccinated=vals['vaccinated'],time_since_vaccinated=vals['time_since_vaccinated'],
+    bet=bet, demog=demog))
     # New infections
     newInf = Ss[np.random.uniform(size=len(Ss)) < lambda_step[Ss]]
 
@@ -128,8 +154,7 @@ def stepF_fixed(vals, params, demog, bet):
     # Step 5: implement transitions
     # Transition: become diseased (and infected)
     vals['IndD'][newDis] = 1  # if they've become diseased they become D=1
-    vals['T_ID'][newDis] = ID_period_function(Ind_ID_period_base=vals['Ind_ID_period_base'][newDis],
-    No_Inf=vals['No_Inf'][newDis], params=params)
+    vals['T_ID'][newDis] = ID_period_function(newDis, params=params, vals = vals)
     #vals['T_D'][newDis] = 0  # SS Added to prevent transition of doom.
     # Transition: Clear infection
     vals['IndI'][newClearInf] = 0  # clear infection they become I=0
@@ -141,7 +166,7 @@ def stepF_fixed(vals, params, demog, bet):
     # Transition: Clear disease
     vals['IndD'][newClearDis] = 0  # clear disease they become D=0
     # Transition: Become infectious
-    vals['bact_load'][newInfectious] = bacterialLoad(No_Inf=vals['No_Inf'][newInfectious])
+    vals['bact_load'][newInfectious] = bacterialLoad(newInfectious,params = params, vals = vals)
 
     # Step 6: implement infections
     # Transition: become infected
@@ -156,6 +181,9 @@ def stepF_fixed(vals, params, demog, bet):
     # Tracking infection history
     vals['No_Inf'][newInf] += 1
 
+    # update vaccination history
+    vals['time_since_vaccinated'][vals['vaccinated']] += 1
+
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
     vals['Age'] += 1
@@ -169,6 +197,8 @@ def stepF_fixed(vals, params, demog, bet):
     vals['T_latent'][reset_indivs] = 0
     vals['T_ID'][reset_indivs] = 0
     vals['T_D'][reset_indivs] = 0
+    vals['vaccinated'][reset_indivs] = False
+    vals['time_since_vaccinated'][reset_indivs] = 0
     #me = 2
     #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
 
@@ -224,7 +254,8 @@ def get_MDA_times(MDA_dates, Start_date, burnin):
 
 
 
-def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
+def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
+    vaccinated,time_since_vaccinated):
 
     y_children = np.where(np.logical_and(Age >= 0, Age < 9 * 52))[0]  # Young children
     o_children = np.where(np.logical_and(Age >= 9 * 52, Age < 15 * 52))[0]  # Older children
@@ -247,6 +278,16 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog):
     returned[y_children] = A[0]
     returned[o_children] = A[1]
     returned[adults] = A[2]
+
+    # add reduction in lambda according to who has been vaccinated
+    prob_reduction = params["vacc_prob_block_transmission"]
+
+    # add impact of waning using a linear slope. After waning period assumed vaccine has zero impact.
+    prob_reduction = prob_reduction * (- time_since_vaccinated / params["vacc_waning_length"] + 1)
+    prob_reduction = np.maximum(prob_reduction,0)
+
+    returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
+
     return returned
 
 def Reset(Age, demog, params):
@@ -383,13 +424,38 @@ def MDA_timestep_Age_range(vals, params, MDA_round, Tx_mat, ageStart, ageEnd):
     return vals, len(treated_cured[1])
 
 
-def ID_period_function(Ind_ID_period_base, No_Inf, params):
+def ID_period_function(newDis, params, vals):
 
     '''
     Function to give duration of active infection.
-    '''
+    Add reduction in duration if additionally been vaccinated
 
-    return np.round((Ind_ID_period_base - params['min_ID']) * np.exp(-params['inf_red'] * (No_Inf - 1)) + params['min_ID'])
+    Parameters
+    ----------
+    newInfectious : np.array 
+        boolean array denoting which individuals are newly infected
+    params : dict
+    vals : dict
+
+    Returns
+    -------
+    np.array
+        array of duration of infections subsetted by newInfectious
+    '''
+    Ind_ID_period_base  =vals['Ind_ID_period_base'][newDis]
+    No_Inf = vals['No_Inf'][newDis]
+    id_periods = (Ind_ID_period_base - params['min_ID']) * np.exp(-params['inf_red'] * (No_Inf - 1)) + params['min_ID']
+
+    # If vaccinated reduce bacterial load by a fixed proportion
+    prob_reduction = params["vacc_reduce_duration"]
+    vaccinated = vals['vaccinated'][newDis]
+
+    id_periods[vaccinated] = (1 - prob_reduction) * id_periods[vaccinated]
+
+    # round to an integer
+    id_periods = np.round(id_periods)
+
+    return id_periods
 
 def D_period_function(Ind_D_period_base, No_Inf, params, Age):
 
@@ -402,16 +468,37 @@ def D_period_function(Ind_D_period_base, No_Inf, params, Age):
 
     return T_ID
 
-def bacterialLoad(No_Inf):
+def bacterialLoad(newInfectious,params,vals):
 
     '''
-    Function to scale bacterial load according to infection history
-    '''
+    Function to scale bacterial load according to infection history.
+    Add reduction in bacterial load if additionally been vaccinated
 
+    Parameters
+    ----------
+    newInfectious : np.array 
+        boolean array denoting which individuals are newly infected
+    params : dict
+    vals : dict
+
+    Returns
+    -------
+    np.array
+        array of bacterial loads subsetted by newInfectious
+    '''
+    No_Inf = vals['No_Inf'][newInfectious]
     b1 = 1
     ep2 = 0.114
 
-    return b1 * np.exp((No_Inf - 1) * - ep2)
+    bacterial_loads = b1 * np.exp((No_Inf - 1) * - ep2)
+    
+    # If vaccinated reduce bacterial load by a fixed proportion
+    prob_reduction = params["vacc_reduce_bacterial_load"]
+    vaccinated = vals['vaccinated'][newInfectious]
+
+    bacterial_loads[vaccinated] = (1 - prob_reduction) * bacterial_loads[vaccinated]
+
+    return bacterial_loads
 
 def Set_inits(params, demog, sim_params):
 
@@ -486,6 +573,31 @@ def Seed_infection(params, vals):
 
     return vals
 
+def Check_and_init_vaccination_state(params,vals):
+    '''
+    Check if "vaccinated" and "time_since_vaccinated" keys are in `vals`. If they are
+    not then initialize for population
+    
+    Parameters
+    ----------
+    
+    params : dict 
+        Parameter dictionary with all parameters not associated with MDA
+
+    vals : dict
+        Contains current state of simulation
+    Returns
+    -------
+    dict 
+        vals dictionary modified with vaccination state
+    '''
+
+    if not set(["vaccinated","time_since_vaccinated"]).issubset(vals.keys()):
+        vals["vaccinated"] = np.zeros(params['N'],dtype=bool)
+        vals["time_since_vaccinated"] = np.zeros(params['N'])
+
+    return vals
+
 def init_ages(params, demog):
 
     '''
@@ -510,6 +622,9 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
     Function to run a single simulation with MDA at time points determined by function MDA_times.
     Output is true prevalence of infection/disease in children aged 1-9.
     '''
+
+    # extract vaccination time
+    vacc_time = params["vacc_time"]
 
     # when we are starting new simulations
     # we use the provided random seed
@@ -537,6 +652,9 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, seed, stat
             vals = out[0]
             nDoses = out[1]
             coverage = nDoses/ len(vals['IndI'])
+        
+        if i == vacc_time:
+            vals = vaccinate_population(vals = vals, params = params)
 
         #else:  removed and deleted one indent in the line below to correct mistake.
 
@@ -597,6 +715,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
 
         np.random.set_state(state)
 
+    vacc_time = params['vacc_time']
     prevalence = []
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
@@ -657,6 +776,8 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
                 # if the number of MDAs is the same as the number for the next survey then set survey time
           #  if sum(numMDA) == nextSurvey:
           #      surveyTime = i + 26
+        if i == vacc_time:
+            vals = vaccinate_population(vals = vals, params = params)
         #else:  removed and deleted one indent in the line below to correct mistake.
         #if np.logical_and(i == surveyTime, surveyPass==0):     
         if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
