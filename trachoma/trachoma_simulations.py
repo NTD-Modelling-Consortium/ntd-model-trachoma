@@ -191,7 +191,7 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
             'prob_block_transmission' : 0, 
             'reduce_bacterial_load' : 0, 
             'reduce_duration' : 0,  
-            'waning_length' : 0
+            'waning_length' : 1
         }
     
     # add 'vacc_' prefix to all keys for quicker referencing
