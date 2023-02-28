@@ -35,7 +35,7 @@ params = {'N': 2500,
           'n_inf_sev':38,
           'TestSensitivity': 0.96,
           'TestSpecificity': 0.965,
-          'SecularTrendIndicator': 1,
+          'SecularTrendIndicator': True,
           'SecularTrendYearlyBetaDecrease': 0.05}
 
 sim_params = {'timesim':52*21, 

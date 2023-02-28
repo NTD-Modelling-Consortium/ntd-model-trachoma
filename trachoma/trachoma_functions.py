@@ -43,15 +43,18 @@ def readCoverageData(coverageFileName):
     PlatCov = pd.read_csv(
          f"{modelDataDir}/{coverageFileName}"
     )
+    
+    MDARows = np.where(PlatCov.Platform == "MDA")[0]
+    PlatCov = PlatCov.iloc[MDARows, :]
      # we want to find which is the first year specified in the coverage data, along with which
      # column of the data set this corresponds to
-    #fy = 10000
-    fy_index = np.where(PlatCov.columns == "2020")[0][0]
-    # for i in range(len(PlatCov.columns)):
-    #     if type(PlatCov.columns[i]) == int:
-    #         fy = min(fy, PlatCov.columns[i])
-    #         fy_index = min(fy_index, i)
-    # print(fy_index)
+    fy = 10000
+    fy_index = 7
+    for i in range(len(PlatCov.columns)):
+        if type(PlatCov.columns[i]) == int:
+            fy = min(fy, PlatCov.columns[i])
+            fy_index = min(fy_index, i)
+
     count = 0
     minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
     maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
@@ -68,19 +71,55 @@ def readCoverageData(coverageFileName):
                     MDAData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
                     count +=1
     return MDAData
+               
+def readVaccineData(coverageFileName):
+    # read coverage data file
+    modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
+    PlatCov = pd.read_csv(
+         f"{modelDataDir}/{coverageFileName}"
+    )
+    
+    VaccineRows = np.where(PlatCov.Platform == "Vaccine")[0]
+    PlatCov = PlatCov.iloc[VaccineRows, :]
+     # we want to find which is the first year specified in the coverage data, along with which
+     # column of the data set this corresponds to
+    fy = 10000
+    fy_index = 7
+    for i in range(len(PlatCov.columns)):
+        if type(PlatCov.columns[i]) == int:
+            fy = min(fy, PlatCov.columns[i])
+            fy_index = min(fy_index, i)
+    
+    count = 0
+    minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
+    maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
+    for i in range(fy_index, len(PlatCov.columns)):
+        dd = PlatCov.iloc[:, i]
+        VaccineS = np.where(dd>0)[0]
+        if len(VaccineS)>0:
+            for k in range(len(VaccineS)):
+                j = VaccineS[k]
+                if count == 0:
+                    VaccineData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
+                    count += 1
+                else:
+                    VaccineData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
+                    count +=1
+    return VaccineData
                 
-                
-def getMDADates(MDAData):
-    for i in range(len(MDAData)):
-        d = MDAData[i][0]
+def getInterventionDates(InterventionData):
+    for i in range(len(InterventionData)):
+        d = InterventionData[i][0]
         y = int(d)
         m = round(12*(d - int(d))) + 1
         day = 1
         if i == 0:
-            MDA_dates = [date(y, m, day)]
+            Intervention_dates = [date(y, m, day)]
         else:
-            MDA_dates.append(date(y, m, day))
-    return MDA_dates
+            Intervention_dates.append(date(y, m, day))
+    return Intervention_dates
+ 
+
 
 def getOutputTimes(outputTimes):
     for i in range(len(outputTimes)):
@@ -246,11 +285,11 @@ def Tx_matrix_2(MDAData, params, previous_rounds):
     return ind_treat
 
 
-def get_MDA_times(MDA_dates, Start_date, burnin):
-    MDA_times = []
-    for i in range(0, len(MDA_dates)):
-        MDA_times.append(burnin + int((MDA_dates[i] - Start_date).days/7))
-    return np.array(MDA_times)
+def get_Intervention_times(Intervention_dates, Start_date, burnin):
+    Intervention_times = []
+    for i in range(0, len(Intervention_dates)):
+        Intervention_times.append(burnin + int((Intervention_dates[i] - Start_date).days/7))
+    return np.array(Intervention_times)
 
 
 
