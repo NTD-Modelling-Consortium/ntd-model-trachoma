@@ -115,7 +115,7 @@ def vaccinate_population(vals = None, params = None):
     # randomly vaccinated population according to coverage
     index_vaccinated = np.random.rand(params['N']) < params['vacc_coverage']
     vals['vaccinated'][index_vaccinated] = True
-    vals['vac_time'][index_vaccinated] = 0
+    vals['time_since_vaccinated'][index_vaccinated] = 0
 
     return vals
 

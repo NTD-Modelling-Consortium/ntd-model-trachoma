@@ -171,7 +171,7 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
         # read first row of CSV and convert to a dictionary
         vacc_params = pd.read_csv(VaccFilePath).to_dict("records")[0]
 
-        vacc_param_names = set(['time','coverage', 'prob_block_transmission', 
+        vacc_param_names = set(['vaccination_date','coverage', 'prob_block_transmission', 
                             'reduce_bacterial_load', 'reduce_duration',  
                             'waning_length'])
         
@@ -180,7 +180,7 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
 
 
         # convert vaccination date to simulation time
-        start_vacc = pd.Timestamp(vacc_params["start_date"])
+        start_vacc = pd.Timestamp(vacc_params["vaccination_date"])
         start_vacc_diff = start_vacc - sim_start_date
         vacc_params['time'] = int(start_vacc_diff / np.timedelta64(1, 'W'))
 
