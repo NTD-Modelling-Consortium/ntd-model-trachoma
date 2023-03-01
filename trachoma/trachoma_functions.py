@@ -19,12 +19,16 @@ class Result:
     NoInf: ndarray
     nMDA:Optional[ndarray] = None
     nMDADoses: Optional[ndarray] = None
+    nVacc:Optional[ndarray] = None
+    nVaccDoses: Optional[ndarray] = None
     nSurvey: Optional[int] = None
     surveyPass: Optional[int] = None
     elimination: Optional[int] = None
     propMDA: Optional[ndarray] = None    
+    propVacc: Optional[ndarray] = None    
     
-def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elimination):
+    
+def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elimination, nVacc, nVaccDoses, propVacc):
     return (Result(time = i,
                           IndI = vals['IndI'], 
                           IndD = vals['IndD'], 
@@ -35,7 +39,10 @@ def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elim
                           surveyPass = surveyPass,
                           elimination = true_elimination,
                           propMDA = coverage,
-                          nMDA = nMDA))
+                          nMDA = nMDA,
+                          nVacc = nVacc, 
+                          nVaccDoses = nVaccDoses,
+                          propVacc = propVacc))
 
 def readCoverageData(coverageFileName):
     # read coverage data file
@@ -702,10 +709,10 @@ def init_ages(params, demog):
 
 
 
-def SecularTrendBetaDecrease(timesim, bet, params):
+def SecularTrendBetaDecrease(timesim, burnin, bet, params):
     simbeta = bet * np.ones(timesim + 1)
     if params['SecularTrendIndicator'] == 1:
-        for j in range(round(len(simbeta)/52)):
+        for j in range(round(burnin/52),round(len(simbeta)/52)):
             bet1 = simbeta[j * 52] 
             for i in range(52+1):
                 simbeta[(j * 52) + i] = bet1 - (params['SecularTrendYearlyBetaDecrease'] * bet1 * i/52)
@@ -737,7 +744,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, vacc_times
     infections = []
     max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros((timesim+1, max_age))
-    betas = SecularTrendBetaDecrease(timesim, bet, params)
+    betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
@@ -793,7 +800,9 @@ def numMDAsBeforeNextSurvey(surveyPrev):
 
 
 
-def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_times, MDAData, vacc_times, VaccData, outputTimes, seed, state=None):
+def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
+                               demog, bet, MDA_times, MDAData,
+                               vacc_times, VaccData, outputTimes, seed, state=None):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -854,7 +863,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
     vals['prevNVacc'] = np.zeros(VaccData[0][-1], dtype=object)
     
     
-    betas = SecularTrendBetaDecrease(timesim, bet, params)
+    betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
     for i in range(1, 1 + timesim):
         if i in MDA_times:
             if surveyPass == 0:
@@ -931,7 +940,9 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, demog, bet, MDA_ti
             # has the disease truly eliminated in the population
             true_elimination = 1 if (sum(vals['IndI']) + sum(vals['IndD'])) == 0 else 0
             # append the results to results variable
-            results.append(outputResult(copy.deepcopy(vals), i, nDoses, coverage, numMDA-prevNMDA, vals['nSurvey'] - vals['prevNSurvey'], surveyPass, true_elimination))
+            results.append(outputResult(copy.deepcopy(vals), i, nDoses, coverage, numMDA-prevNMDA, 
+                                        vals['nSurvey'] - vals['prevNSurvey'], surveyPass, true_elimination,
+                                        vals['numVacc'] - vals['prevNVacc'], vals['nDosesVacc'] , vals['coverageVacc']))
             # when will next Endgame output time be
             nextOutputTime = min(outputTimes2)
             # change next output time location in the all output variable to be after the end of the simulation
@@ -1150,6 +1161,7 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
 def run_single_simulation(pickleData, 
                           params, 
                           timesim,
+                          burnin,
                           demog, 
                           beta, 
                           MDA_times, 
@@ -1169,6 +1181,7 @@ def run_single_simulation(pickleData,
     Tx_mat = Tx_matrix_2(MDAData, params, 0)
     results = sim_Ind_MDA_Include_Survey(params=params, Tx_mat = Tx_mat, 
                                         vals = vals, timesim = timesim,
+                                        burnin=burnin,
                                         demog=demog, bet=beta, MDA_times = MDA_times, 
                                         MDAData=MDAData, vacc_times = vacc_times, VaccData = VaccData,
                                         outputTimes= outputTimes, 

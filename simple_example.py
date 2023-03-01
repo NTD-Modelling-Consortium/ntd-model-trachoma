@@ -81,7 +81,7 @@ params['N'] = len(a['IndI'])
 #############################################################################################################################
 #############################################################################################################################
 # which years to make endgame output specify and convert these to simulation time
-outputYear = range(2020, 2041)
+outputYear = range(2018, 2041)
 outputTimes = getOutputTimes(outputYear)
 outputTimes = get_MDA_times(outputTimes, Start_date, sim_params['burnin'])
 
@@ -116,6 +116,7 @@ results = Parallel(n_jobs=num_cores)(
          delayed(run_single_simulation)(pickleData = pickleData[i], 
                                         params = params, 
                                         timesim = sim_params['timesim'],
+                                        burnin = sim_params['burnin'],
                                         demog=demog, 
                                         beta = allBetas.beta[i], 
                                         MDA_times = MDA_times, 
