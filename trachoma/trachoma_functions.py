@@ -52,31 +52,32 @@ def readCoverageData(coverageFileName):
     )
     
     MDARows = np.where(PlatCov.Platform == "MDA")[0]
-    PlatCov = PlatCov.iloc[MDARows, :]
-     # we want to find which is the first year specified in the coverage data, along with which
-     # column of the data set this corresponds to
-    fy = 10000
-    fy_index = 7
-    for i in range(len(PlatCov.columns)):
-        if type(PlatCov.columns[i]) == int:
-            fy = min(fy, PlatCov.columns[i])
-            fy_index = min(fy_index, i)
-
-    count = 0
-    minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
-    maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
-    for i in range(fy_index, len(PlatCov.columns)):
-        dd = PlatCov.iloc[:, i]
-        MDAS = np.where(dd>0)[0]
-        if len(MDAS)>0:
-            for k in range(len(MDAS)):
-                j = MDAS[k]
-                if count == 0:
-                    MDAData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
-                    count += 1
-                else:
-                    MDAData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
-                    count +=1
+    if(len(MDARows) >0):
+        PlatCov = PlatCov.iloc[MDARows, :]
+         # we want to find which is the first year specified in the coverage data, along with which
+         # column of the data set this corresponds to
+        fy = 10000
+        fy_index = 7
+        for i in range(len(PlatCov.columns)):
+            if type(PlatCov.columns[i]) == int:
+                fy = min(fy, PlatCov.columns[i])
+                fy_index = min(fy_index, i)
+    
+        count = 0
+        minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
+        maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
+        for i in range(fy_index, len(PlatCov.columns)):
+            dd = PlatCov.iloc[:, i]
+            MDAS = np.where(dd>0)[0]
+            if len(MDAS)>0:
+                for k in range(len(MDAS)):
+                    j = MDAS[k]
+                    if count == 0:
+                        MDAData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
+                        count += 1
+                    else:
+                        MDAData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
+                        count +=1
         if count == 1:
             MDAData.append([3026.0, 2, 5, 0.6, 0, 2])
         if count == 0:
@@ -1152,20 +1153,20 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRange
                 for k in range(len(VaccAgeRanges)):
                     df.iloc[ind, 0] = year
                     df.iloc[ind, 3] = "nDosesVacc"
-                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
-                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, 1] = VaccAgeRanges[k][0]
+                    df.iloc[ind, 2] = VaccAgeRanges[k][1]
                     df.iloc[ind, i+4] = d[j].nVaccDoses[k]
                     ind += 1
                     df.iloc[ind, 0] = year
                     df.iloc[ind, 3] = "VaccCoverage"
-                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
-                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, 1] = VaccAgeRanges[k][0]
+                    df.iloc[ind, 2] = VaccAgeRanges[k][1]
                     df.iloc[ind, i+4] = d[j].propVacc[k]
                     ind += 1
                     df.iloc[ind, 0] = year
-                    df.iloc[ind, 3] = "numMDAs"
-                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
-                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, 3] = "numVaccs"
+                    df.iloc[ind, 1] = VaccAgeRanges[k][0]
+                    df.iloc[ind, 2] = VaccAgeRanges[k][1]
                     df.iloc[ind, i+4] = d[j].nVacc[k]
                     ind += 1
                     
