@@ -77,6 +77,14 @@ def readCoverageData(coverageFileName):
                 else:
                     MDAData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
                     count +=1
+        if count == 1:
+            MDAData.append([3026.0, 2, 5, 0.6, 0, 2])
+        if count == 0:
+            MDAData = [[3026.0, 2, 5, 0.6, 0, 2]]
+            MDAData.append([3026.0, 2, 5, 0.6, 0, 2])
+    else:
+        MDAData = [[3026.0, 2, 5, 0.6, 0, 2],
+                   [3026.0, 2, 5, 0.6, 0, 2]]
     return MDAData
                
 def readVaccineData(coverageFileName):
@@ -864,6 +872,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
     
     
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
+
     for i in range(1, 1 + timesim):
         if i in MDA_times:
             if surveyPass == 0:
@@ -957,7 +966,10 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
             # set coverage and nDoses to 0, so that if these are non-zero, we know that they occured since last output
             nDoses = np.zeros(MDAData[0][-1], dtype=object)
             coverage = np.zeros(MDAData[0][-1], dtype=object)
-           
+            
+            vals['nDosesVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+            vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+
             
     vals['Yearly_threshold_infs'] = yearly_threshold_infs
     vals['True_Prev_Disease_children_1_9'] = prevalence # save the prevalence in children aged 1-9
@@ -1067,28 +1079,30 @@ def getResultsIHME(results, demog, params, outputYear):
     return df
 
 
-def getMDAAgeRanges(coverageFileName):
+def getInterventionAgeRanges(coverageFileName, intervention):
 
     modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
     PlatCov = pd.read_csv(
          f"{modelDataDir}/{coverageFileName}"
     )
-
-    MDAAgeRanges = np.zeros([PlatCov.shape[0],2], dtype = object)
+    InterventionRows = np.where(PlatCov.Platform == intervention)[0]
+    PlatCov = PlatCov.iloc[InterventionRows, :]
+    InterventionAgeRanges = np.zeros([PlatCov.shape[0],2], dtype = object)
     minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
     maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
     for i in range(PlatCov.shape[0]):
-        MDAAgeRanges[i, 0] = PlatCov.iloc[i, minAgeIndex]
-        MDAAgeRanges[i, 1] = PlatCov.iloc[i, maxAgeIndex]
+        InterventionAgeRanges[i, 0] = PlatCov.iloc[i, minAgeIndex]
+        InterventionAgeRanges[i, 1] = PlatCov.iloc[i, maxAgeIndex]
         
-    return MDAAgeRanges
+    return InterventionAgeRanges
 
-def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
+def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRanges):
     '''
     Function to collate results for IPM
     '''
    
-    df = pd.DataFrame(0, range(len(outputYear)*3 + len(outputYear) * 3 * len(MDAAgeRanges)), columns= range(len(results)+4))
+    df = pd.DataFrame(0, range(len(outputYear)*3 + len(outputYear) * 3 * len(MDAAgeRanges) + len(outputYear) * 3 * len(VaccAgeRanges)), 
+                      columns= range(len(results)+4))
     df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
     
     for i in range(len(results)):
@@ -1118,7 +1132,7 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
                 ind += 1
                 for k in range(len(MDAAgeRanges)):
                     df.iloc[ind, 0] = year
-                    df.iloc[ind, 3] = "nDoses"
+                    df.iloc[ind, 3] = "nDosesMDA"
                     df.iloc[ind, 1] = MDAAgeRanges[k][0]
                     df.iloc[ind, 2] = MDAAgeRanges[k][1]
                     df.iloc[ind, i+4] = d[j].nMDADoses[k]
@@ -1135,6 +1149,25 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
                     df.iloc[ind, 2] = MDAAgeRanges[k][1]
                     df.iloc[ind, i+4] = d[j].nMDA[k]
                     ind += 1
+                for k in range(len(VaccAgeRanges)):
+                    df.iloc[ind, 0] = year
+                    df.iloc[ind, 3] = "nDosesVacc"
+                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
+                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, i+4] = d[j].nVaccDoses[k]
+                    ind += 1
+                    df.iloc[ind, 0] = year
+                    df.iloc[ind, 3] = "VaccCoverage"
+                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
+                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, i+4] = d[j].propVacc[k]
+                    ind += 1
+                    df.iloc[ind, 0] = year
+                    df.iloc[ind, 3] = "numMDAs"
+                    df.iloc[ind, 1] = MDAAgeRanges[k][0]
+                    df.iloc[ind, 2] = MDAAgeRanges[k][1]
+                    df.iloc[ind, i+4] = d[j].nVacc[k]
+                    ind += 1
                     
                 
             else:
@@ -1150,6 +1183,13 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges):
                     df.iloc[ind, i+4] = d[j].propMDA[k]
                     ind += 1
                     df.iloc[ind, i+4] = d[j].nMDA[k]
+                    ind += 1
+                for k in range(len(VaccAgeRanges)):               
+                    df.iloc[ind, i+4] = d[j].nVaccDoses[k]
+                    ind += 1   
+                    df.iloc[ind, i+4] = d[j].propVacc[k]
+                    ind += 1
+                    df.iloc[ind, i+4] = d[j].nVacc[k]
                     ind += 1
                 
     for i in range(len(results)):
