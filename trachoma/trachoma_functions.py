@@ -44,16 +44,16 @@ def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elim
                           nVaccDoses = nVaccDoses,
                           propVacc = propVacc))
 
-def readCoverageData(coverageFileName):
+def readPlatformData(coverageFileName, Platform):
     # read coverage data file
     modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
     PlatCov = pd.read_csv(
          f"{modelDataDir}/{coverageFileName}"
     )
     
-    MDARows = np.where(PlatCov.Platform == "MDA")[0]
-    if(len(MDARows) >0):
-        PlatCov = PlatCov.iloc[MDARows, :]
+    PlatformRows = np.where(PlatCov.Platform == Platform)[0]
+    if(len(PlatformRows) >0):
+        PlatCov = PlatCov.iloc[PlatformRows, :]
          # we want to find which is the first year specified in the coverage data, along with which
          # column of the data set this corresponds to
         fy = 10000
@@ -68,71 +68,27 @@ def readCoverageData(coverageFileName):
         maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
         for i in range(fy_index, len(PlatCov.columns)):
             dd = PlatCov.iloc[:, i]
-            MDAS = np.where(dd>0)[0]
-            if len(MDAS)>0:
-                for k in range(len(MDAS)):
-                    j = MDAS[k]
+            PlatformS = np.where(dd>0)[0]
+            if len(PlatformS)>0:
+                for k in range(len(PlatformS)):
+                    j = PlatformS[k]
                     if count == 0:
-                        MDAData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
+                        PlatformData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
                         count += 1
                     else:
-                        MDAData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
+                        PlatformData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
                         count +=1
         if count == 1:
-            MDAData.append([3026.0, 2, 5, 0.6, 0, 2])
+            PlatformData.append([3026.0, 2, 5, 0.6, 0, 2])
         if count == 0:
-            MDAData = [[3026.0, 2, 5, 0.6, 0, 2]]
-            MDAData.append([3026.0, 2, 5, 0.6, 0, 2])
+            PlatformData = [[3026.0, 2, 5, 0.6, 0, 2]]
+            PlatformData.append([3026.0, 2, 5, 0.6, 0, 2])
     else:
-        MDAData = [[3026.0, 2, 5, 0.6, 0, 2],
+        PlatformData = [[3026.0, 2, 5, 0.6, 0, 2],
                    [3026.0, 2, 5, 0.6, 0, 2]]
-    return MDAData
+    return PlatformData
                
-def readVaccineData(coverageFileName):
-    # read coverage data file
-    modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
-    PlatCov = pd.read_csv(
-         f"{modelDataDir}/{coverageFileName}"
-    )
-    
-    VaccineRows = np.where(PlatCov.Platform == "Vaccine")[0]
-    
-    if(len(VaccineRows) >0):
-        PlatCov = PlatCov.iloc[VaccineRows, :]
-         # we want to find which is the first year specified in the coverage data, along with which
-         # column of the data set this corresponds to
-        fy = 10000
-        fy_index = 7
-        for i in range(len(PlatCov.columns)):
-            if type(PlatCov.columns[i]) == int:
-                fy = min(fy, PlatCov.columns[i])
-                fy_index = min(fy_index, i)
-        
-        count = 0
-        minAgeIndex = np.where(PlatCov.columns == "min age")[0][0]
-        maxAgeIndex = np.where(PlatCov.columns == "max age")[0][0]
-        for i in range(fy_index, len(PlatCov.columns)):
-            dd = PlatCov.iloc[:, i]
-            VaccineS = np.where(dd>0)[0]
-            if len(VaccineS)>0:
-                for k in range(len(VaccineS)):
-                    j = VaccineS[k]
-                    if count == 0:
-                        VaccineData = [[float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]]]
-                        count += 1
-                    else:
-                        VaccineData.append([float(PlatCov.columns[i]), PlatCov.iloc[j, minAgeIndex], PlatCov.iloc[j, maxAgeIndex], PlatCov.iloc[j, i], j,  PlatCov.shape[0]])
-                        count +=1
-        if count == 1:
-            VaccineData.append([3026.0, 2, 5, 0.6, 0, 2])
-        if count == 0:
-            VaccineData = [[3026.0, 2, 5, 0.6, 0, 2]]
-            VaccineData.append([3026.0, 2, 5, 0.6, 0, 2])
-    else:
-        VaccineData = [[3026.0, 2, 5, 0.6, 0, 2],
-                       [3026.0, 2, 5, 0.6, 0, 2]]
-    return VaccineData
-                
+
 def getInterventionDates(InterventionData):
     for i in range(len(InterventionData)):
         d = InterventionData[i][0]
