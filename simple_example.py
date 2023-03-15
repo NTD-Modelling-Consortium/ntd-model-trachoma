@@ -106,7 +106,7 @@ sim_params['N_Vaccines'] = len(vacc_times)
 #############################################################################################################################
 
 # decide how many sims we will run
-numSims = 8
+numSims = 200
 print( f'Running {numSims} simulations on {num_cores} cores' )
 start = time.time()
 
