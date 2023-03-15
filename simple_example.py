@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 15 18:16:41 2023
+
+@author: matthew
+"""
+
 from trachoma.trachoma_functions import *
 import multiprocessing
 import time
@@ -82,7 +90,7 @@ params['N'] = len(a['IndI'])
 #############################################################################################################################
 #############################################################################################################################
 # which years to make endgame output specify and convert these to simulation time
-outputYear = range(2018, 2041)
+outputYear = range(2020, 2041)
 outputTimes = getOutputTimes(outputYear)
 outputTimes = get_Intervention_times(outputTimes, Start_date, sim_params['burnin'])
 
@@ -101,12 +109,12 @@ sim_params['N_MDA'] = len(MDA_times)
 VaccData = readPlatformData(coverageFileName, "Vaccine")
 Vaccine_dates = getInterventionDates(VaccData)
 vacc_times = get_Intervention_times(Vaccine_dates, Start_date, sim_params['burnin'])
-sim_params['N_Vaccines'] = len(Vaccine_times)
+sim_params['N_Vaccines'] = len(vacc_times)
 #############################################################################################################################
 #############################################################################################################################
 
 # decide how many sims we will run
-numSims = 200
+numSims = 8
 print( f'Running {numSims} simulations on {num_cores} cores' )
 start = time.time()
 
@@ -141,7 +149,7 @@ outsIHME.to_csv('outsIHME'+ scenario +'.csv',index=False)
 #############################################################################################################################
 #############################################################################################################################
 # collate and output IPM data
-MDAAgeRanges = getMDAAgeRanges(coverageFileName)
+MDAAgeRanges = getInterventionAgeRanges(coverageFileName, "MDA")
 VaccAgeRanges = getInterventionAgeRanges(coverageFileName, "Vaccine")
 outsIPM = getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRanges)
 outsIPM.to_csv('outsIPM'+ scenario +'.csv',index=False)
