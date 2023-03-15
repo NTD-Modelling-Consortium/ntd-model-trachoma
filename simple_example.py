@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar 15 18:16:41 2023
-
-@author: matthew
-"""
-
 from trachoma.trachoma_functions import *
 import multiprocessing
 import time
