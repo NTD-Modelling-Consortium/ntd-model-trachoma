@@ -801,7 +801,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
    # call this value nextSurvey    
     nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
     # initialize time for next survey 
-    surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
+    surveyTime = min(MDA_times) + (nextSurvey * 52) + 25
    # initialize count of MDAs
     numMDA = np.zeros(MDAData[0][-1], dtype=object)
    # initialize time for impact survey dependent on surveyed prevalence
@@ -884,7 +884,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
             # call this value nextSurvey    
             nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
             # add the number of MDAs already done to the number of MDAs to be done before the next survey
-            surveyTime = i + (nextSurvey * 52) + 26
+            surveyTime = i + (nextSurvey * 52) + 25
             
             vals['nSurvey'] += 1
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=betas[i])
