@@ -43,7 +43,7 @@ params = {'N': 2500,
           'vacc_waning_length': 52 * 5}
 
 
-sim_params = {'timesim':52*21, 
+sim_params = {'timesim':52*23, 
               'burnin': 26,
               'N_MDA':5,
               'nsim':10}
@@ -58,7 +58,7 @@ demog = {'tau': 0.0004807692,
 previous_rounds = 0
 
 
-Start_date = date(2020,1, 1)
+Start_date = date(2019,1, 1)
 End_date = date(2030,12,31)
 #############################################################################################################################
 #############################################################################################################################
@@ -82,7 +82,7 @@ params['N'] = len(a['IndI'])
 #############################################################################################################################
 #############################################################################################################################
 # which years to make endgame output specify and convert these to simulation time
-outputYear = range(2020, 2041)
+outputYear = range(2019, 2041)
 outputTimes = getOutputTimes(outputYear)
 outputTimes = get_Intervention_times(outputTimes, Start_date, sim_params['burnin'])
 
