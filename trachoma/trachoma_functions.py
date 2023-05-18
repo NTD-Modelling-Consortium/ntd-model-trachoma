@@ -801,7 +801,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
    # call this value nextSurvey    
     nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
     # initialize time for next survey 
-    surveyTime = min(MDA_times) + (nextSurvey * 52) + 25
+    surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
    # initialize count of MDAs
     numMDA = np.zeros(MDAData[0][-1], dtype=object)
    # initialize time for impact survey dependent on surveyed prevalence
@@ -831,6 +831,48 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
 
     for i in range(1, 1 + timesim):
+        
+        if i == nextOutputTime:
+            
+            # has the disease truly eliminated in the population
+            true_elimination = 1 if (sum(vals['IndI']) + sum(vals['IndD'])) == 0 else 0
+            # append the results to results variable
+            results.append(outputResult(copy.deepcopy(vals), i, nDoses, coverage, numMDA-prevNMDA, 
+                                        vals['nSurvey'] - vals['prevNSurvey'], surveyPass, true_elimination,
+                                        vals['numVacc'] - vals['prevNVacc'], vals['nDosesVacc'] , vals['coverageVacc']))
+            # when will next Endgame output time be
+            nextOutputTime = min(outputTimes2)
+            # change next output time location in the all output variable to be after the end of the simulation
+            # then the next output will be done at the correct time
+            w = np.where(outputTimes2 == nextOutputTime)
+            outputTimes2[w] = timesim + 10
+            # save current num surveys, num MDAS as previous num surveys/MDAs, so next output we can tell how many were performed
+            # since last output
+            vals['prevNSurvey'] = copy.deepcopy(vals['nSurvey']) 
+            prevNMDA = copy.deepcopy(numMDA)
+            vals['prevNVacc'] = copy.deepcopy(vals['numVacc']) 
+            # set coverage and nDoses to 0, so that if these are non-zero, we know that they occured since last output
+            nDoses = np.zeros(MDAData[0][-1], dtype=object)
+            coverage = np.zeros(MDAData[0][-1], dtype=object)
+            
+            vals['nDosesVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+            vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+            
+        if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
+            surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
+               
+            # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
+            surveyPass = 1 if surveyPrev <= 0.05 else 0
+            if surveyPass == 1:
+                impactSurveyTime = i + 104  
+            # if the prevalence is > 5%, then we will do another survey after given number of MDAs
+            # call this value nextSurvey    
+            nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
+            # add the number of MDAs already done to the number of MDAs to be done before the next survey
+            surveyTime = i + (nextSurvey * 52) + 26
+            
+            vals['nSurvey'] += 1
+        
         if i in MDA_times:
             if surveyPass == 0:
                 MDA_round = np.where(MDA_times == i)[0]
@@ -873,20 +915,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
             #vals = vaccinate_population(vals = vals, params = params)
         #else:  removed and deleted one indent in the line below to correct mistake.
         #if np.logical_and(i == surveyTime, surveyPass==0):     
-        if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
-            surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
-               
-            # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
-            surveyPass = 1 if surveyPrev <= 0.05 else 0
-            if surveyPass == 1:
-                impactSurveyTime = i + 104  
-            # if the prevalence is > 5%, then we will do another survey after given number of MDAs
-            # call this value nextSurvey    
-            nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
-            # add the number of MDAs already done to the number of MDAs to be done before the next survey
-            surveyTime = i + (nextSurvey * 52) + 25
-            
-            vals['nSurvey'] += 1
+       
         vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=betas[i])
 
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
@@ -901,31 +930,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
         a, _ = np.histogram(vals['Age'], bins=max_age, weights=large_infection_count.astype(int))
         yearly_threshold_infs[i, :] = a / params['N']
         # check if time to save variables to make Endgame outputs
-        if i == nextOutputTime:
-            
-            # has the disease truly eliminated in the population
-            true_elimination = 1 if (sum(vals['IndI']) + sum(vals['IndD'])) == 0 else 0
-            # append the results to results variable
-            results.append(outputResult(copy.deepcopy(vals), i, nDoses, coverage, numMDA-prevNMDA, 
-                                        vals['nSurvey'] - vals['prevNSurvey'], surveyPass, true_elimination,
-                                        vals['numVacc'] - vals['prevNVacc'], vals['nDosesVacc'] , vals['coverageVacc']))
-            # when will next Endgame output time be
-            nextOutputTime = min(outputTimes2)
-            # change next output time location in the all output variable to be after the end of the simulation
-            # then the next output will be done at the correct time
-            w = np.where(outputTimes2 == nextOutputTime)
-            outputTimes2[w] = timesim + 10
-            # save current num surveys, num MDAS as previous num surveys/MDAs, so next output we can tell how many were performed
-            # since last output
-            vals['prevNSurvey'] = copy.deepcopy(vals['nSurvey']) 
-            prevNMDA = copy.deepcopy(numMDA)
-            vals['prevNVacc'] = copy.deepcopy(vals['numVacc']) 
-            # set coverage and nDoses to 0, so that if these are non-zero, we know that they occured since last output
-            nDoses = np.zeros(MDAData[0][-1], dtype=object)
-            coverage = np.zeros(MDAData[0][-1], dtype=object)
-            
-            vals['nDosesVacc'] = np.zeros(VaccData[0][-1], dtype=object)
-            vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
+        
 
             
     vals['Yearly_threshold_infs'] = yearly_threshold_infs
