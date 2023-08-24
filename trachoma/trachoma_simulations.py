@@ -263,7 +263,8 @@ def Trachoma_Simulation(
     SaveOutput=False, OutSimFilePath=None, InSimFilePath=None,
     rho=0.3, MDA_Cov=0.8, numReps=0,
     useCloudStorage=False, download_blob_to_file=None, logger=None,
-    VaccFilePath=None
+    VaccFilePath=None,
+    num_cores=-1,
 ):
 
     '''
@@ -400,7 +401,6 @@ def Trachoma_Simulation(
 
         # run simulations
         model_version = 'v20210329a'
-        num_cores = multiprocessing.cpu_count()
         print_function( f"Starting {numReps}x Trachoma runs on {num_cores} core(s), {model_version}" )
 
         start_time = time.time()
