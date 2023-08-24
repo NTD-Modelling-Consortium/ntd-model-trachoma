@@ -6,3 +6,5 @@ matplotlib
 seaborn
 pytest
 joblib
+openpyxl
+google-cloud-storage
