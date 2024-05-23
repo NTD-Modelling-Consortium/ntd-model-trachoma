@@ -158,17 +158,7 @@ def stepF_fixed(vals, params, demog, bet):
 
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
-    vals['Age'] += 1
-    reset_indivs = Reset(Age=vals['Age'], demog=demog, params=params)
 
-    # Resetting new parameters for all new individuals created
-    vals['Age'][reset_indivs] = 0
-    vals['IndI'][reset_indivs] = 0
-    vals['IndD'][reset_indivs] = 0
-    vals['No_Inf'][reset_indivs] = 0
-    vals['T_latent'][reset_indivs] = 0
-    vals['T_ID'][reset_indivs] = 0
-    vals['T_D'][reset_indivs] = 0
     #me = 2
     #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
 
