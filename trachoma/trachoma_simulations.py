@@ -98,7 +98,7 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
     # the burnin, otherwise we include the burnin
     if InSimFilePath is None:
 
-        burnin = 40 * 52
+        burnin = 0
 
     else:
 

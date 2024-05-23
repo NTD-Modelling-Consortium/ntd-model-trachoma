@@ -99,17 +99,7 @@ def stepF_fixed(vals, params, demog, bet):
     '''
     Step function i.e. transitions in each time non-MDA timestep.
     '''
-    # Step 1: Identify individuals available for infection.
-    # Susceptible individuals available for infection.
-    Ss = np.where(vals['IndI'] == 0)[0]
-
-    # Step 2: Calculate infection pressure from previous time step and choose infected individuals
-    # Susceptible individuals acquiring new infections. This gives a lambda
-    # for each individual dependent on age and disease status.
-    lambda_step = 1 - np.exp(- getlambdaStep(params=params, Age=vals['Age'], bact_load=vals['bact_load'],
-    IndD=vals['IndD'], bet=bet, demog=demog))
-    # New infections
-    newInf = Ss[np.random.uniform(size=len(Ss)) < lambda_step[Ss]]
+    newInf = np.array([False] * params["N"])
 
     # Step 3: Identify transitions
     newDis = np.where(vals['T_latent'] == 1)[0]  # Designated latent period for that individual is about to expire
@@ -159,7 +149,7 @@ def stepF_fixed(vals, params, demog, bet):
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
     vals['Age'] += 1
-    reset_indivs = Reset(Age=vals['Age'], demog=demog, params=params)
+    reset_indivs = np.array([False] * params["N"])
 
     # Resetting new parameters for all new individuals created
     vals['Age'][reset_indivs] = 0
@@ -445,10 +435,10 @@ def Set_inits(params, demog, sim_params):
         Ind_latent=params['av_I_duration'] * np.ones(params['N']),
 
         # Individual's baseline ID period (first infection)
-        Ind_ID_period_base=np.random.poisson(lam=params['av_ID_duration'], size=params['N']),
+        Ind_ID_period_base=np.array([params['av_ID_duration']] * params['N']),
 
         # Individual's baseline diseased period (first infection)
-        Ind_D_period_base=np.random.poisson(lam=params['av_D_duration'], size=params['N']),
+        Ind_D_period_base=np.array([params['av_D_duration']] * params['N']),
 
         # Baseline bacterial load set to zero
         bact_load=np.zeros(params['N']),
