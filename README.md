@@ -39,7 +39,11 @@ Numerous different examples are included in the Jupyter notebook `trachoma_tests
 
 ### How to run
 
-Install [pipenv](https://drive.google.com/drive/folders/1Or6lUkymYd_p031xKGZLcnTV4GYf-oYb) according to the instructions for your OS, then `cd` to the project directory and run:
+Install [pipenv](https://drive.google.com/drive/folders/1Or6lUkymYd_p031xKGZLcnTV4GYf-oYb) according to the instructions for your OS.
+
+Also install setuptools (probably `pip install setuptools`). 
+
+Then `cd` to the project directory and run:
 
 ```
 	$ pipenv install . # sets up per-project python environment ('env')
