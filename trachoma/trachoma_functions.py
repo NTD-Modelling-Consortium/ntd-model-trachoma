@@ -1012,26 +1012,25 @@ def getResultsIHME(results, demog, params, outputYear):
     max_age = demog['max_age'] // 52 # max_age in weeks
 
     df = initialize_dataframe(outputYear, results)
-    
-    for i in range(len(results)):
+
+    for simulationNumber in range(len(results)): # results has length of num of simulations
         ind = 0
-        d = copy.deepcopy(results[i][1])
-        for j in range(len(d)):
-            year = outputYear[j]
-            large_infection_count = (d[j].NoInf > params['n_inf_sev'])
-            infection_count = (d[j].IndI > 0)
-            Diseased = np.where(d[j].IndD == 1)
-            NonDiseased = np.where(d[j].IndD == 0)
-            pos = np.zeros(len(d[j].Age), dtype = object)
+        d = copy.deepcopy(results[simulationNumber][1])
+        for yearIndex in range(len(d)): # d has length of number of years
+            year = outputYear[yearIndex]
+            large_infection_count = (d[yearIndex].NoInf > params['n_inf_sev'])
+            infection_count = (d[yearIndex].IndI > 0)
+            Diseased = np.where(d[yearIndex].IndD == 1)
+            NonDiseased = np.where(d[yearIndex].IndD == 0)
+            pos = np.zeros(len(d[yearIndex].Age), dtype = object)
             if(len(Diseased) > 0):
                 TruePositive = np.random.binomial(n=1, size=len(Diseased[0]), p = params['TestSensitivity'])
                 pos[Diseased] = TruePositive
             if(len(NonDiseased) > 0):
                 FalsePositive = np.random.binomial(n=1, size=len(NonDiseased[0]), p = 1- params['TestSpecificity'])
                 pos[NonDiseased] = FalsePositive
-            
- 
-            Age = d[j].Age
+
+            Age = d[yearIndex].Age # ages are in weeks
             # Cast weights to integer to be able to count
             manyInfs, _ = np.histogram(Age, bins=max_age, weights=large_infection_count.astype(int))
             Infs, _ = np.histogram(Age, bins=max_age, weights=infection_count.astype(int))
@@ -1039,27 +1038,27 @@ def getResultsIHME(results, demog, params, outputYear):
             observedDis, _ = np.histogram(Age, bins=max_age, weights=pos.astype(int))
             k = np.where(nums == 0)
             nums[k] = 1
-            if i == 0:
-                update_measure_for_index(df, Measure.TRUE_PREVALENCE, ind, max_age, Infs, nums, i, year)
+            if simulationNumber == 0:
+                update_measure_for_index(df, Measure.TRUE_PREVALENCE, ind, max_age, Infs, nums, simulationNumber, year)
                 ind += max_age
-                update_measure_for_index(df, Measure.OBSERVED_TF, ind, max_age, Infs, nums, i, year)
+                update_measure_for_index(df, Measure.OBSERVED_TF, ind, max_age, Infs, nums, simulationNumber, year)
                 ind += max_age
-                update_measure_for_index(df, Measure.HEAVY_INFECTIONS, ind, max_age, Infs, nums, i, year)
+                update_measure_for_index(df, Measure.HEAVY_INFECTIONS, ind, max_age, Infs, nums, simulationNumber, year)
                 ind += max_age
                 nums[k] = 0
-                update_measure_for_index(df, Measure.NUMBER, ind, max_age, Infs, nums, i, year)
+                update_measure_for_index(df, Measure.NUMBER, ind, max_age, Infs, nums, simulationNumber, year)
                 ind += max_age
             else:
-                df.iloc[range(ind, ind+max_age), i+ColumnNumbers.FIRST_SIM_COLUMN.value] = Infs/nums
+                df.iloc[range(ind, ind+max_age), simulationNumber+ColumnNumbers.FIRST_SIM_COLUMN.value] = Infs/nums
                 ind += max_age
-                df.iloc[range(ind, ind+max_age), i+ColumnNumbers.FIRST_SIM_COLUMN.value] = observedDis/nums
+                df.iloc[range(ind, ind+max_age), simulationNumber+ColumnNumbers.FIRST_SIM_COLUMN.value] = observedDis/nums
                 ind += max_age
-                df.iloc[range(ind, ind+max_age), i+ColumnNumbers.FIRST_SIM_COLUMN.value] = manyInfs/nums
+                df.iloc[range(ind, ind+max_age), simulationNumber+ColumnNumbers.FIRST_SIM_COLUMN.value] = manyInfs/nums
                 ind += max_age
-                df.iloc[range(ind, ind+max_age), i+ColumnNumbers.FIRST_SIM_COLUMN.value] = nums
+                df.iloc[range(ind, ind+max_age), simulationNumber+ColumnNumbers.FIRST_SIM_COLUMN.value] = nums
                 ind += max_age
-    for i in range(len(results)):
-        df = df.rename(columns={i+4: "draw_"+ str(i)}) 
+    for simulationNumber in range(len(results)):
+        df = df.rename(columns={simulationNumber+4: "draw_"+ str(simulationNumber)})
     return df
 
 
