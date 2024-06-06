@@ -995,7 +995,10 @@ def update_measure_for_index(df: pd.DataFrame, measure: Measure, ind: int, max_a
     df.iloc[range(ind, ind + max_age), i + ColumnNumbers.FIRST_SIM_COLUMN.value] = Infs / nums
 
 def initialize_dataframe(outputYear:range, results):
-    df = pd.DataFrame(0, range(len(outputYear) * 4 * 60), columns=range(len(results) + 4))
+    numberOfAgeBins = 60
+    numberOfMeasures = len(Measure)
+    rowsOfDataFrame = range(len(outputYear) * numberOfMeasures * numberOfAgeBins)
+    df = pd.DataFrame(0, rowsOfDataFrame, columns=range(len(results) + 4))
     df = df.rename(columns={ColumnNumbers.TIME.value: ColumnNames.TIME.value,
                             ColumnNumbers.AGE_START.value: ColumnNames.AGE_START.value,
                             ColumnNumbers.AGE_END.value: ColumnNames.AGE_END.value,
