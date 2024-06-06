@@ -994,15 +994,21 @@ def update_measure_for_index(df: pd.DataFrame, measure: Measure, ind: int, max_a
     df.iloc[range(ind, ind + max_age), ColumnNumbers.MEASURE.value] = np.repeat(measure.value, max_age)
     df.iloc[range(ind, ind + max_age), i + ColumnNumbers.FIRST_SIM_COLUMN.value] = Infs / nums
 
+def initialize_dataframe(outputYear:range, results):
+    df = pd.DataFrame(0, range(len(outputYear) * 4 * 60), columns=range(len(results) + 4))
+    df = df.rename(columns={ColumnNumbers.TIME.value: ColumnNames.TIME.value,
+                            ColumnNumbers.AGE_START.value: ColumnNames.AGE_START.value,
+                            ColumnNumbers.AGE_END.value: ColumnNames.AGE_END.value,
+                            ColumnNumbers.MEASURE.value: ColumnNames.MEASURE.value})
+    return df
+
 def getResultsIHME(results, demog, params, outputYear):
     '''
     Function to collate results for IHME
     '''
     max_age = demog['max_age'] // 52 # max_age in weeks
 
-    df = pd.DataFrame(0, range(len(outputYear)*4*60 ), columns= range(len(results)+4))
-    df = df.rename(columns={ColumnNumbers.TIME.value: ColumnNames.TIME.value, ColumnNumbers.AGE_START.value: ColumnNames.AGE_START.value,
-                            ColumnNumbers.AGE_END.value: ColumnNames.AGE_END.value, ColumnNumbers.MEASURE.value: ColumnNames.MEASURE.value})
+    df = initialize_dataframe(outputYear, results)
     
     for i in range(len(results)):
         ind = 0
