@@ -978,6 +978,21 @@ class ColumnNames(Enum):
     AGE_END = "age_end"
     MEASURE = "measure"
 
+class Measure(Enum):
+    TRUE_PREVALENCE = "TruePrevalence"
+    OBSERVED_TF = "ObservedTF"
+    HEAVY_INFECTIONS = "heavyInfections"
+    NUMBER = "number"
+
+def update_measure_for_index(df: pd.DataFrame, measure: Measure, ind: int, max_age: int, Infs, nums, i : int, year):
+    """
+    Needs a better name when I figure out exactly what this is doing...
+    """
+    df.iloc[range(ind, ind + max_age), ColumnNumbers.TIME.value] = np.repeat(year, max_age)
+    df.iloc[range(ind, ind + max_age), ColumnNumbers.AGE_START.value] = range(0, max_age)
+    df.iloc[range(ind, ind + max_age), ColumnNumbers.AGE_END.value] = range(1, max_age + 1)
+    df.iloc[range(ind, ind + max_age), ColumnNumbers.MEASURE.value] = np.repeat(measure.value, max_age)
+    df.iloc[range(ind, ind + max_age), i + ColumnNumbers.FIRST_SIM_COLUMN.value] = Infs / nums
 
 def getResultsIHME(results, demog, params, outputYear):
     '''
@@ -1016,39 +1031,23 @@ def getResultsIHME(results, demog, params, outputYear):
             k = np.where(nums == 0)
             nums[k] = 1
             if i == 0:
-                df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
-                df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
-                df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
-                df.iloc[range(ind, ind+max_age), 3] = np.repeat("TruePrevalence", max_age)
-                df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
+                update_measure_for_index(df, Measure.TRUE_PREVALENCE, ind, max_age, Infs, nums, i, year)
                 ind += max_age
-                df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
-                df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
-                df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
-                df.iloc[range(ind, ind+max_age), 3] = np.repeat("ObservedTF", max_age)
-                df.iloc[range(ind, ind+max_age), i+4] = observedDis/nums
+                update_measure_for_index(df, Measure.OBSERVED_TF, ind, max_age, Infs, nums, i, year)
                 ind += max_age
-                df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
-                df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
-                df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
-                df.iloc[range(ind, ind+max_age), 3] = np.repeat("heavyInfections", max_age)
-                df.iloc[range(ind, ind+max_age), i+4] = manyInfs/nums
+                update_measure_for_index(df, Measure.HEAVY_INFECTIONS, ind, max_age, Infs, nums, i, year)
                 ind += max_age
                 nums[k] = 0
-                df.iloc[range(ind, ind+max_age), 0] = np.repeat(year,max_age)
-                df.iloc[range(ind, ind+max_age), 1] = range(0, max_age)
-                df.iloc[range(ind, ind+max_age), 2] = range(1, max_age + 1)
-                df.iloc[range(ind, ind+max_age), 3] = np.repeat("number", max_age)
-                df.iloc[range(ind, ind+max_age), i+4] = nums
+                update_measure_for_index(df, Measure.NUMBER, ind, max_age, Infs, nums, i, year)
                 ind += max_age
             else:
-                df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
+                df.iloc[range(ind, ind+max_age), i+ColumnNumbers.FIRST_SIM_COLUMN.value] = Infs/nums
                 ind += max_age
-                df.iloc[range(ind, ind+max_age), i+4] = observedDis/nums
+                df.iloc[range(ind, ind+max_age), i+ColumnNumbers.FIRST_SIM_COLUMN.value] = observedDis/nums
                 ind += max_age
-                df.iloc[range(ind, ind+max_age), i+4] = manyInfs/nums
+                df.iloc[range(ind, ind+max_age), i+ColumnNumbers.FIRST_SIM_COLUMN.value] = manyInfs/nums
                 ind += max_age
-                df.iloc[range(ind, ind+max_age), i+4] = nums
+                df.iloc[range(ind, ind+max_age), i+ColumnNumbers.FIRST_SIM_COLUMN.value] = nums
                 ind += max_age
     for i in range(len(results)):
         df = df.rename(columns={i+4: "draw_"+ str(i)}) 
