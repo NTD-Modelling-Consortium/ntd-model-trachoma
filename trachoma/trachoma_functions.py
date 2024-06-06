@@ -8,6 +8,7 @@ from numpy import ndarray
 from numpy.typing import NDArray
 from dataclasses import dataclass
 from typing import Callable, List, Optional
+from enum import Enum
 
 
 @dataclass
@@ -964,6 +965,18 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity):
     # return prevalence,calculated as number who tested positive divided by number of 1-9 year olds
     return positive/children_ages_1_9.sum()
 
+class ColumnNumbers(Enum):
+    TIME = 0
+    AGE_START = 1
+    AGE_END = 2
+    MEASURE = 3
+    FIRST_SIM_COLUMN = 4
+
+class ColumnNames(Enum):
+    TIME = "Time"
+    AGE_START = "age_start"
+    AGE_END = "age_end"
+    MEASURE = "measure"
 
 
 def getResultsIHME(results, demog, params, outputYear):
@@ -973,7 +986,8 @@ def getResultsIHME(results, demog, params, outputYear):
     max_age = demog['max_age'] // 52 # max_age in weeks
 
     df = pd.DataFrame(0, range(len(outputYear)*4*60 ), columns= range(len(results)+4))
-    df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
+    df = df.rename(columns={ColumnNumbers.TIME.value: ColumnNames.TIME.value, ColumnNumbers.AGE_START.value: ColumnNames.AGE_START.value,
+                            ColumnNumbers.AGE_END.value: ColumnNames.AGE_END.value, ColumnNumbers.MEASURE.value: ColumnNames.MEASURE.value})
     
     for i in range(len(results)):
         ind = 0
