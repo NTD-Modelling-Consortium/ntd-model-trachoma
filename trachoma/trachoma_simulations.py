@@ -400,7 +400,7 @@ def Trachoma_Simulation(
                 return out
 
         # run simulations
-        model_version = 'v20210329a'
+        model_version = 'v1.0.0'
         print_function( f"Starting {numReps}x Trachoma runs on {num_cores} core(s), {model_version}" )
 
         start_time = time.time()
