@@ -1,6 +1,6 @@
 package:
   name: ntd-trachoma
-  version: 0.0.2
+  version: 1.0.0
 
 source:
   git_rev: a5ba739bd2e9cf721710fca6277493362dc2e8c1
