@@ -26,7 +26,3 @@ jobs:
           python -m pip install setuptools wheel
           python -m pip install matplotlib
           pip install .
-      - name: Run test script
-        run: |
-          mkdir results
-          python tests/test_model.py

@@ -34,9 +34,16 @@ params = {'N': 2500,
           'ep2':0.114,
           'n_inf_sev':38,
           'TestSensitivity': 0.96,
-          'TestSpecificity': 0.965}
+          'TestSpecificity': 0.965,
+          'SecularTrendIndicator': 0,
+          'SecularTrendYearlyBetaDecrease': 0.05,
+          'vacc_prob_block_transmission':  0.8, 
+          'vacc_reduce_bacterial_load': 0.5, 
+          'vacc_reduce_duration': 0.5,  
+          'vacc_waning_length': 52 * 5}
 
-sim_params = {'timesim':52*21, 
+
+sim_params = {'timesim':52*23, 
               'burnin': 26,
               'N_MDA':5,
               'nsim':10}
@@ -51,7 +58,7 @@ demog = {'tau': 0.0004807692,
 previous_rounds = 0
 
 
-Start_date = date(2020,1, 1)
+Start_date = date(2019,1, 1)
 End_date = date(2030,12,31)
 #############################################################################################################################
 #############################################################################################################################
@@ -75,21 +82,26 @@ params['N'] = len(a['IndI'])
 #############################################################################################################################
 #############################################################################################################################
 # which years to make endgame output specify and convert these to simulation time
-outputYear = range(2020, 2041)
+outputYear = range(2019, 2041)
 outputTimes = getOutputTimes(outputYear)
-outputTimes = get_MDA_times(outputTimes, Start_date, sim_params['burnin'])
+outputTimes = get_Intervention_times(outputTimes, Start_date, sim_params['burnin'])
+
 
 #############################################################################################################################
 #############################################################################################################################
 
 # generate MDA data from coverage file
-scenario = '1'
+scenario = '2c'
 coverageFileName = 'scen' + scenario + '.csv'
-MDAData = readCoverageData(coverageFileName)
-MDA_dates = getMDADates(MDAData)
-MDA_times = get_MDA_times(MDA_dates, Start_date, sim_params['burnin'])
+MDAData = readPlatformData(coverageFileName, "MDA")
+MDA_dates = getInterventionDates(MDAData)
+MDA_times = get_Intervention_times(MDA_dates, Start_date, sim_params['burnin'])
 sim_params['N_MDA'] = len(MDA_times)
 
+VaccData = readPlatformData(coverageFileName, "Vaccine")
+Vaccine_dates = getInterventionDates(VaccData)
+vacc_times = get_Intervention_times(Vaccine_dates, Start_date, sim_params['burnin'])
+sim_params['N_Vaccines'] = len(vacc_times)
 #############################################################################################################################
 #############################################################################################################################
 
@@ -105,10 +117,13 @@ results = Parallel(n_jobs=num_cores)(
          delayed(run_single_simulation)(pickleData = pickleData[i], 
                                         params = params, 
                                         timesim = sim_params['timesim'],
+                                        burnin = sim_params['burnin'],
                                         demog=demog, 
                                         beta = allBetas.beta[i], 
                                         MDA_times = MDA_times, 
                                         MDAData=MDAData, 
+                                        vacc_times = vacc_times, 
+                                        VaccData = VaccData,
                                         outputTimes= outputTimes, 
                                         index = i) for i in range(numSims))
 
@@ -126,7 +141,8 @@ outsIHME.to_csv('outsIHME'+ scenario +'.csv',index=False)
 #############################################################################################################################
 #############################################################################################################################
 # collate and output IPM data
-MDAAgeRanges = getMDAAgeRanges(coverageFileName)
-outsIPM = getResultsIPM(results, demog, params, outputYear, MDAAgeRanges)
+MDAAgeRanges = getInterventionAgeRanges(coverageFileName, "MDA")
+VaccAgeRanges = getInterventionAgeRanges(coverageFileName, "Vaccine")
+outsIPM = getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRanges)
 outsIPM.to_csv('outsIPM'+ scenario +'.csv',index=False)
 
