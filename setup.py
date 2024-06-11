@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='trachoma',
-    version='1.0.0',
+    version='1.0.1dev',
     url='https://www.artrabbit.com/',
     maintainer='ArtRabbit',
     maintainer_email='support@artrabbit.com',
