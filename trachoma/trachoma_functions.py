@@ -203,7 +203,7 @@ def stepF_fixed(vals, params, demog, bet):
     vals['No_Inf'][newInf] += 1
 
     # update vaccination history
-    vals['time_since_vaccinated'][vals['vaccinated']] += 1
+    vals['time_since_vaccinated'][np.where(vals['vaccinated'])] += 1
 
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
@@ -307,7 +307,7 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
     prob_reduction = prob_reduction * (- time_since_vaccinated / params["vacc_waning_length"] + 1)
     prob_reduction = np.maximum(prob_reduction,0)
 
-    returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
+    returned[np.where(vaccinated)] = (1 - prob_reduction[np.where(vaccinated)]) * returned[np.where(vaccinated)]
 
     return returned
 
@@ -502,7 +502,7 @@ def ID_period_function(newDis, params, vals):
     prob_reduction = params["vacc_reduce_duration"]
     vaccinated = vals['vaccinated'][newDis]
 
-    id_periods[vaccinated] = (1 - prob_reduction) * id_periods[vaccinated]
+    id_periods[np.where(vaccinated)] = (1 - prob_reduction) * id_periods[np.where(vaccinated)]
 
     # round to an integer
     id_periods = np.round(id_periods)
@@ -548,7 +548,7 @@ def bacterialLoad(newInfectious,params,vals):
     prob_reduction = params["vacc_reduce_bacterial_load"]
     vaccinated = vals['vaccinated'][newInfectious]
 
-    bacterial_loads[vaccinated] = (1 - prob_reduction) * bacterial_loads[vaccinated]
+    bacterial_loads[np.where(vaccinated)] = (1 - prob_reduction) * bacterial_loads[np.where(vaccinated)]
 
     return bacterial_loads
 
@@ -683,7 +683,7 @@ def SecularTrendBetaDecrease(timesim, burnin, bet, params):
                 simbeta[(j * 52) + i] = bet1 - (params['SecularTrendYearlyBetaDecrease'] * bet1 * i/52)
     return simbeta
 
-def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, vacc_times, seed, state=None):
+def sim_Ind_MDA(params, Tx_mat, vals, timesim, burnin, demog, bet, MDA_times, vacc_times, seed, state=None):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -705,8 +705,10 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, vacc_times
 
         np.random.set_state(state)
 
-    prevalence = []
-    infections = []
+    prevalence_children_1_9 = []
+    prevalence_All = []
+    infections_children_1_9 = []
+    infections_All = []
     max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros((timesim+1, max_age))
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
@@ -732,18 +734,26 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, demog, bet, MDA_times, vacc_times
         n_children_ages_1_9 = np.count_nonzero(children_ages_1_9)
         n_true_diseased_children_1_9 = np.count_nonzero(vals['IndD'][children_ages_1_9])
         n_true_infected_children_1_9 = np.count_nonzero(vals['IndI'][children_ages_1_9])
-        prevalence.append(n_true_diseased_children_1_9 / n_children_ages_1_9)
-        infections.append(n_true_infected_children_1_9 / n_children_ages_1_9)
+        prevalence_children_1_9.append(n_true_diseased_children_1_9 / n_children_ages_1_9)
+        infections_children_1_9.append(n_true_infected_children_1_9 / n_children_ages_1_9)
 
+        n_true_diseased_All = np.count_nonzero(vals['IndD'])
+        n_true_infected_All = np.count_nonzero(vals['IndI'])
+        prevalence_All.append(n_true_diseased_All / len(vals['IndD']))
+        infections_All.append(n_true_infected_All / len(vals['IndI']))
         large_infection_count = (vals['No_Inf'] > params['n_inf_sev'])
         # Cast weights to integer to be able to count
         a, _ = np.histogram(vals['Age'], bins=max_age, weights=large_infection_count.astype(int))
         yearly_threshold_infs[i, :] = a / params['N']
 
     vals['Yearly_threshold_infs'] = yearly_threshold_infs
-    vals['True_Prev_Disease_children_1_9'] = prevalence # save the prevalence in children aged 1-9
-    vals['True_Infections_Disease_children_1_9'] = infections # save the infections in children aged 1-9
+    vals['True_Prev_Disease_children_1_9'] = prevalence_children_1_9 # save the prevalence in children aged 1-9
+    vals['True_Prev_Infection_children_1_9'] = infections_children_1_9 # save the infections in children aged 1-9
+    vals['True_Prev_Disease'] = prevalence_All # save the prevalence in children aged 1-9
+    vals['True_Prev_Infection'] = infections_All # save the infections in children aged 1-9
     vals['State'] = np.random.get_state() # save the state of the simulations
+
+
 
     return vals
 
