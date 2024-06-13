@@ -64,6 +64,8 @@ pipenv shell
 python simple_example.py
 ```
 
-
+If you have both python 2 and 3 installed, you may need to provide `pipenv` commands with the correct version,
+e.g. `pipenv install . --python 3`, `pipenv run python3 simple_example.py`, and `pipenv shell; python3 simple_example.py`
+along with using `pip3`.
 
 
