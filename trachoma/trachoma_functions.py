@@ -307,7 +307,7 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
     prob_reduction = prob_reduction * (- time_since_vaccinated / params["vacc_waning_length"] + 1)
     prob_reduction = np.maximum(prob_reduction,0)
 
-    returned[np.where(vaccinated)] = (1 - prob_reduction[np.where(vaccinated)]) * returned[np.where(vaccinated)]
+    returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
 
     return returned
 
@@ -502,7 +502,7 @@ def ID_period_function(newDis, params, vals):
     prob_reduction = params["vacc_reduce_duration"]
     vaccinated = vals['vaccinated'][newDis]
 
-    id_periods[np.where(vaccinated)] = (1 - prob_reduction) * id_periods[np.where(vaccinated)]
+    id_periods[vaccinated] = (1 - prob_reduction) * id_periods[vaccinated]
 
     # round to an integer
     id_periods = np.round(id_periods)
@@ -548,7 +548,7 @@ def bacterialLoad(newInfectious,params,vals):
     prob_reduction = params["vacc_reduce_bacterial_load"]
     vaccinated = vals['vaccinated'][newInfectious]
 
-    bacterial_loads[np.where(vaccinated)] = (1 - prob_reduction) * bacterial_loads[np.where(vaccinated)]
+    bacterial_loads[vaccinated] = (1 - prob_reduction) * bacterial_loads[vaccinated]
 
     return bacterial_loads
 
@@ -601,7 +601,7 @@ def Set_inits(params, demog, sim_params):
         # Prevalence
         True_Prev_Disease_children_1_9=[],
         
-        vaccinated = np.zeros(params['N']),
+        vaccinated = np.full(params['N'], fill_value=False, dtype=bool),
         
         time_since_vaccinated = np.zeros(params['N']) ,
         
