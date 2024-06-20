@@ -26,3 +26,8 @@ jobs:
           python -m pip install setuptools wheel
           python -m pip install matplotlib
           pip install .
+      - name: Run test
+        run: |
+          cd tests
+          python -m unittest test_endtoend.py
+          cd ..
