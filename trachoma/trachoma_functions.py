@@ -226,14 +226,14 @@ def stepF_fixed(vals, params, demog, bet):
     return vals
 
 
-def Tx_matrix_2(MDAData, params, previous_rounds):
+def Tx_matrix_2(MDAData, params, previous_rounds, numpy_state):
 
     '''
     Create matrix to determine who gets treated at each MDA round,
     allowing for systematic non-compliance as specified by Dyson.
     '''
 
-    np.random.seed(0)
+    np.random.set_state(numpy_state)
 
     if previous_rounds == 0:
         
@@ -320,7 +320,7 @@ def Reset(Age, demog, params):
 
     return np.where(np.logical_or(np.random.uniform(size=params['N']) < 1 - np.exp(- demog['tau']), Age > demog['max_age']))[0]
 
-def Tx_matrix(params, sim_params, previous_rounds):
+def Tx_matrix(params, sim_params, previous_rounds, numpy_state):
 
     '''
     Create matrix to determine who gets treated at each MDA round,
@@ -341,7 +341,7 @@ def Tx_matrix(params, sim_params, previous_rounds):
         Two-dimensional representing the assigned MDA treatments for each person by each round
     '''
 
-    np.random.seed(0)
+    np.random.set_state(numpy_state)
 
     if previous_rounds == 0:
 
@@ -552,13 +552,13 @@ def bacterialLoad(newInfectious,params,vals):
 
     return bacterial_loads
 
-def Set_inits(params, demog, sim_params):
+def Set_inits(params, demog, sim_params, numpy_state):
 
     '''
     Set initial values.
     '''
 
-    np.random.seed(0)
+    np.random.set_state(numpy_state)
 
     vals = dict(
 
@@ -593,7 +593,7 @@ def Set_inits(params, demog, sim_params):
         bact_load=np.zeros(params['N']),
 
         # Age distribution
-        Age=init_ages(params=params, demog=demog),
+        Age=init_ages(params=params, demog=demog, numpy_state=numpy_state),
 
         # Number of MDA rounds
         N_MDA=sim_params['N_MDA'],
@@ -654,14 +654,14 @@ def Check_and_init_vaccination_state(params,vals):
 
     return vals
 
-def init_ages(params, demog):
+def init_ages(params, demog, numpy_state):
 
     '''
     Initialise age distribution
     Note: ages are in weeks.
     '''
 
-    np.random.seed(0)
+    np.random.set_state(numpy_state)
 
     ages = np.arange(1, 1 + demog['max_age'])
 
@@ -683,7 +683,7 @@ def SecularTrendBetaDecrease(timesim, burnin, bet, params):
                 simbeta[(j * 52) + i] = bet1 - (params['SecularTrendYearlyBetaDecrease'] * bet1 * i/52)
     return simbeta
 
-def sim_Ind_MDA(params, Tx_mat, vals, timesim, burnin, demog, bet, MDA_times, vacc_times, seed, state=None):
+def sim_Ind_MDA(params, Tx_mat, vals, timesim, burnin, demog, bet, MDA_times, vacc_times, numpy_state):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -695,15 +695,7 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, burnin, demog, bet, MDA_times, va
 
     # when we are starting new simulations
     # we use the provided random seed
-    if state is None:
-
-        np.random.seed(seed)
-
-    # when we are resuming previous simulations
-    # we use the provided random state
-    else:
-
-        np.random.set_state(state)
+    np.random.set_state(numpy_state)
 
     prevalence_children_1_9 = []
     prevalence_All = []
@@ -777,24 +769,15 @@ def numMDAsBeforeNextSurvey(surveyPrev):
 
 def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
                                demog, bet, MDA_times, MDAData,
-                               vacc_times, VaccData, outputTimes, seed, state=None):
+                               vacc_times, VaccData, outputTimes, numpy_state):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
     Output is true prevalence of infection/disease in children aged 1-9.
     '''
     outputTimes2 = copy.deepcopy(outputTimes)
-   # when we are starting new simulations
-   # we use the provided random seed
-    if state is None:
-
-        np.random.seed(seed)
-
-   # when we are resuming previous simulations
-   # we use the provided random state
-    else:
-
-        np.random.set_state(state)
+    # when we are resuming previous simulations we use the provided random state
+    np.random.set_state(numpy_state)
 
     #vacc_time = params['vacc_time']
     prevalence = []
@@ -1170,19 +1153,9 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRange
 
 
 
-def run_single_simulation(pickleData, 
-                          params, 
-                          timesim,
-                          burnin,
-                          demog, 
-                          beta, 
-                          MDA_times, 
-                          MDAData, 
-                          vacc_times, 
-                          VaccData,
-                          outputTimes, 
-                          index ):
-    
+def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_times, MDAData, vacc_times, VaccData,
+                          outputTimes, index, numpy_state):
+
     '''
     Function to run a single instance of the simulation. The starting point for these simulations
     is
@@ -1190,14 +1163,14 @@ def run_single_simulation(pickleData,
     vals = copy.deepcopy(pickleData)
     vals = Check_and_init_vaccination_state(params,vals)
     params['N'] = len(vals['IndI'])
-    Tx_mat = Tx_matrix_2(MDAData, params, 0)
+    Tx_mat = Tx_matrix_2(MDAData, params, 0, numpy_state)
     results = sim_Ind_MDA_Include_Survey(params=params, Tx_mat = Tx_mat, 
                                         vals = vals, timesim = timesim,
                                         burnin=burnin,
                                         demog=demog, bet=beta, MDA_times = MDA_times, 
                                         MDAData=MDAData, vacc_times = vacc_times, VaccData = VaccData,
                                         outputTimes= outputTimes, 
-                                        seed = index)
+                                        numpy_state=numpy_state)
     return results
 
 ##########################################################################################

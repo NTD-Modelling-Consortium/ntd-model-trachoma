@@ -132,7 +132,8 @@ results = Parallel(n_jobs=num_cores)(
                                         vacc_times = vacc_times, 
                                         VaccData = VaccData,
                                         outputTimes= outputTimes, 
-                                        index = i) for i in range(numSims))
+                                        index = i,
+                                        numpy_state=numpy_state) for i in range(numSims))
 
 
 print(time.time()- start)
