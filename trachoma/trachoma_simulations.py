@@ -11,7 +11,7 @@ import sys
 import os
 import uuid
 
-from trachoma.trachoma_functions import *
+import trachoma.trachoma_functions as tf
 
 def timer(func):
     """Print the runtime of the decorated function"""
@@ -353,14 +353,14 @@ def Trachoma_Simulation(
 
         if InSimFilePath is None: # start new simulations
 
-            vals = Set_inits(params=params, demog=demog, sim_params=sim_params, numpy_state=numpy_state)  # set initial conditions
-            vals = Seed_infection(params=params, vals=vals)  # seed infection
-            vals = Check_and_init_vaccination_state(params=params,vals=vals)
+            vals = tf.Set_inits(params=params, demog=demog, sim_params=sim_params, numpy_state=numpy_state)  # set initial conditions
+            vals = tf.Seed_infection(params=params, vals=vals)  # seed infection
+            vals = tf.Check_and_init_vaccination_state(params=params,vals=vals)
 
             if sim_params['N_MDA'] != 0:  # create treatment matrix
 
                 previous_rounds = 0  # previous MDA rounds
-                Tx_mat = Tx_matrix(params=params, sim_params=sim_params, previous_rounds=previous_rounds, numpy_state=numpy_state)
+                Tx_mat = tf.Tx_matrix(params=params, sim_params=sim_params, previous_rounds=previous_rounds, numpy_state=numpy_state)
 
             else:
 
@@ -368,7 +368,7 @@ def Trachoma_Simulation(
 
             def multiple_simulations(j):
 
-                out = sim_Ind_MDA(params=params, Tx_mat=Tx_mat, vals=vals, timesim=sim_params['timesim'],
+                out = tf.sim_Ind_MDA(params=params, Tx_mat=Tx_mat, vals=vals, timesim=sim_params['timesim'],
                 demog=demog, bet=sim_params['Beta'][j], MDA_times=sim_params['MDA_times'], numpy_state=numpy_state)
 
                 return out
@@ -386,7 +386,7 @@ def Trachoma_Simulation(
 
                 pickleData = pickle.load(open(InSimFilePath, 'rb'))
                 previous_rounds = pickleData[0]['N_MDA']  # previous MDA rounds
-                Tx_mat = Tx_matrix(params=params, sim_params=sim_params, previous_rounds=previous_rounds, numpy_state=numpy_state)
+                Tx_mat = tf.Tx_matrix(params=params, sim_params=sim_params, previous_rounds=previous_rounds, numpy_state=numpy_state)
 
             else:
 
@@ -397,7 +397,7 @@ def Trachoma_Simulation(
                 pickleData = pickle.load(open(InSimFilePath, 'rb'))
                 vals = pickleData[j]  # load the previous simulations
 
-                out = sim_Ind_MDA(params=params, Tx_mat=Tx_mat, vals=vals, timesim=sim_params['timesim'],
+                out = tf.sim_Ind_MDA(params=params, Tx_mat=Tx_mat, vals=vals, timesim=sim_params['timesim'],
                 demog=demog, bet=sim_params['Beta'][j], MDA_times=sim_params['MDA_times'], numpy_state=vals['State'])
 
                 return out

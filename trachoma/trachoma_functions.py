@@ -9,6 +9,11 @@ from numpy.typing import NDArray
 from dataclasses import dataclass
 from typing import Callable, List, Optional
 
+"""
+This file contains helper functions for running simulations.
+A single simulation can be run using run_single_simulation.
+Otherwise simulations are run using the sim_Ind_MDA_XXXX functions.
+"""
 
 @dataclass
 class Result:
