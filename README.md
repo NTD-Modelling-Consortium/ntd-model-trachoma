@@ -39,19 +39,38 @@ Numerous different examples are included in the Jupyter notebook `trachoma_tests
 
 ### How to run
 
-Install [pipenv](https://drive.google.com/drive/folders/1Or6lUkymYd_p031xKGZLcnTV4GYf-oYb) according to the instructions for your OS.
-
-Also install setuptools (probably `pip install setuptools`). 
-
-Then `cd` to the project directory and run:
-
-```
-	$ pipenv install . # sets up per-project python environment ('env')
-	$ pipenv shell # starts a per-project shell using that env
-	(ntd-model-trachoma) $ python tests/trachoma_run.py # runs the test model scenarios
+Install `pipenv` and `setuptools` according to the instructions for your OS, e.g. 
+```commandline
+pip install pipenv
+pip install setuptools
 ```
 
+`cd` to the project directory and run:
+```commandline
+pipenv install .
+```
 
+At this point you will need to add files to the root of the project directory. Please ask your 
+administrator for these files.
 
+Then you can run an example file using `pipenv`:
+```commandline
+pipenv run python simple_example.py
+```
+
+or open up the `pipenv` shell and run:
+```commandline
+pipenv shell
+python simple_example.py
+```
+
+### Notes about Python versions
+
+If you have both python 2 and 3 installed, you may need to provide `pipenv` commands with the correct version,
+e.g. `pipenv install . --python 3`, `pipenv run python3 simple_example.py`, and `pipenv shell; python3 simple_example.py`
+along with using `pip3`.
+
+Note that the project has deprecated dependencies that require Python 3.8, so if you have a newer version
+installed and are using an IDE, you may need to set the Python interpreter to 3.8.
 
 
