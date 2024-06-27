@@ -73,4 +73,13 @@ along with using `pip3`.
 Note that the project has deprecated dependencies that require Python 3.8, so if you have a newer version
 installed and are using an IDE, you may need to set the Python interpreter to 3.8.
 
+### How to test
+
+There is currently one working test. It can be run using the command
+
+```commandline
+cd tests
+python -m unittest test_endtoend.py
+```
+
 

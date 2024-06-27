@@ -5,8 +5,6 @@ on:
     branches:
       - 'master'
   pull_request:
-    types:
-      - opened
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,3 +24,10 @@ jobs:
           python -m pip install setuptools wheel
           python -m pip install matplotlib
           pip install .
+          pip install pipenv
+          pipenv install . --python ${{ matrix.python-version }}
+      - name: Run test
+        run: |
+          cd tests
+          pipenv run pytest
+          cd ..
