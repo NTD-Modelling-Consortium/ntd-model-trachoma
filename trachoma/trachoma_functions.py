@@ -620,7 +620,7 @@ def Reset_vals(vals, reset_indivs, params):
     vals['time_since_vaccinated'][reset_indivs] = 0
     vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
     vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs),
-    vals['bact_load'][reset_indivs] = np.zeros(numResetIndivs)
+    vals['bact_load'][reset_indivs] = 0
 
     return vals
 
