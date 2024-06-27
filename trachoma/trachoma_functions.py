@@ -609,6 +609,28 @@ def Set_inits(params, demog, sim_params):
 
     return vals
 
+def Reset_inits(vals, reset_indivs, params):
+
+    '''
+    Set initial values.
+    '''
+    numResetIndivs = len(reset_indivs)
+    vals['Age'][reset_indivs] = 0
+    vals['IndI'][reset_indivs] = 0
+    vals['IndD'][reset_indivs] = 0
+    vals['No_Inf'][reset_indivs] = 0
+    vals['T_latent'][reset_indivs] = 0
+    vals['T_ID'][reset_indivs] = 0
+    vals['T_D'][reset_indivs] = 0
+    vals['vaccinated'][reset_indivs] = False
+    vals['time_since_vaccinated'][reset_indivs] = 0
+    vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
+    vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs),
+    vals['bact_load'][reset_indivs] = np.zeros(numResetIndivs)
+
+    return vals
+
+
 def Seed_infection(params, vals):
 
     '''
