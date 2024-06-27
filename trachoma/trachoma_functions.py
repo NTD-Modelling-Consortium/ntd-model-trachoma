@@ -211,15 +211,9 @@ def stepF_fixed(vals, params, demog, bet):
     reset_indivs = Reset(Age=vals['Age'], demog=demog, params=params)
 
     # Resetting new parameters for all new individuals created
-    vals['Age'][reset_indivs] = 0
-    vals['IndI'][reset_indivs] = 0
-    vals['IndD'][reset_indivs] = 0
-    vals['No_Inf'][reset_indivs] = 0
-    vals['T_latent'][reset_indivs] = 0
-    vals['T_ID'][reset_indivs] = 0
-    vals['T_D'][reset_indivs] = 0
-    vals['vaccinated'][reset_indivs] = False
-    vals['time_since_vaccinated'][reset_indivs] = 0
+    if(len(reset_indivs) > 0):
+        vals = Reset_vals(vals, reset_indivs, params)
+    
     #me = 2
     #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
 
@@ -608,6 +602,28 @@ def Set_inits(params, demog, sim_params):
     )
 
     return vals
+
+def Reset_vals(vals, reset_indivs, params):
+
+    '''
+    Set initial values.
+    '''
+    numResetIndivs = len(reset_indivs)
+    vals['Age'][reset_indivs] = 0
+    vals['IndI'][reset_indivs] = 0
+    vals['IndD'][reset_indivs] = 0
+    vals['No_Inf'][reset_indivs] = 0
+    vals['T_latent'][reset_indivs] = 0
+    vals['T_ID'][reset_indivs] = 0
+    vals['T_D'][reset_indivs] = 0
+    vals['vaccinated'][reset_indivs] = False
+    vals['time_since_vaccinated'][reset_indivs] = 0
+    vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
+    vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs),
+    vals['bact_load'][reset_indivs] = 0
+
+    return vals
+
 
 def Seed_infection(params, vals):
 
