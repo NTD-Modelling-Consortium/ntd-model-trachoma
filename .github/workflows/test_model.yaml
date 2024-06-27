@@ -24,8 +24,10 @@ jobs:
           python -m pip install setuptools wheel
           python -m pip install matplotlib
           pip install .
+          pip install pipenv
+          pipenv install . --python ${{ matrix.python-version }}
       - name: Run test
         run: |
           cd tests
-          python -m unittest test_endtoend.py
+          pipenv run pytest
           cd ..
