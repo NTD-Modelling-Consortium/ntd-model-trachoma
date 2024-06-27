@@ -1,3 +1,5 @@
+import numpy as np
+
 from trachoma.trachoma_functions import *
 import multiprocessing
 import time
@@ -8,6 +10,11 @@ import pickle
 
 #############################################################################################################################
 #############################################################################################################################
+
+# set seed and save state, leave seed=None for random data, or a value like seed=0 for consistent run-to-run data
+numpy_seed = None
+np.random.seed(numpy_seed)
+numpy_state = np.random.get_state()
 
 # initialize parameters, sim_params, and demography
 
@@ -125,7 +132,8 @@ results = Parallel(n_jobs=num_cores)(
                                         vacc_times = vacc_times, 
                                         VaccData = VaccData,
                                         outputTimes= outputTimes, 
-                                        index = i) for i in range(numSims))
+                                        index = i,
+                                        numpy_state=numpy_state) for i in range(numSims))
 
 
 print(time.time()- start)
