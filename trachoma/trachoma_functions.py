@@ -1194,6 +1194,10 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
                                         numpy_state=numpy_state)
     return results
 
+def seed_to_state(seed):
+    np.random.seed(seed)
+    return np.random.get_state()
+
 ##########################################################################################
 ##########################################################################################
 ##########################################################################################

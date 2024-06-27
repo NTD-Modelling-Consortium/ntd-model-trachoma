@@ -66,9 +66,13 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         #############################################################################################################################
 
-        # set seed and save state, leave seed=None for random data, or a value like seed=0 for consistent run-to-run data
+        # decide how many sims we will run
+        numSims = 1
+
+        # we set the seed for generating the numpy states below, leave seed=None for random data, or a value like seed=0 for consistent run-to-run data
         np.random.seed(seed)
-        numpy_state = np.random.get_state()
+        # we generate a numpy state for each simulation by saving a state. If the seed is set above, this will be consistent from run to run
+        numpy_states = list(map(lambda s: tf.seed_to_state(s), np.random.randint(2^32, size=numSims)))
 
         # initialize parameters, sim_params, and demography
 
@@ -166,8 +170,6 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         #############################################################################################################################
 
-        # decide how many sims we will run
-        numSims = 1
         print( f'Running {numSims} simulations on {num_cores} cores' )
         start = time.time()
 
@@ -175,19 +177,20 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         # run as many simulations as specified
         results = Parallel(n_jobs=num_cores)(
-                 delayed(tf.run_single_simulation)(pickleData = pickleData[i],
+                 delayed(tf.run_single_simulation)(pickleData = pickleData[0], # there is only a single entry in test data, so is set as zero in case we need more simulations
                                                 params = params,
                                                 timesim = sim_params['timesim'],
                                                 burnin = sim_params['burnin'],
                                                 demog=demog,
-                                                beta = allBetas.beta[i],
+                                                beta = allBetas.beta[0], # there is only a single entry in test data, so is set as zero in case we need more simulations
                                                 MDA_times = MDA_times,
                                                 MDAData=MDAData,
                                                 vacc_times = vacc_times,
                                                 VaccData = VaccData,
                                                 outputTimes= outputTimes,
                                                 index = i,
-                                                numpy_state=numpy_state) for i in range(numSims))
+                                                # We use a fresh state for each simulation
+                                                numpy_state=numpy_states[i]) for i in range(numSims))
 
 
         print(time.time()- start)

@@ -113,9 +113,16 @@ sim_params['N_Vaccines'] = len(vacc_times)
 #############################################################################################################################
 
 # decide how many sims we will run
-numSims = 200
+numSims = 2
 print( f'Running {numSims} simulations on {num_cores} cores' )
 start = time.time()
+
+# generate seed
+# we set the seed for generating the numpy states below, leave seed=None for random data, or a value like seed=0 for consistent run-to-run data
+seed = None
+np.random.seed(seed)
+# we generate a numpy state for each simulation by saving a state. If the seed is set above, this will be consistent from run to run
+numpy_states = list(map(lambda s: seed_to_state(s), np.random.randint(2^32, size=numSims)))
 
 #############################################################################################################################
 #############################################################################################################################
@@ -133,7 +140,7 @@ results = Parallel(n_jobs=num_cores)(
                                         VaccData = VaccData,
                                         outputTimes= outputTimes, 
                                         index = i,
-                                        numpy_state=numpy_state) for i in range(numSims))
+                                        numpy_state=numpy_states[i]) for i in range(numSims))
 
 
 print(time.time()- start)
