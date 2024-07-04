@@ -19,6 +19,9 @@ class EndToEndTest(unittest.TestCase):
     The results of the simulation are compared to the reference results
     reference_output/outsIHME2c.csv and reference_output/outsIPM2c.csv
     The reference files are simply the output of this file with seed=0.
+
+    If the tests are failing and you know the code is correct, run only test_seed_0 and
+    copy the outputs in the tests folder to the reference_output folder.
     """
 
     def test_seed_0(self):
