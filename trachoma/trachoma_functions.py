@@ -670,8 +670,7 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
                 vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
                 out = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
                 vals = out[0]
-                nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, out,
-                                                                                vals, ageStart, ageEnd, nDoses, numMDA, coverage)
+                
         
         if i in vacc_times:
             vals = vaccinate_population(vals = vals, params = params)

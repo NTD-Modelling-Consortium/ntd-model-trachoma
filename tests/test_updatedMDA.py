@@ -63,8 +63,11 @@ MDAData = [[2018.0, 0, 100.0, 0.1, 0, 2],
 # we also need to specify the times for these MDA's so that later we can access them correctly
 MDA_times = np.array([5200, 5252])
 
-
-vals = Set_inits(params=params, demog=demog, sim_params = sim_params, MDAData=MDAData)    # Set initial conditions
+seed = None
+np.random.seed(seed)
+# we generate a numpy state for each simulation by saving a state. If the seed is set above, this will be consistent from run to run
+numpy_states = list(map(lambda s: seed_to_state(s), np.random.randint(2^32, size=1)))
+vals = Set_inits(params=params, demog=demog, sim_params = sim_params, MDAData=MDAData, numpy_state=numpy_states[0])    # Set initial conditions
 # we start by assigning everyone as infected
 vals['IndI'] = np.ones(params['N'])
 vals['No_Inf'] = np.ones(params['N'])
