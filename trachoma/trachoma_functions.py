@@ -225,47 +225,6 @@ def stepF_fixed(vals, params, demog, bet):
     return vals
 
 
-def Tx_matrix_2(MDAData, params, previous_rounds, numpy_state):
-
-    '''
-    Create matrix to determine who gets treated at each MDA round,
-    allowing for systematic non-compliance as specified by Dyson.
-    '''
-
-    np.random.set_state(numpy_state)
-
-    if previous_rounds == 0:
-        
-        ind_treat = np.zeros((params['N'], len(MDAData)))
-
-        # Assign first treatment
-        MDA_Cov = MDAData[0][3]
-        ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
-
-        for k in range(1, len(MDAData)):
-            MDA_Cov = MDAData[k][3]
-            # Subsequent treatment probs function of previous treatments
-            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
-            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
-
-    else:
-        MDA_Cov = MDAData[0][3]
-        ind_treat = np.zeros((params['N'], previous_rounds + len(MDAData)))
-
-        # Assign first treatment
-        ind_treat[:, 0] = np.random.uniform(size=params['N']) < MDA_Cov
-
-        for k in range(1, previous_rounds + len(MDAData)):
-            MDA_Cov = MDAData[k][3]
-            # Subsequent treatment probs function of previous treatments
-            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(MDA_Cov * (1 - params['rho']) +
-            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
-
-        ind_treat = ind_treat[:, - len(MDAData):]
-
-    return ind_treat
-
-
 def get_Intervention_times(Intervention_dates, Start_date, burnin):
     Intervention_times = []
     for i in range(0, len(Intervention_dates)):
@@ -319,123 +278,38 @@ def Reset(Age, demog, params):
 
     return np.where(np.logical_or(np.random.uniform(size=params['N']) < 1 - np.exp(- demog['tau']), Age > demog['max_age']))[0]
 
-def Tx_matrix(params, sim_params, previous_rounds, numpy_state):
-
+def doMDAAgeRange(vals, params, ageStart, ageEnd):
     '''
-    Create matrix to determine who gets treated at each MDA round,
-    allowing for systematic non-compliance as specified by Dyson.
-
-    Parameters
-    ----------
-    params : dict 
-        Demographic and infection related parameters
-    sim_params : dict
-        Parameters related to specific simulation including treatment
-    previous_rounds : int
-        Number of prior rounds of MDA
-
-    Returns
-    -------
-    list
-        Two-dimensional representing the assigned MDA treatments for each person by each round
-    '''
-
-    np.random.set_state(numpy_state)
-
-    if previous_rounds == 0:
-
-        ind_treat = np.zeros((params['N'], sim_params['N_MDA']))
-
-        # Assign first treatment
-        ind_treat[:, 0] = np.random.uniform(size=params['N']) < params['MDA_Cov']
-
-        for k in range(1, sim_params['N_MDA']):
-
-            # Subsequent treatment probs function of previous treatments
-            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(params['MDA_Cov'] * (1 - params['rho']) +
-            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
-
-    else:
-
-        ind_treat = np.zeros((params['N'], previous_rounds + sim_params['N_MDA']))
-
-        # Assign first treatment
-        ind_treat[:, 0] = np.random.uniform(size=params['N']) < params['MDA_Cov']
-
-        for k in range(1, previous_rounds + sim_params['N_MDA']):
-
-            # Subsequent treatment probs function of previous treatments
-            ind_treat[:, k] = np.random.binomial(n=1, size=params['N'], p=(params['MDA_Cov'] * (1 - params['rho']) +
-            (params['rho'] * np.sum(ind_treat[:, :k], axis=1))) / (1 + (k + 1 - 2) * params['rho']))
-
-        ind_treat = ind_treat[:, - sim_params['N_MDA']:]
-
-    return ind_treat
-
-def doMDA(params, Age, MDA_round, Tx_mat):
-
-    '''
-    Decide who is cured during MDA based on treatment matrix
+    Decide who is cured during MDA based on treatment probabilities
     and probability of clearance given treated.
     '''
-
-    babies = np.where(Age <= 26)[0]
-    treated_babies = babies[Tx_mat[babies, MDA_round] == 1]
-    cured_babies = treated_babies[np.random.uniform(size=len(treated_babies)) < (params['MDA_Eff'] * 0.5)]
-
-    older = np.where(Age > 26)[0]
-    treated_older = older[Tx_mat[older, MDA_round] == 1]
-    cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
-    #print('MDA:',cured_babies,cured_older)
-    return np.append(cured_babies, cured_older)
-
-
-def doMDAAgeRange(params, Age, MDA_round, Tx_mat, ageStart, ageEnd):
-
-    '''
-    Decide who is cured during MDA based on treatment matrix
-    and probability of clearance given treated.
-    '''
+    Age = vals['Age']
+    cured_babies = []
+    cured_older = []
+    treated_babies = []
+    treated_older = []
     if ageStart*52 <= 26:
         babies = np.where(Age <= 26)[0]
-        treated_babies = babies[Tx_mat[babies, MDA_round] == 1]
+        treated_babies = np.where(np.random.uniform(size=len(babies)) < vals['treatProbability'][babies])[0]
         cured_babies = treated_babies[np.random.uniform(size=len(treated_babies)) < (params['MDA_Eff'] * 0.5)]
-    
+
         older = np.where(np.logical_and(Age > 26, Age <= ageEnd *52))[0]
-        treated_older = older[Tx_mat[older, MDA_round] == 1]
-        cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
+        treated_older = np.where(np.random.uniform(size=len(older)) < vals['treatProbability'][older])[0]
+        cured_older = treated_older[np.random.uniform(size=len(treated_older)) < (params['MDA_Eff'])]
     else:
         older = np.where(np.logical_and(Age > ageStart * 52, Age <= ageEnd *52))[0]
-        treated_older = older[Tx_mat[older, MDA_round] == 1]
-        cured_older = treated_older[np.random.uniform(size=len(treated_older)) < params['MDA_Eff']]
-        cured_babies = []
-        treated_babies = []
-    #print('MDA:',cured_babies,cured_older)
+        treated_older = np.where(np.random.uniform(size=len(older)) < vals['treatProbability'][older])[0]
+        cured_older = treated_older[np.random.uniform(size=len(treated_older)) < (params['MDA_Eff'])]
     return np.append(cured_babies, cured_older), np.append(treated_babies, treated_older)
 
-def MDA_timestep(vals, params, MDA_round, Tx_mat):
+def MDA_timestep_Age_range(vals, params, ageStart, ageEnd):
 
     '''
     This is time step in which MDA occurs
     '''
 
     # Id who is treated and cured
-    treated_cured = doMDA(params=params, Age=vals['Age'], MDA_round=MDA_round, Tx_mat=Tx_mat)
-
-    # Set treated/cured indivs infection status and bacterial load to 0
-    vals['IndI'][treated_cured] = 0       # clear infection they become I=0
-    vals['bact_load'][treated_cured] = 0  # stop being infectious
-
-    return vals, len(treated_cured)
-
-def MDA_timestep_Age_range(vals, params, MDA_round, Tx_mat, ageStart, ageEnd):
-
-    '''
-    This is time step in which MDA occurs
-    '''
-
-    # Id who is treated and cured
-    treated_cured = doMDAAgeRange(params=params, Age=vals['Age'], MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart = ageStart, ageEnd = ageEnd)
+    treated_cured = doMDAAgeRange(params=params, Age=vals['Age'], ageStart = ageStart, ageEnd = ageEnd)
 
     # Set treated/cured indivs infection status and bacterial load to 0
     vals['IndI'][treated_cured[0].astype(int)] = 0       # clear infection they become I=0
@@ -551,14 +425,70 @@ def bacterialLoad(newInfectious,params,vals):
 
     return bacterial_loads
 
-def Set_inits(params, demog, sim_params, numpy_state):
+
+
+def drawTreatmentProbabilities(n, cov, snc):
+
+    """
+    Draw the treatment probabilities for the value of coverage and snc given.
+    This uses the scheme explained in section 1.5.3 of the suppplement to this paper
+    https://www.sciencedirect.com/science/article/pii/S1755436516300810?via%3Dihub#sec0110
+    """
+
+    if(cov == 0):
+        treatmentProb = np.zeros(n)
+    elif(snc > 0):
+        alpha = cov * (1-snc)/snc
+        beta = (1-cov)*(1-snc)/snc
+        treatmentProb = np.random.beta(alpha, beta, n)
+    else:
+        treatmentProb = np.ones(n) * cov 
+    return treatmentProb
+
+
+def editTreatProbability(vals, cov, snc):
+
+    """
+    Choose new values for treatment probability (e.g. for when coverage or snc change)
+
+    The rank of each individuals probability of treatement is retained
+    I.e. if previously you were the most likely person to get treated, you still will be after this
+    """
+
+    if snc > 0:
+        # Draw probabilities from the beta distribution
+        treatProbabilities = drawTreatmentProbabilities(len(vals['IndI']), cov, snc)
+        # Sort these values so that they are in ascending order so they can later be matched with people
+        treatProbabilities.sort()
+
+        # Store the current value of the treatProbability 
+        oldTreatProbabilities = vals['treatProbability']
+
+        # Sort the indices array based on the values in oldTreatProbabilities
+        indices = np.argsort(oldTreatProbabilities)
+        # Assign the newly drawn treatment probabilities to the appropriate individuals
+        for rank, person_index in enumerate(indices):
+            vals['treatProbability'][person_index] = treatProbabilities[rank]
+    else:
+        vals['treatProbability'] = np.ones(len(vals['IndI'])) * cov
+
+    return vals
+
+
+def Set_inits(params, demog, sim_params, MDAData, numpy_state):
 
     '''
     Set initial values.
     '''
 
     np.random.set_state(numpy_state)
+    MDA_coverage = 0
+    treatProbability = np.full(shape=params['N'], fill_value=np.NaN, dtype=float)
+    systematic_non_compliance = params['rho']
 
+    if (len(MDAData) > 0):
+        MDA_coverage = MDAData[0][3]
+        treatProbability = drawTreatmentProbabilities(params['N'], MDA_coverage, systematic_non_compliance)
     vals = dict(
 
         # Individual's infected status
@@ -604,6 +534,11 @@ def Set_inits(params, demog, sim_params, numpy_state):
         
         time_since_vaccinated = np.zeros(params['N']) ,
         
+        treatProbability = treatProbability,
+
+        MDA_coverage = MDA_coverage,
+
+        systematic_non_compliance = systematic_non_compliance
     )
 
     return vals
@@ -626,7 +561,7 @@ def Reset_vals(vals, reset_indivs, params):
     vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
     vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs),
     vals['bact_load'][reset_indivs] = 0
-
+    vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance'])
     return vals
 
 
@@ -704,7 +639,7 @@ def SecularTrendBetaDecrease(timesim, burnin, bet, params):
                 simbeta[(j * 52) + i] = bet1 - (params['SecularTrendYearlyBetaDecrease'] * bet1 * i/52)
     return simbeta
 
-def sim_Ind_MDA(params, Tx_mat, vals, timesim, burnin, demog, bet, MDA_times, vacc_times, numpy_state):
+def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, vacc_times, numpy_state):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -728,13 +663,15 @@ def sim_Ind_MDA(params, Tx_mat, vals, timesim, burnin, demog, bet, MDA_times, va
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
-
-            MDA_round = np.where(MDA_times == i)[0][0]
-
-            out = MDA_timestep(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat)
-            vals = out[0]
-            nDoses = out[1]
-            coverage = nDoses/ len(vals['IndI'])
+            MDA_round = np.where(MDA_times == i)[0]
+            for l in range(len(MDA_round)):
+                MDA_round_current = MDA_round[l]
+                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
+                vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
+                out = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
+                vals = out[0]
+                nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, out,
+                                                                                vals, ageStart, ageEnd, nDoses, numMDA, coverage)
         
         if i in vacc_times:
             vals = vaccinate_population(vals = vals, params = params)
@@ -786,9 +723,28 @@ def numMDAsBeforeNextSurvey(surveyPrev):
     return 100
 
 
+def get_MDA_params(MDAData, MDA_round_current, vals):
+    ageStart = MDAData[MDA_round_current][1]
+    ageEnd = MDAData[MDA_round_current][2]
+    cov = MDAData[MDA_round_current][3]
+    systematic_non_compliance = vals['systematic_non_compliance']
+    return ageStart, ageEnd, cov, systematic_non_compliance
 
+def check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals):
+    if(cov != vals['MDA_coverage'])| (systematic_non_compliance != vals['systematic_non_compliance']):
+        vals = editTreatProbability(vals, cov, systematic_non_compliance)
+        vals['MDA_coverage'] = cov
+        vals['systematic_non_compliance'] = systematic_non_compliance
+    return vals
 
-def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
+def update_MDA_information_for_output(MDAData, MDA_round_current, out, vals, ageStart, ageEnd, nDoses, numMDA, coverage):
+    nDoses[MDAData[MDA_round_current][-2]] += out[1]
+                    # increment number of MDAs
+    numMDA[MDAData[MDA_round_current][-2]] += 1
+    coverage[MDAData[MDA_round_current][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+    return nDoses, numMDA, coverage
+
+def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                                demog, bet, MDA_times, MDAData,
                                vacc_times, VaccData, outputTimes, numpy_state):
 
@@ -816,8 +772,7 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
     nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
     # initialize time for next survey 
     surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
-   # initialize count of MDAs
-    numMDA = np.zeros(MDAData[0][-1], dtype=object)
+   
    # initialize time for impact survey dependent on surveyed prevalence
     if surveyPrev <= 0.05:
         impactSurveyTime = min(MDA_times) + 104
@@ -834,6 +789,8 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
     
     nDoses = np.zeros(MDAData[0][-1], dtype=object)
     coverage = np.zeros(MDAData[0][-1], dtype=object)
+    # initialize count of MDAs
+    numMDA = np.zeros(MDAData[0][-1], dtype=object)
     prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
     
     vals['numVacc'] = np.zeros(VaccData[0][-1], dtype=object)
@@ -890,27 +847,14 @@ def sim_Ind_MDA_Include_Survey(params, Tx_mat, vals, timesim, burnin,
         if i in MDA_times:
             if surveyPass == 0:
                 MDA_round = np.where(MDA_times == i)[0]
-                if(len(MDA_round) == 1):
-                    MDA_round = MDA_round[0]
-                    ageStart = MDAData[MDA_round][1]
-                    ageEnd = MDAData[MDA_round][2]
-                    out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
+                for l in range(len(MDA_round)):
+                    MDA_round_current = MDA_round[l]
+                    ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
+                    vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
+                    out = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
                     vals = out[0]
-                    nDoses[MDAData[MDA_round][-2]] += out[1]
-                    # increment number of MDAs
-                    numMDA[MDAData[MDA_round][-2]] += 1
-                    coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
-                else:
-                    for l in range(len(MDA_round)):
-                        MDA_round2 = copy.deepcopy(MDA_round[l])
-                        ageStart = MDAData[MDA_round2][1]
-                        ageEnd = MDAData[MDA_round2][2]
-                        out = MDA_timestep_Age_range(vals=vals, params=params, MDA_round=MDA_round2, Tx_mat=Tx_mat, ageStart=ageStart, ageEnd=ageEnd)
-                        vals = out[0]
-                        nDoses[MDAData[MDA_round][-2]] += out[1]
-                        # increment number of MDAs
-                        numMDA[MDAData[MDA_round][-2]] += 1
-                        coverage[MDAData[MDA_round][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+                    nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, out,
+                                                                                   vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 # if the number of MDAs is the same as the number for the next survey then set survey time
           #  if sum(numMDA) == nextSurvey:
           #      surveyTime = i + 26
@@ -1184,8 +1128,7 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
     vals = copy.deepcopy(pickleData)
     vals = Check_and_init_vaccination_state(params,vals)
     params['N'] = len(vals['IndI'])
-    Tx_mat = Tx_matrix_2(MDAData, params, 0, numpy_state)
-    results = sim_Ind_MDA_Include_Survey(params=params, Tx_mat = Tx_mat, 
+    results = sim_Ind_MDA_Include_Survey(params=params,
                                         vals = vals, timesim = timesim,
                                         burnin=burnin,
                                         demog=demog, bet=beta, MDA_times = MDA_times, 
