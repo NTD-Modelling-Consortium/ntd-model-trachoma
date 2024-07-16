@@ -610,6 +610,38 @@ def Check_and_init_vaccination_state(params,vals):
 
     return vals
 
+def Check_and_init_MDA_treatment_state(params, vals, MDAData):
+    '''
+    Check if "treatProbability","MDA_coverage" and "sytematic_non_compliance" keys are in `vals`. If they are
+    not then initialize for population
+    
+    Parameters
+    ----------
+    
+    params : dict 
+        Parameter dictionary with all parameters not associated with MDA
+
+    vals : dict
+        Contains current state of simulation
+    Returns
+    -------
+    dict 
+        vals dictionary modified with vaccination state
+    '''
+
+    if not set(["treatProbability","MDA_coverage", "sytematic_non_compliance"]).issubset(vals.keys()):
+        MDA_coverage = 0
+        treatProbability = np.full(shape=params['N'], fill_value=np.NaN, dtype=float)
+        systematic_non_compliance = params['rho']
+        vals["treatProbability"] = treatProbability
+        if (len(MDAData) > 0):
+            MDA_coverage = MDAData[0][3]
+            vals["treatProbability"] = drawTreatmentProbabilities(params['N'], MDA_coverage, systematic_non_compliance)
+        vals["MDA_coverage"] = MDA_coverage
+        vals["systematic_non_compliance"] = systematic_non_compliance
+
+    return vals
+
 def init_ages(params, demog, numpy_state):
 
     '''
@@ -1126,6 +1158,7 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
     '''
     vals = copy.deepcopy(pickleData)
     vals = Check_and_init_vaccination_state(params,vals)
+    vals = Check_and_init_MDA_treatment_state(params, vals, MDAData)
     params['N'] = len(vals['IndI'])
     results = sim_Ind_MDA_Include_Survey(params=params,
                                         vals = vals, timesim = timesim,
