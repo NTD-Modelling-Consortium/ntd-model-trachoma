@@ -5,7 +5,7 @@ import numpy.testing as npt
 from trachoma.trachoma_functions import *
 
 class TestMDAFunctionality(unittest.TestCase):
-
+    # start by defining parameters for the run
     def setUp(self):
         self.params = {'N': 2500,
                        'av_I_duration': 2,
@@ -50,15 +50,20 @@ class TestMDAFunctionality(unittest.TestCase):
                       'max_age': 3120,
                       'mean_age': 1040}
 
+        # we set up two MDA's, one targeting everyone and another targeting just babies
+        # as there is a difference in the efficacy of the drug for babies, so we want to
+        # check this is working ok
         self.MDAData = [[2018.0, 0, 100.0, 0.1, 0, 2],
                         [2019.0, 0, 0.5, 0.8, 1, 2]]
-        
+        # pick some corresponding to these MDA's. This isn't really important for this test
         self.MDA_times = np.array([5200, 5252])
 
         seed = None
         np.random.seed(seed)
         numpy_states = list(map(lambda s: self.seed_to_state(s), np.random.randint(2**32, size=1)))
         
+        # we initiate a set of values for the starting point and will also make it so everyone is infected so that
+        # we can easily test the MDA's due to everyone who is cured having a change in IndI and bact_load variables which we can check against
         self.vals = Set_inits(params=self.params, demog=self.demog, sim_params=self.sim_params, MDAData=self.MDAData, numpy_state=numpy_states[0])  
         self.vals['IndI'] = np.ones(self.params['N'])
         self.vals['No_Inf'] = np.ones(self.params['N'])
@@ -68,12 +73,13 @@ class TestMDAFunctionality(unittest.TestCase):
         np.random.seed(seed)
         return np.random.get_state()
 
-    def testMDAOnChildren(self):
+    def testMDAOnBabies(self):
         MDA_round = np.where(self.MDA_times == self.MDA_times[1])[0]
         propCured = []
         bactLoadReduction = []
         for _ in range(100):
             valsTest = copy.deepcopy(self.vals)
+            # set everyone's age to 0 so that they all count as babies
             valsTest['Age'] = np.zeros(self.params['N'])
             preMDAInf = sum(valsTest['IndI'])
             preMDAbactLoad = sum(valsTest['bact_load'])
@@ -119,6 +125,7 @@ class TestMDAFunctionality(unittest.TestCase):
         propCured = []
         for _ in range(100):
             valsTest = copy.deepcopy(self.vals)
+            # set everyone's age to 20 so that none count as babies
             valsTest['Age'] = 20 * np.ones(self.params['N']) * 52
             preMDAInf = sum(valsTest['IndI'])
             for l in range(len(MDA_round)):
