@@ -58,6 +58,10 @@ class TestMDAFunctionality(unittest.TestCase):
         # pick some corresponding to these MDA's. This isn't really important for this test
         self.MDA_times = np.array([5200, 5252])
 
+        self.MDAData1 = [[2018.0, 0, 100.0, 0.1, 0, 2],
+                    [2018.0, 0, 0.5, 0.4, 1, 2]]
+        # adjust MDA's so that they occur at the same time to test that this is accounted for correctly
+        self.MDA_times1 = np.array([5200, 5200])
         seed = None
         np.random.seed(seed)
         numpy_states = list(map(lambda s: self.seed_to_state(s), np.random.randint(2**32, size=1)))
@@ -68,7 +72,8 @@ class TestMDAFunctionality(unittest.TestCase):
         self.vals['IndI'] = np.ones(self.params['N'])
         self.vals['No_Inf'] = np.ones(self.params['N'])
         self.vals['bact_load'] = bacterialLoad(range(self.params['N']), params=self.params, vals=self.vals)
-    
+        self.nReps = 100
+
     def seed_to_state(self, seed):
         np.random.seed(seed)
         return np.random.get_state()
@@ -77,7 +82,7 @@ class TestMDAFunctionality(unittest.TestCase):
         MDA_round = np.where(self.MDA_times == self.MDA_times[1])[0]
         propCured = []
         bactLoadReduction = []
-        for _ in range(100):
+        for _ in range(self.nReps):
             valsTest = copy.deepcopy(self.vals)
             # set everyone's age to 0 so that they all count as babies
             valsTest['Age'] = np.zeros(self.params['N'])
@@ -101,7 +106,7 @@ class TestMDAFunctionality(unittest.TestCase):
         MDA_round = np.where(self.MDA_times == self.MDA_times[0])[0]
         propCured = []
         bactLoadReduction = []
-        for _ in range(100):
+        for _ in range(self.nReps):
             valsTest = copy.deepcopy(self.vals)
             valsTest['Age'] = 20 * np.ones(self.params['N']) * 52
             preMDAInf = sum(valsTest['IndI'])
@@ -123,7 +128,7 @@ class TestMDAFunctionality(unittest.TestCase):
     def testNotTreatingOutsideOfTargetAgeRange(self):
         MDA_round = np.where(self.MDA_times == self.MDA_times[1])[0]
         propCured = []
-        for _ in range(100):
+        for _ in range(self.nReps):
             valsTest = copy.deepcopy(self.vals)
             # set everyone's age to 20 so that none count as babies
             valsTest['Age'] = 20 * np.ones(self.params['N']) * 52
@@ -139,5 +144,50 @@ class TestMDAFunctionality(unittest.TestCase):
         
         npt.assert_allclose(np.mean(propCured), 0, atol=0, err_msg="The values are not close enough")
 
-if __name__ == '__main__':
-    unittest.main()
+
+        
+    # this is to test that if we have multiple MDA's in the same time point then we will do them appropriately
+    # the test is again for babies and non-babies with different coverages for the tests for babies and non-babies
+    # this also tests that the re-drawing of the treatment probabilities is working correctly,
+    # at least in terms of the mean of the probabilities after re-drawing them (it doesn't test the rank correlation of this)
+    def testDoingConcurrentMDAs(self):
+        MDA_round = np.where(self.MDA_times1 == self.MDA_times1[0])[0]
+        propCuredBabies = []
+        propCuredNonBabies = []
+        for _ in range(self.nReps):
+            for l in range(len(MDA_round)):
+                valsTest = copy.deepcopy(self.vals)
+                valsTest['IndI'] = np.ones(self.params['N'])
+                preMDAInf = sum(valsTest['IndI'])
+                if(l == 0):
+                    valsTest['Age'] = 20 * np.ones(self.params['N']) * 52
+                else:
+                    valsTest['Age'] = 0.1 * np.ones(self.params['N']) * 52
+                MDA_round_current = MDA_round[l]
+                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(self.MDAData1, MDA_round_current, valsTest)
+                valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
+                out = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd)
+                valsTest = out[0]
+                postMDAInf = sum(valsTest['IndI'])
+                if(l == 0):
+                    propCuredNonBabies.append(((preMDAInf - postMDAInf) / preMDAInf))
+                else:
+                    propCuredBabies.append(((preMDAInf - postMDAInf) / preMDAInf))
+        npt.assert_allclose(np.mean(propCuredNonBabies), self.params['MDA_Eff'] * self.MDAData1[0][3], atol=5e-03, err_msg="The values are not close enough for non babies")
+        npt.assert_allclose(np.mean(propCuredBabies), self.params['MDA_Eff'] * self.MDAData1[1][3] * 0.5, atol=5e-03, err_msg="The values are not close enough for babies")
+
+
+    # this test is to check that once we re-draw the treatment probabilities people are still in the same rank order
+    # e.g. if you were the most likely to get treated with the previous probabilities, you still are after re-drawing them
+    def testRankCorellationOfTreatmentProbabilites(self):
+        valsTest = copy.deepcopy(self.vals)
+        rank1 = np.argsort(valsTest['treatProbability'])
+        if( valsTest["MDA_coverage"] == 0):
+            cov = 0.5
+        else:
+            cov = valsTest["MDA_coverage"] * valsTest["MDA_coverage"]
+        systematic_non_compliance = 0.3
+        valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
+        rank2 = np.argsort(valsTest['treatProbability'])
+        npt.assert_equal(actual = rank1, desired = rank2)
+
