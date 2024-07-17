@@ -227,13 +227,25 @@ class TestMDAFunctionality(unittest.TestCase):
     # e.g. if you were the most likely to get treated with the previous probabilities, you still are after re-drawing them
     def testRankCorellationOfTreatmentProbabilites(self):
         valsTest = copy.deepcopy(self.vals)
+        # store the rank of the treatment probabilities as we will compare this to an updated set of probabilites
         rank1 = np.argsort(valsTest['treatProbability'])
+        # we also store the mean of treatment probabilities to compare with the expected mean
+        mean1 = np.mean(valsTest['treatProbability'])
+        expected_mean1 = valsTest["MDA_coverage"] 
+        # ensure that the coverage is changed so that we will have to re-draw the probabilites
         if( valsTest["MDA_coverage"] == 0):
             cov = 0.5
         else:
             cov = valsTest["MDA_coverage"] * valsTest["MDA_coverage"]
         systematic_non_compliance = 0.3
+        # re-draw the probabilites
         valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
+        # store the updated rank of the treatment probabilities as we will compare this to original rank
         rank2 = np.argsort(valsTest['treatProbability'])
-        npt.assert_equal(actual = rank1, desired = rank2)
+        # we also store the mean of treatment probabilities to compare with the expected mean
+        mean2 = np.mean(valsTest['treatProbability'])
+        expected_mean2 = cov
 
+        npt.assert_equal(actual = rank1, desired = rank2)
+        npt.assert_allclose(mean1, expected_mean1, atol=2e-03, err_msg="The values are not close enough")
+        npt.assert_allclose(mean2, expected_mean2, atol=2e-03, err_msg="The values are not close enough")
