@@ -175,7 +175,9 @@ class EndToEndTest(unittest.TestCase):
 
         print( f'Running {numSims} simulations on {num_cores} cores' )
         start = time.time()
-
+        # when we are resuming previous simulations we use the provided random state
+        np.random.set_state(numpy_states[0])
+        pickleData[0] = tf.Seed_infection(params=params, vals=pickleData[0]) # Seed infection
         #############################################################################################################################
         #############################################################################################################################
         # run as many simulations as specified
