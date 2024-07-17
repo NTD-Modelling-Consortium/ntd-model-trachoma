@@ -705,10 +705,16 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
             MDA_round = np.where(MDA_times == i)[0]
             for l in range(len(MDA_round)):
                 MDA_round_current = MDA_round[l]
+                # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
+                # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
+                # check if these have changed here, and if they have, then we re-draw the probabilities
                 vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
+                # do the MDA for the age range specified by ageStart and ageEnd
                 out = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
                 vals = out[0]
+                # keep track of doses and coverage of the MDA to be output later.
+                # currently within this function, these aren't output 
                 nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, out,
                                                                                    vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 
@@ -889,15 +895,19 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                 MDA_round = np.where(MDA_times == i)[0]
                 for l in range(len(MDA_round)):
                     MDA_round_current = MDA_round[l]
+                    # we want to get the data corresponding to this MDA from the MDAdata
                     ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
+                    # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
+                    # check if these have changed here, and if they have, then we re-draw the probabilities
                     vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
+                    # do the MDA for the age range specified by ageStart and ageEnd
                     out = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
                     vals = out[0]
+                    # keep track of doses and coverage of the MDA to be output later.
                     nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, out,
-                                                                                   vals, ageStart, ageEnd, nDoses, numMDA, coverage)
-                # if the number of MDAs is the same as the number for the next survey then set survey time
-          #  if sum(numMDA) == nextSurvey:
-          #      surveyTime = i + 26
+                                                                                    vals, ageStart, ageEnd, nDoses, numMDA, coverage)
+                
+                
         if i in vacc_times:
       
             vacc_round = np.where(vacc_times == i)[0]
