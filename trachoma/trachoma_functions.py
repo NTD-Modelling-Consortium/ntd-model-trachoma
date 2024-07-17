@@ -692,6 +692,13 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
     max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros((timesim+1, max_age))
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
+
+    nDoses = np.zeros(MDAData[0][-1], dtype=object)
+    coverage = np.zeros(MDAData[0][-1], dtype=object)
+    # initialize count of MDAs
+    numMDA = np.zeros(MDAData[0][-1], dtype=object)
+    prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
+    
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
@@ -702,6 +709,8 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
                 vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
                 out = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
                 vals = out[0]
+                nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, out,
+                                                                                   vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 
         
         if i in vacc_times:
