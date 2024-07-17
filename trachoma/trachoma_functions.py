@@ -483,7 +483,7 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state):
 
     np.random.set_state(numpy_state)
     MDA_coverage = 0
-    treatProbability = np.full(shape=params['N'], fill_value=np.NaN, dtype=float)
+    treatProbability = np.full(shape=params['N'], fill_value=np.nan, dtype=float)
     systematic_non_compliance = params['rho']
 
     if (len(MDAData) > 0):
@@ -631,7 +631,7 @@ def Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state):
     np.random.set_state(numpy_state)
     if not set(["treatProbability","MDA_coverage", "sytematic_non_compliance"]).issubset(vals.keys()):
         MDA_coverage = 0
-        treatProbability = np.full(shape=params['N'], fill_value=np.NaN, dtype=float)
+        treatProbability = np.full(shape=params['N'], fill_value=np.nan, dtype=float)
         systematic_non_compliance = params['rho']
         vals["treatProbability"] = treatProbability
         if (len(MDAData) > 0):
