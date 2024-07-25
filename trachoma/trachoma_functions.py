@@ -472,8 +472,6 @@ def editTreatProbability(vals, cov, snc):
     else:
         vals['treatProbability'] = np.ones(len(vals['IndI'])) * cov
 
-    return vals
-
 
 def Set_inits(params, demog, sim_params, MDAData, numpy_state):
 
@@ -778,7 +776,7 @@ def get_MDA_params(MDAData, MDA_round_current, vals):
 
 def check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals):
     if(cov != vals['MDA_coverage'])| (systematic_non_compliance != vals['systematic_non_compliance']):
-        vals = editTreatProbability(vals, cov, systematic_non_compliance)
+        editTreatProbability(vals, cov, systematic_non_compliance)
         vals['MDA_coverage'] = cov
         vals['systematic_non_compliance'] = systematic_non_compliance
     return vals
