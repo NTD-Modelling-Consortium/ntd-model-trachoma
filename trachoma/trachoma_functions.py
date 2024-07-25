@@ -784,7 +784,7 @@ def update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_pe
     nDoses[MDAData[MDA_round_current][-2]] += num_treated_people
                     # increment number of MDAs
     numMDA[MDAData[MDA_round_current][-2]] += 1
-    coverage[MDAData[MDA_round_current][-2]] += num_treated_people / len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+    coverage[MDAData[MDA_round_current][-2]] += num_treated_people / np.count_nonzero((vals['Age'] > ageStart * 52) & (vals['Age'] <= ageEnd * 52))
     return nDoses, numMDA, coverage
 
 def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
