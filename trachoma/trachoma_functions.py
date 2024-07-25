@@ -709,11 +709,10 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
                 # check if these have changed here, and if they have, then we re-draw the probabilities
                 vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
                 # do the MDA for the age range specified by ageStart and ageEnd
-                out = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
-                vals = out[0]
+                vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
                 # keep track of doses and coverage of the MDA to be output later.
                 # currently within this function, these aren't output 
-                nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, out,
+                nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
                                                                                    vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 
         
@@ -781,11 +780,11 @@ def check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_comp
         vals['systematic_non_compliance'] = systematic_non_compliance
     return vals
 
-def update_MDA_information_for_output(MDAData, MDA_round_current, out, vals, ageStart, ageEnd, nDoses, numMDA, coverage):
-    nDoses[MDAData[MDA_round_current][-2]] += out[1]
+def update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people, vals, ageStart, ageEnd, nDoses, numMDA, coverage):
+    nDoses[MDAData[MDA_round_current][-2]] += num_treated_people
                     # increment number of MDAs
     numMDA[MDAData[MDA_round_current][-2]] += 1
-    coverage[MDAData[MDA_round_current][-2]] += out[1]/ len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
+    coverage[MDAData[MDA_round_current][-2]] += num_treated_people / len(np.where(np.logical_and(vals['Age'] > ageStart * 52, vals['Age'] <= ageEnd *52))[0])
     return nDoses, numMDA, coverage
 
 def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
@@ -899,10 +898,9 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                     # check if these have changed here, and if they have, then we re-draw the probabilities
                     vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
                     # do the MDA for the age range specified by ageStart and ageEnd
-                    out = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
-                    vals = out[0]
+                    vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
                     # keep track of doses and coverage of the MDA to be output later.
-                    nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, out,
+                    nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
                                                                                     vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 
                 
