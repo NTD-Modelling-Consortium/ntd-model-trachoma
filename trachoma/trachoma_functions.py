@@ -309,13 +309,13 @@ def MDA_timestep_Age_range(vals, params, ageStart, ageEnd):
     '''
 
     # Id who is treated and cured
-    treated_cured = doMDAAgeRange(vals = vals, params=params, ageStart = ageStart, ageEnd = ageEnd)
+    cured_people, treated_people = doMDAAgeRange(vals = vals, params=params, ageStart = ageStart, ageEnd = ageEnd)
 
     # Set treated/cured indivs infection status and bacterial load to 0
-    vals['IndI'][treated_cured[0].astype(int)] = 0       # clear infection they become I=0
-    vals['bact_load'][treated_cured[0].astype(int)] = 0  # stop being infectious
+    vals['IndI'][cured_people.astype(int)] = 0       # clear infection they become I=0
+    vals['bact_load'][cured_people.astype(int)] = 0  # stop being infectious
 
-    return vals, len(treated_cured[1])
+    return vals, len(treated_people)
 
 def vacc_timestep_Age_range(params, vals, vacc_round, VaccData):
 
