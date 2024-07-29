@@ -175,8 +175,6 @@ class EndToEndTest(unittest.TestCase):
 
         print( f'Running {numSims} simulations on {num_cores} cores' )
         start = time.time()
-        # set numpy state here so that we get reproducible results
-        np.random.set_state(numpy_states[0])
         # seed the population with infection so that there are events occurring in the simulation
         # this means that when running with different seeds, there are differences in the simulation
         # which isn't guaranteed when there are no infections
