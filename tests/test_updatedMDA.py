@@ -1,3 +1,4 @@
+from unittest.mock import MagicMock
 import numpy as np
 import copy
 import unittest
@@ -245,3 +246,33 @@ class TestMDAFunctionality(unittest.TestCase):
         npt.assert_equal(actual = rank1, desired = rank2)
         npt.assert_allclose(mean1, expected_mean1, atol=2e-03, err_msg="The values are not close enough")
         npt.assert_allclose(mean2, expected_mean2, atol=2e-03, err_msg="The values are not close enough")
+
+
+    def test_doMDAAgeRange_on_babies_needs_random_below_half(self):
+        np.random.uniform = MagicMock(side_effect=[
+            np.array([0] * 2), # uniform result for treating baies
+            np.array([0.6, 0.4]), # uniform result for treatment working
+            np.array([]), # uniform result for treating older
+            np.array([]) # uniform result for older workign
+        ])
+        vals = {
+            'Age' : np.zeros(2), # 2 zero-week olds
+            'treatProbability': np.ones(2), # garanteeed to be treated
+        }
+        params = { 'MDA_Eff': 1.0}
+        curedPeople, treatedPeople = doMDAAgeRange(vals, params, ageStart=0, ageEnd=0.5)
+        npt.assert_array_equal(curedPeople, [1])
+        npt.assert_array_equal(treatedPeople, [0, 1])
+
+    # Additional tests
+    # treat probability for baby excludes baby
+    # 26 week old baby is treated with half efficacy 
+    # ageStart = 12/52 then babies under 12 weeks no treated (I think there is a minor bug here)
+    # For all tests, need to test for both whether the AgeStart is less than 0.5 or not
+    # Treat probability of adult excludes people
+    # MDA_Eff effects treated older people
+
+    # Tests for MDA_timestep_age_range
+    # No one cured leaves everyone with original indi
+    # Someon cured sets IndI to zero, but leaves other infected untouched
+    # Someon cured sets bact_load to zero, but leaves other infected untouched
