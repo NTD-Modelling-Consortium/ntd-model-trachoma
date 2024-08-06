@@ -175,7 +175,10 @@ class EndToEndTest(unittest.TestCase):
 
         print( f'Running {numSims} simulations on {num_cores} cores' )
         start = time.time()
-
+        # seed the population with infection so that there are events occurring in the simulation
+        # this means that when running with different seeds, there are differences in the simulation
+        # which isn't guaranteed when there are no infections
+        pickleData[0] = tf.Seed_infection(params=params, vals=pickleData[0]) # Seed infection
         #############################################################################################################################
         #############################################################################################################################
         # run as many simulations as specified
