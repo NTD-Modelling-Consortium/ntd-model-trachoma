@@ -144,7 +144,10 @@ class TestMDAFunctionality(unittest.TestCase):
         expectedProportionCured = self.params['MDA_Eff'] * cov
         npt.assert_allclose(np.mean(propCured), expectedProportionCured, atol=5e-03, err_msg="The values are not close enough")
 
-    def testGeneralMDA(self):
+    # tests so far have checked that for a population all aged the same, the MDA works correctly
+    # the next test ensures that when the MDA is done on a typical population, no one outside of the specified
+    # range of ages given by ageStart and ageEnd is given MDA
+    def testAgeRangeForMDAInTypicalPopulation(self):
         MDA_round = np.where(self.MDA_times == self.MDA_times[2])[0]
         # set up propCured, which is the proportion of people who are cured each MDA. This is later used
         # to calculate the mean proportion of people cured over multiple repetitions
@@ -158,7 +161,7 @@ class TestMDAFunctionality(unittest.TestCase):
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
                 # check if these have changed here, and if they have, then we re-draw the probabilities
                 valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
-                # test the MDA function directly
+                # test the MDA function directly so that we can see the people who are targeted and cured by the MDA
                 curedPeople, treatedPeople = doMDAAgeRange(valsTest, self.params, ageStart, ageEnd)
                 # get the ages of people who were treated and cured
                 treatedAges = valsTest['Age'][treatedPeople.astype(int)]
