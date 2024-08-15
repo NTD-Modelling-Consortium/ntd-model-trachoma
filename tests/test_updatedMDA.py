@@ -55,7 +55,7 @@ class TestMDAFunctionality(unittest.TestCase):
         # as there is a difference in the efficacy of the drug for babies, so we want to
         # check this is working ok
         self.MDAData = [[2018.0, 0, 100.0, 0.1, 0, 2],
-                        [2019.0, 0, 0.5, 0.8, 1, 2]
+                        [2019.0, 0, 0.5, 0.8, 1, 2],
                         [2020.0, 1, 10, 0.8, 1, 2]]
         # pick some times corresponding to these MDA's. This isn't really important for the tests
         # which use this set of MDA_times as they are considered separately, we test the 
@@ -161,13 +161,14 @@ class TestMDAFunctionality(unittest.TestCase):
                 # test the MDA function directly
                 curedPeople, treatedPeople = doMDAAgeRange(valsTest, self.params, ageStart, ageEnd)
                 # get the ages of people who were treated and cured
-                treatedAges = valsTest['Age'][treatedPeople]
-                curedAges = valsTest['Age'][curedPeople]
+                treatedAges = valsTest['Age'][treatedPeople.astype(int)]
+                curedAges = valsTest['Age'][curedPeople.astype(int)]
+
         # check that the ages of people who are treated and cured are within the bounds of ageStart and ageEnd
-        assert(max(treatedAges) <= ageEnd)
-        assert(min(treatedAges) >= ageStart)
-        assert(max(curedAges) <= ageEnd)
-        assert(max(curedAges) >= ageStart)
+        assert(max(treatedAges)/52 <= ageEnd)
+        assert(min(treatedAges)/52 >= ageStart)
+        assert(max(curedAges)/52 <= ageEnd)
+        assert(max(curedAges)/52 >= ageStart)
         
 
     def testNotTreatingOutsideOfTargetAgeRange(self):
