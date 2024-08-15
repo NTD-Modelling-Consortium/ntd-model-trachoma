@@ -283,7 +283,7 @@ def doMDAAgeRange(vals, params, ageStart, ageEnd):
     Decide who is cured during MDA based on treatment probabilities
     and probability of clearance given treated.
     '''
-    Age = vals['Age']
+    Age = vals['Age'] 
     cured_babies = []
     cured_older = []
     treated_babies = []
