@@ -1160,6 +1160,8 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
     Function to run a single instance of the simulation. The starting point for these simulations
     is
     '''
+    np.random.seed(seed)
+
     vals = copy.deepcopy(pickleData)
     vals = Check_and_init_vaccination_state(params,vals)
     vals = Check_and_init_MDA_treatment_state(params, vals, MDAData)
@@ -1171,10 +1173,6 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
                                         MDAData=MDAData, vacc_times = vacc_times, VaccData = VaccData,
                                         outputTimes= outputTimes)
     return results
-
-def seed_to_state(seed):
-    np.random.seed(seed)
-    return np.random.get_state()
 
 ##########################################################################################
 ##########################################################################################
