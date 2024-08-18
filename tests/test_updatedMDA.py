@@ -67,13 +67,9 @@ class TestMDAFunctionality(unittest.TestCase):
         # adjust MDA's so that they occur at the same time to test that this is accounted for correctly
         self.MDA_times_concurrent = np.array([5200, 5200])
 
-        seed = 0
-        np.random.seed(seed)
-        numpy_states = list(map(lambda s: self.seed_to_state(s), np.random.randint(2**32, size=1)))
-        
         # we initiate a set of values for the starting point and will also make it so everyone is infected so that
         # we can easily test the MDA's due to everyone who is cured having a change in IndI and bact_load variables which we can check against
-        self.vals = Set_inits(params=self.params, demog=self.demog, sim_params=self.sim_params, MDAData=self.MDAData, numpy_state=numpy_states[0])  
+        self.vals = Set_inits(params=self.params, demog=self.demog, sim_params=self.sim_params, MDAData=self.MDAData)
         self.vals['IndI'] = np.ones(self.params['N'])
         self.vals['No_Inf'] = np.ones(self.params['N'])
         self.vals['bact_load'] = bacterialLoad(range(self.params['N']), params=self.params, vals=self.vals)
