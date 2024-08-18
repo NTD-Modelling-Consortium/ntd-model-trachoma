@@ -8,8 +8,6 @@ import numpy as np
 import trachoma.trachoma_functions as tf
 import multiprocessing
 import time
-from joblib import Parallel, delayed
-num_cores = multiprocessing.cpu_count()
 import pickle
 
 class EndToEndTest(unittest.TestCase):
@@ -172,29 +170,27 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         #############################################################################################################################
         # run as many simulations as specified
-        results = Parallel(n_jobs=num_cores)(
-                 delayed(tf.run_single_simulation)(pickleData = pickleData[0], # there is only a single entry in test data, so is set as zero in case we need more simulations
-                                                params = params,
-                                                timesim = sim_params['timesim'],
-                                                burnin = sim_params['burnin'],
-                                                demog=demog,
-                                                beta = allBetas.beta[0], # there is only a single entry in test data, so is set as zero in case we need more simulations
-                                                MDA_times = MDA_times,
-                                                MDAData=MDAData,
-                                                vacc_times = vacc_times,
-                                                VaccData = VaccData,
-                                                outputTimes= outputTimes,
-                                                index = i,
-                                                # We use a fresh state for each simulation
-                                                seed=seed) for i in range(numSims))
-
-
+        results = tf.run_single_simulation(
+            pickleData = pickleData[0], # there is only a single entry in test data, so is set as zero in case we need more simulations
+            params = params,
+            timesim = sim_params['timesim'],
+            burnin = sim_params['burnin'],
+            demog=demog,
+            beta = allBetas.beta[0], # there is only a single entry in test data, so is set as zero in case we need more simulations
+            MDA_times = MDA_times,
+            MDAData=MDAData,
+            vacc_times = vacc_times,
+            VaccData = VaccData,
+            outputTimes= outputTimes,
+            index = 0,
+            seed=seed,
+        )
         print(time.time()- start)
         #############################################################################################################################
         #############################################################################################################################
         # collate and output IHME data
 
-        outsIHME = tf.getResultsIHME(results, demog, params, outputYear)
+        outsIHME = tf.getResultsIHME([results], demog, params, outputYear)
         outsIHME.to_csv('endtoendIHMEOuts.csv',index=False)
 
 
@@ -204,5 +200,5 @@ class EndToEndTest(unittest.TestCase):
         # collate and output IPM data
         MDAAgeRanges = tf.getInterventionAgeRanges(coverageFileName, "MDA")
         VaccAgeRanges = tf.getInterventionAgeRanges(coverageFileName, "Vaccine")
-        outsIPM = tf.getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRanges)
+        outsIPM = tf.getResultsIPM([results], demog, params, outputYear, MDAAgeRanges, VaccAgeRanges)
         outsIPM.to_csv('endtoendIPMOuts.csv',index=False)
