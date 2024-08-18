@@ -69,16 +69,7 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         #############################################################################################################################
 
-        # decide how many sims we will run
-        numSims = 1
-
-        # we set the seed for generating the numpy states below, leave seed=None for random data, or a value like seed=0 for consistent run-to-run data
-        np.random.seed(seed)
-        # we generate a numpy state for each simulation by saving a state. If the seed is set above, this will be consistent from run to run
-        numpy_states = list(map(lambda s: tf.seed_to_state(s), np.random.randint(2^32, size=numSims)))
-
         # initialize parameters, sim_params, and demography
-
         params = {'N': 2500,
                   'av_I_duration' : 2,
                   'av_ID_duration':200/7,
@@ -173,7 +164,6 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         #############################################################################################################################
 
-        print( f'Running {numSims} simulations on {num_cores} cores' )
         start = time.time()
         # seed the population with infection so that there are events occurring in the simulation
         # this means that when running with different seeds, there are differences in the simulation
@@ -196,7 +186,7 @@ class EndToEndTest(unittest.TestCase):
                                                 outputTimes= outputTimes,
                                                 index = i,
                                                 # We use a fresh state for each simulation
-                                                numpy_state=numpy_states[i]) for i in range(numSims))
+                                                seed=seed) for i in range(numSims))
 
 
         print(time.time()- start)
