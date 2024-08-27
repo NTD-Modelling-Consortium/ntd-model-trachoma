@@ -627,7 +627,7 @@ def Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state):
         vals dictionary modified with vaccination state
     '''
     np.random.set_state(numpy_state)
-    if not set(["treatProbability","MDA_coverage", "sytematic_non_compliance"]).issubset(vals.keys()):
+    if not set(["treatProbability","MDA_coverage", "systematic_non_compliance"]).issubset(vals.keys()):
         MDA_coverage = 0
         treatProbability = np.full(shape=params['N'], fill_value=np.nan, dtype=float)
         systematic_non_compliance = params['rho']
