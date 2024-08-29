@@ -195,6 +195,8 @@ class EndToEndTest(unittest.TestCase):
                                                 VaccData = VaccData,
                                                 outputTimes= outputTimes,
                                                 index = i,
+                                                doSurvey = True, 
+                                                doIHMEOutput = True, 
                                                 # We use a fresh state for each simulation
                                                 numpy_state=numpy_states[i]) for i in range(numSims))
 

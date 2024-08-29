@@ -789,7 +789,7 @@ def update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_pe
 
 def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                                demog, bet, MDA_times, MDAData,
-                               vacc_times, VaccData, outputTimes, numpy_state):
+                               vacc_times, VaccData, outputTimes, doSurvey, doIHMEOutput, numpy_state):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -805,22 +805,24 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     max_age = demog['max_age'] // 52 # max_age in weeks
     yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
-    surveyPrev  = 0.5
-    surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
-   # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
-    #surveyPass = 0
-    surveyPass = 1 if surveyPrev <= 0.05 else 0
-   # if the prevalence is > 5%, then we will do another survey after given number of MDAs
-   # call this value nextSurvey    
-    nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
-    # initialize time for next survey 
-    surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
-   
-   # initialize time for impact survey dependent on surveyed prevalence
-    if surveyPrev <= 0.05:
-        impactSurveyTime = min(MDA_times) + 104
-    else:
-        impactSurveyTime = timesim + 10
+    surveyPass = 0
+    if doSurvey:
+        surveyPrev  = 0.5
+        surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
+    # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
+        #surveyPass = 0
+        surveyPass = 1 if surveyPrev <= 0.05 else 0
+    # if the prevalence is > 5%, then we will do another survey after given number of MDAs
+    # call this value nextSurvey    
+        nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
+        # initialize time for next survey 
+        surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
+    
+    # initialize time for impact survey dependent on surveyed prevalence
+        if surveyPrev <= 0.05:
+            impactSurveyTime = min(MDA_times) + 104
+        else:
+            impactSurveyTime = timesim + 10
     nextOutputTime = min(outputTimes2)
     w = np.where(outputTimes2 == nextOutputTime)
     outputTimes2[w] = timesim + 10
@@ -846,7 +848,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
 
     for i in range(1, 1 + timesim):
         
-        if i == nextOutputTime:
+        if doIHMEOutput and i == nextOutputTime:
             
             # has the disease truly eliminated in the population
             true_elimination = 1 if (sum(vals['IndI']) + sum(vals['IndD'])) == 0 else 0
@@ -872,7 +874,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             vals['nDosesVacc'] = np.zeros(VaccData[0][-1], dtype=object)
             vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
             
-        if np.logical_or(i == surveyTime, i == impactSurveyTime) :     
+        if doSurvey and np.logical_or(i == surveyTime, i == impactSurveyTime) :     
             surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
                
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
@@ -1165,7 +1167,7 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRange
 
 
 def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_times, MDAData, vacc_times, VaccData,
-                          outputTimes, index, numpy_state):
+                          outputTimes, doSurvey, doIHMEOutput, index, numpy_state):
 
     '''
     Function to run a single instance of the simulation. The starting point for these simulations
@@ -1180,7 +1182,7 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
                                         burnin=burnin,
                                         demog=demog, bet=beta, MDA_times = MDA_times, 
                                         MDAData=MDAData, vacc_times = vacc_times, VaccData = VaccData,
-                                        outputTimes= outputTimes, 
+                                        outputTimes= outputTimes, doSurvey=doSurvey, doIHMEOutput=doIHMEOutput,
                                         numpy_state=numpy_state)
     return results
 
