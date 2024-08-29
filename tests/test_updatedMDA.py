@@ -55,12 +55,13 @@ class TestMDAFunctionality(unittest.TestCase):
         # as there is a difference in the efficacy of the drug for babies, so we want to
         # check this is working ok
         self.MDAData = [[2018.0, 0, 100.0, 0.1, 0, 2],
-                        [2019.0, 0, 0.5, 0.8, 1, 2]]
+                        [2019.0, 0, 0.5, 0.8, 1, 2],
+                        [2020.0, 1, 10, 0.8, 1, 2]]
         # pick some times corresponding to these MDA's. This isn't really important for the tests
         # which use this set of MDA_times as they are considered separately, we test the 
         # MDA works correctly when done concurrently on different age groups with different coverage
         # using MDA_times_concurrent and MDA_times_concurrent
-        self.MDA_times = np.array([5200, 5252])
+        self.MDA_times = np.array([5200, 5252, 5304])
 
         self.MDADataConcurrent = [[2018.0, 0, 100.0, 0.1, 0, 2],
                     [2018.0, 0, 0.5, 0.4, 1, 2]]
@@ -142,6 +143,35 @@ class TestMDAFunctionality(unittest.TestCase):
         # calculated the expected proportion of people cured via the efficacy of the MDA along with the coverage
         expectedProportionCured = self.params['MDA_Eff'] * cov
         npt.assert_allclose(np.mean(propCured), expectedProportionCured, atol=5e-03, err_msg="The values are not close enough")
+
+    # tests so far have checked that for a population all aged the same, the MDA works correctly
+    # the next test ensures that when the MDA is done on a typical population, no one outside of the specified
+    # range of ages given by ageStart and ageEnd is given MDA
+    def testAgeRangeForMDAInTypicalPopulation(self):
+        MDA_round = np.where(self.MDA_times == self.MDA_times[2])[0]
+        # set up propCured, which is the proportion of people who are cured each MDA. This is later used
+        # to calculate the mean proportion of people cured over multiple repetitions
+        propCured = []
+        for _ in range(self.nReps):
+            valsTest = copy.deepcopy(self.vals)
+            for l in range(len(MDA_round)):
+                MDA_round_current = MDA_round[l]
+                # we want to get the data corresponding to this MDA from the MDAdata
+                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
+                # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
+                # check if these have changed here, and if they have, then we re-draw the probabilities
+                valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
+                # test the MDA function directly so that we can see the people who are targeted and cured by the MDA
+                curedPeople, treatedPeople = doMDAAgeRange(valsTest, self.params, ageStart, ageEnd)
+                # get the ages of people who were treated and cured
+                treatedAges = valsTest['Age'][treatedPeople.astype(int)]
+                curedAges = valsTest['Age'][curedPeople.astype(int)]
+
+        # check that the ages of people who are treated and cured are within the bounds of ageStart and ageEnd
+        assert(max(treatedAges)/52 <= ageEnd)
+        assert(min(treatedAges)/52 >= ageStart)
+        assert(max(curedAges)/52 <= ageEnd)
+        assert(max(curedAges)/52 >= ageStart)
         
 
     def testNotTreatingOutsideOfTargetAgeRange(self):

@@ -283,22 +283,22 @@ def doMDAAgeRange(vals, params, ageStart, ageEnd):
     Decide who is cured during MDA based on treatment probabilities
     and probability of clearance given treated.
     '''
-    Age = vals['Age']
+    Age = vals['Age'] 
     cured_babies = []
     cured_older = []
     treated_babies = []
     treated_older = []
     if ageStart*52 <= 26:
         babies = np.where(Age <= 26)[0]
-        treated_babies = np.where(np.random.uniform(size=len(babies)) < vals['treatProbability'][babies])[0]
+        treated_babies = babies[np.where(np.random.uniform(size=len(babies)) < vals['treatProbability'][babies])[0]]
         cured_babies = treated_babies[np.random.uniform(size=len(treated_babies)) < (params['MDA_Eff'] * 0.5)]
 
         older = np.where(np.logical_and(Age > 26, Age <= ageEnd *52))[0]
-        treated_older = np.where(np.random.uniform(size=len(older)) < vals['treatProbability'][older])[0]
+        treated_older = older[np.where(np.random.uniform(size=len(older)) < vals['treatProbability'][older])[0]]
         cured_older = treated_older[np.random.uniform(size=len(treated_older)) < (params['MDA_Eff'])]
     else:
         older = np.where(np.logical_and(Age > ageStart * 52, Age <= ageEnd *52))[0]
-        treated_older = np.where(np.random.uniform(size=len(older)) < vals['treatProbability'][older])[0]
+        treated_older = older[np.where(np.random.uniform(size=len(older)) < vals['treatProbability'][older])[0]]
         cured_older = treated_older[np.random.uniform(size=len(treated_older)) < (params['MDA_Eff'])]
     return np.append(cured_babies, cured_older), np.append(treated_babies, treated_older)
 
