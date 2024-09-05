@@ -437,6 +437,8 @@ def drawTreatmentProbabilities(n, cov, snc):
 
     if(cov == 0):
         treatmentProb = np.zeros(n)
+    elif(cov == 1):
+        treatmentProb = np.ones(n)
     elif(snc > 0):
         alpha = cov * (1-snc)/snc
         beta = (1-cov)*(1-snc)/snc
