@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=70.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ntdmc-trachoma"
+dynamic = ["version"]
+authors = [
+  {name = "Neglected Tropical Diseases Modelling Consortium"},
+]
+description = ""
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+requires-python = ">= 3.9"
+dependencies = [
+  "numpy==1.26.*",
+  "pandas==2.2.*",
+  "openpyxl==3.1.*",
+]
+[project.optional-dependencies]
+dev = ["pytest", "ruff==0.4.*"]
+
+[project.urls]
+Homepage = "https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma"
+
+[tool.setuptools.package-dir]
+ntdmc_trachoma = "trachoma"
+
+[tool.setuptools.package-data]
+ntdmc_trachoma = [
+    "data/**/*.txt",
+    "data/**/*.xlsx",
+    "data/**/*.csv"
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "ntdmc_trachoma.__version__"}
