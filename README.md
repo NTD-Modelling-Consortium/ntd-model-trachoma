@@ -82,4 +82,14 @@ cd tests
 python -m unittest test_endtoend.py
 ```
 
+### Building the docs
 
+You'll need to have [the sphinx static site generator](https://www.sphinx-doc.org) installed.  A good way to install Sphinx is to use [`pipx`](pipx.pypa.io).
+
+From the root of the repository:
+
+```shell
+sphinx-build -b html docs/source docs/build/html
+```
+
+You can now visualise the documentation webiste by opening `docs/build/html/index.html` with your web browser.
