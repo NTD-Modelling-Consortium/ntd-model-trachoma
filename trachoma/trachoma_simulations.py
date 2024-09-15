@@ -11,7 +11,7 @@ import sys
 import os
 import uuid
 
-import trachoma.trachoma_functions as tf
+import ntdmc_trachoma.trachoma_functions as tf
 
 def timer(func):
     """Print the runtime of the decorated function"""

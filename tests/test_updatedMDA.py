@@ -3,7 +3,7 @@ import numpy as np
 import copy
 import unittest
 import numpy.testing as npt
-from trachoma.trachoma_functions import *
+from ntdmc_trachoma.trachoma_functions import *
 
 class TestMDAFunctionality(unittest.TestCase):
     # start by defining parameters for the run
