@@ -32,3 +32,35 @@ vals, results = run_single_simulation(
 
 See [the docs](link) for more information about the meaning of the
 different parameters and the objects returned by the function.
+
+## Contributing
+
+Start by cloning the repository:
+
+```shell
+git clone git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git
+```
+
+Then install the package in editable mode.  It is recommend that you
+do so within a Python virtual environment dedicated to this project.
+
+```shell
+cd ntd-model-trachoma && pip install --editable .[dev]
+```
+
+Specifying the `[dev]` suffix will trigger the installation of both
+`ruff` and `pytest`.
+
+Contributions to the Python code are expected to pass all checks
+applied by the `ruff check` tool.  Before you commit changes, make
+sure this is the case by running the `ruff check trachoma/` command
+from the root of the repository.
+
+Automated tests can be run with `pytest`:
+
+```shell
+cd tests && python -m pytest .
+```
+
+Note the current directory _must_ be set to the `tests` folder in
+order for all the tests to pass.
