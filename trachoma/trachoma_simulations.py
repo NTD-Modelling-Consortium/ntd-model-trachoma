@@ -1,13 +1,11 @@
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-import multiprocessing
 import pickle
 import time
 import json
 import functools
 import datetime
-import sys
 import os
 import uuid
 
@@ -98,8 +96,6 @@ def loadParameters(BetFilePath, MDAFilePath, PrevFilePath, InfectFilePath, SaveO
     demog: dict
         demography parameters.
     '''
-
-    print_function = logger.info if logger is not None else print
 
     # load the values of beta and of the random seed
     simparams = pd.read_csv( BetFilePath ) if numReps == 0 else pd.read_csv( BetFilePath, nrows=numReps )

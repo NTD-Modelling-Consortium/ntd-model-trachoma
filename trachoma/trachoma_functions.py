@@ -3,9 +3,8 @@ from datetime import date
 import pandas as pd
 import copy
 from numpy import ndarray
-from numpy.typing import NDArray
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Optional
 from pathlib import Path
 
 DATA_PATH = Path(__file__).parent / "data"
@@ -692,7 +691,6 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
     coverage = np.zeros(MDAData[0][-1], dtype=object)
     # initialize count of MDAs
     numMDA = np.zeros(MDAData[0][-1], dtype=object)
-    prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
     
     for i in range(1, 1 + timesim):
 
