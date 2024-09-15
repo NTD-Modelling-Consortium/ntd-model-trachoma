@@ -40,3 +40,7 @@ ntdmc_trachoma = [
 
 [tool.setuptools.dynamic]
 version = {attr = "ntdmc_trachoma.__version__"}
+
+[tool.ruff.lint]
+# Ignore bare 'except' stmts
+ignore = ["E722"]
