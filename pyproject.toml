@@ -18,8 +18,9 @@ classifiers = [
 requires-python = ">= 3.9"
 dependencies = [
   "numpy==1.26.*",
-  "pandas==2.2.*",
-  "openpyxl==3.1.*",
+  "pandas",
+  "openpyxl",
+  "joblib",
 ]
 [project.optional-dependencies]
 dev = ["pytest", "ruff==0.4.*"]
