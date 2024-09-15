@@ -696,8 +696,8 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
 
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
-            for l in range(len(MDA_round)):
-                MDA_round_current = MDA_round[l]
+            for round_idx in range(len(MDA_round)):
+                MDA_round_current = MDA_round[round_idx]
                 # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
@@ -887,8 +887,8 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if i in MDA_times:
             if surveyPass == 0:
                 MDA_round = np.where(MDA_times == i)[0]
-                for l in range(len(MDA_round)):
-                    MDA_round_current = MDA_round[l]
+                for round_idx in range(len(MDA_round)):
+                    MDA_round_current = MDA_round[round_idx]
                     # we want to get the data corresponding to this MDA from the MDAdata
                     ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
                     # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
@@ -909,8 +909,8 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                 vals = vacc_timestep_Age_range(params, vals, vacc_round, VaccData)
                 
             else:
-                for l in range(len(vacc_round)):
-                    vacc_round2 = copy.deepcopy(vacc_round[l])
+                for round_idx in range(len(vacc_round)):
+                    vacc_round2 = copy.deepcopy(vacc_round[round_idx])
                     vals = vacc_timestep_Age_range(params, vals, vacc_round2, VaccData)
                    
             #vals = vaccinate_population(vals = vals, params = params)
