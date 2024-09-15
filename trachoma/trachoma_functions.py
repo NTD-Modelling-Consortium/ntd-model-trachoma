@@ -3,11 +3,13 @@ from datetime import date
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
-import pkg_resources
 from numpy import ndarray
 from numpy.typing import NDArray
 from dataclasses import dataclass
 from typing import Callable, List, Optional
+from pathlib import Path
+
+DATA_PATH = Path(__file__).parent / "data"
 
 """
 This file contains helper functions for running simulations.
@@ -51,11 +53,7 @@ def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elim
 
 def readPlatformData(coverageFileName, Platform):
     # read coverage data file
-    modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
-    PlatCov = pd.read_csv(
-         f"{modelDataDir}/{coverageFileName}"
-    )
-    
+    PlatCov = pd.read_csv(DATA_PATH / "coverage" / coverageFileName)
     PlatformRows = np.where(PlatCov.Platform == Platform)[0]
     if(len(PlatformRows) >0):
         PlatCov = PlatCov.iloc[PlatformRows, :]
@@ -1048,11 +1046,7 @@ def getResultsIHME(results, demog, params, outputYear):
 
 
 def getInterventionAgeRanges(coverageFileName, intervention):
-
-    modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
-    PlatCov = pd.read_csv(
-         f"{modelDataDir}/{coverageFileName}"
-    )
+    PlatCov = pd.read_csv(DATA_PATH / "coverage" / coverageFileName)
     InterventionRows = np.where(PlatCov.Platform == intervention)[0]
     PlatCov = PlatCov.iloc[InterventionRows, :]
     InterventionAgeRanges = np.zeros([PlatCov.shape[0],2], dtype = object)
