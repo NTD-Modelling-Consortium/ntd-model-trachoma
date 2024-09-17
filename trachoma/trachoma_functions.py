@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional
 from pathlib import Path
 
-DATA_PATH = Path(__file__).parent / "data"
+DEFAULT_DATA_PATH = Path(__file__).parent / "data" / "coverage"
 
 """
 This file contains helper functions for running simulations.
@@ -51,9 +51,31 @@ def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elim
                           nVaccDoses = nVaccDoses,
                           propVacc = propVacc))
 
-def readPlatformData(coverageFileName, Platform):
-    # read coverage data file
-    PlatCov = pd.read_csv(DATA_PATH / "coverage" / coverageFileName)
+
+def _validate_data_path(data_path):
+    """
+    Set data path to default is None, otherwise check that path
+    actually exists.
+    """
+    if data_path:
+        try:
+            data_path = Path(data_path)
+        except TypeError as e:
+            sys.stderr(f"ERROR: {data_path} is not a valid data path")
+            raise e
+        if not data_path.exists():
+            raise FileNotFoundError(
+                f"ERROR: {data_path} does not exists"
+            )
+        return data_path
+
+    return DEFAULT_DATA_PATH
+
+
+def readPlatformData(coverageFileName, Platform, data_path=None):
+    PlatCov = pd.read_csv(
+        _validate_data_path(data_path) / coverageFileName
+    )
     PlatformRows = np.where(PlatCov.Platform == Platform)[0]
     if(len(PlatformRows) >0):
         PlatCov = PlatCov.iloc[PlatformRows, :]
@@ -1045,8 +1067,10 @@ def getResultsIHME(results, demog, params, outputYear):
     return df
 
 
-def getInterventionAgeRanges(coverageFileName, intervention):
-    PlatCov = pd.read_csv(DATA_PATH / "coverage" / coverageFileName)
+def getInterventionAgeRanges(coverageFileName, intervention, data_path=None):
+    PlatCov = pd.read_csv(
+        _validate_data_path(data_path) / coverageFileName
+    )
     InterventionRows = np.where(PlatCov.Platform == intervention)[0]
     PlatCov = PlatCov.iloc[InterventionRows, :]
     InterventionAgeRanges = np.zeros([PlatCov.shape[0],2], dtype = object)
