@@ -23,7 +23,7 @@ dependencies = [
   "joblib",
 ]
 [project.optional-dependencies]
-dev = ["pytest", "ruff==0.4.*"]
+dev = ["pytest", "ruff==0.6.*"]
 
 [project.urls]
 Homepage = "https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma"
@@ -40,3 +40,7 @@ ntdmc_trachoma = [
 
 [tool.setuptools.dynamic]
 version = {attr = "ntdmc_trachoma.__version__"}
+
+[tool.ruff.lint]
+# Ignore bare 'except' stmts
+ignore = ["E722"]
