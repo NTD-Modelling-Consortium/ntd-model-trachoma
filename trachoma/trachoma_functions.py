@@ -1,13 +1,13 @@
 import numpy as np
 from datetime import date
-import matplotlib.pyplot as plt
 import pandas as pd
 import copy
-import pkg_resources
 from numpy import ndarray
-from numpy.typing import NDArray
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Optional
+from pathlib import Path
+
+DATA_PATH = Path(__file__).parent / "data"
 
 """
 This file contains helper functions for running simulations.
@@ -51,11 +51,7 @@ def outputResult(vals, i, nDoses, coverage, nMDA, nSurvey, surveyPass, true_elim
 
 def readPlatformData(coverageFileName, Platform):
     # read coverage data file
-    modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
-    PlatCov = pd.read_csv(
-         f"{modelDataDir}/{coverageFileName}"
-    )
-    
+    PlatCov = pd.read_csv(DATA_PATH / "coverage" / coverageFileName)
     PlatformRows = np.where(PlatCov.Platform == Platform)[0]
     if(len(PlatformRows) >0):
         PlatCov = PlatCov.iloc[PlatformRows, :]
@@ -64,7 +60,7 @@ def readPlatformData(coverageFileName, Platform):
         fy = 10000
         fy_index = 7
         for i in range(len(PlatCov.columns)):
-            if type(PlatCov.columns[i]) == int:
+            if isinstance(PlatCov.columns[i], int):
                 fy = min(fy, PlatCov.columns[i])
                 fy_index = min(fy_index, i)
     
@@ -695,14 +691,13 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
     coverage = np.zeros(MDAData[0][-1], dtype=object)
     # initialize count of MDAs
     numMDA = np.zeros(MDAData[0][-1], dtype=object)
-    prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
     
     for i in range(1, 1 + timesim):
 
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
-            for l in range(len(MDA_round)):
-                MDA_round_current = MDA_round[l]
+            for round_idx in range(len(MDA_round)):
+                MDA_round_current = MDA_round[round_idx]
                 # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
@@ -892,8 +887,8 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if i in MDA_times:
             if surveyPass == 0:
                 MDA_round = np.where(MDA_times == i)[0]
-                for l in range(len(MDA_round)):
-                    MDA_round_current = MDA_round[l]
+                for round_idx in range(len(MDA_round)):
+                    MDA_round_current = MDA_round[round_idx]
                     # we want to get the data corresponding to this MDA from the MDAdata
                     ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
                     # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
@@ -914,8 +909,8 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                 vals = vacc_timestep_Age_range(params, vals, vacc_round, VaccData)
                 
             else:
-                for l in range(len(vacc_round)):
-                    vacc_round2 = copy.deepcopy(vacc_round[l])
+                for round_idx in range(len(vacc_round)):
+                    vacc_round2 = copy.deepcopy(vacc_round[round_idx])
                     vals = vacc_timestep_Age_range(params, vals, vacc_round2, VaccData)
                    
             #vals = vaccinate_population(vals = vals, params = params)
@@ -1048,11 +1043,7 @@ def getResultsIHME(results, demog, params, outputYear):
 
 
 def getInterventionAgeRanges(coverageFileName, intervention):
-
-    modelDataDir = pkg_resources.resource_filename( "trachoma", "data/coverage" )
-    PlatCov = pd.read_csv(
-         f"{modelDataDir}/{coverageFileName}"
-    )
+    PlatCov = pd.read_csv(DATA_PATH / "coverage" / coverageFileName)
     InterventionRows = np.where(PlatCov.Platform == intervention)[0]
     PlatCov = PlatCov.iloc[InterventionRows, :]
     InterventionAgeRanges = np.zeros([PlatCov.shape[0],2], dtype = object)

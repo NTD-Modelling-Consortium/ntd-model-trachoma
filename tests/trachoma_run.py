@@ -3,7 +3,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from trachoma.trachoma_simulations import Trachoma_Simulation
+from ntdmc_trachoma.trachoma_simulations import Trachoma_Simulation
 
 def timer(func):
     """Print the runtime of the decorated function"""

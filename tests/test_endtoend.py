@@ -5,7 +5,7 @@ from datetime import date
 import pandas as pd
 import numpy as np
 
-import trachoma.trachoma_functions as tf
+import ntdmc_trachoma.trachoma_functions as tf
 import multiprocessing
 import time
 from joblib import Parallel, delayed
