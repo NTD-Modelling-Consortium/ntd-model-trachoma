@@ -19,7 +19,7 @@ def test_read_platform_data():
 
 def test_read_platform_data_other_data_path():
     result = readPlatformData(
-        "test_coverage_data.csv",
+        "test_cov_data.csv",
         "MDA",
         data_path="data"
     )
