@@ -56,6 +56,11 @@ applied by the `ruff check` tool.  Before you commit changes, make
 sure this is the case by running the `ruff check trachoma/` command
 from the root of the repository.
 
+Contributions to the Python code are expected to comply with the style
+enforced by the `ruff format` tool.  Before your commit changes, make
+sure to format your code accordingly by running the `ruff format
+trachoma` command frfrom the root of the repository.
+
 Automated tests can be run with `pytest`:
 
 ```shell
