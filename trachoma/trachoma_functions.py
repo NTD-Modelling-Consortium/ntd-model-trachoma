@@ -422,7 +422,7 @@ def bacterialLoad(params,vals):
     # people have active infection and then multiply by an indicator of this.
     # the following line finds the people who have an active infection
     peopleWithNonZeroBactLoad = vals['T_ID'] > 0 
-    bacterial_loads = b1 * np.exp(- No_Inf * ep2) * (peopleWithNonZeroBactLoad)
+    bacterial_loads = b1 * np.exp(- (No_Inf-1) * ep2) * (peopleWithNonZeroBactLoad)
     
     # If vaccinated reduce bacterial load by a fixed proportion
     prob_reduction = params["vacc_reduce_bacterial_load"]
