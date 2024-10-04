@@ -369,6 +369,7 @@ def doVaccAgeRange(params, vals, vacc_round, VaccData):
     return vals
 
 
+
 def ID_period_function(newDis, params, vals):
 
     '''
@@ -387,9 +388,9 @@ def ID_period_function(newDis, params, vals):
     np.array
         array of duration of infections subsetted by newInfectious
     '''
-    Ind_ID_period_base  =vals['Ind_ID_period_base'][newDis]
+    Ind_ID_period_base = vals['Ind_ID_period_base'][newDis]
     No_Inf = vals['No_Inf'][newDis]
-    id_periods = (Ind_ID_period_base - params['min_ID']) * np.exp(-params['inf_red'] * (No_Inf - 1)) + params['min_ID']
+    id_periods = 1/((1/Ind_ID_period_base - 1/params['min_ID']) * np.exp(-params['inf_red'] * (No_Inf - 1)) + 1/params['min_ID'])
 
     # If vaccinated reduce bacterial load by a fixed proportion
     prob_reduction = params["vacc_reduce_duration"]
@@ -407,11 +408,10 @@ def D_period_function(Ind_D_period_base, No_Inf, params, Age):
     '''
     Function to give duration of disease only period.
     '''
-    ag = 0.00179
-    aq = 0.0368
-    T_ID = np.round( params['min_D'] + ( Ind_D_period_base - params['min_D'] ) * np.exp( -aq * ( No_Inf-1 ) -ag * Age ) )
 
-    return T_ID
+    T_D = np.round(1/((1/Ind_D_period_base - 1/params['min_D']) * np.exp(- params['dis_red'] * (No_Inf - 1)) + 1/params['min_D']))
+    return T_D
+
 
 def bacterialLoad(newInfectious,params,vals):
 
