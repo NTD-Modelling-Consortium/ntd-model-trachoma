@@ -864,8 +864,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
     surveyPass = 0
     if doSurvey:
-        if i % 52 == 0:
-            params['importation_rate'] *= params['importation_reduction_rate']
+        
         surveyPrev  = 0.5
         surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
     # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
@@ -906,7 +905,8 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
 
     for i in range(1, 1 + timesim):
-        
+        if i % 52 == 0:
+            params['importation_rate'] *= params['importation_reduction_rate']
         if doIHMEOutput and i == nextOutputTime:
             
             # has the disease truly eliminated in the population
