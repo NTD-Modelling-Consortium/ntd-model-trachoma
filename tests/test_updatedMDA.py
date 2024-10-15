@@ -14,6 +14,7 @@ class TestMDAFunctionality(unittest.TestCase):
                        'inf_red': 0.45,
                        'min_ID': 11, 
                        'av_D_duration': 300/7,
+                       'dis_red':0.3,
                        'min_D': 1, 
                        'v_1': 1,
                        'v_2': 2.6,
