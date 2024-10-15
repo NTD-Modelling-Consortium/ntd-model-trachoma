@@ -8,6 +8,15 @@ from trachoma.trachoma_functions import *
 class TestTimeInCompartmentsIsSameAsRModel(unittest.TestCase): 
 
     # check that the way the python code does it gives the same result
+    # the R code calculated rates of moving from one compartment to another (e.g. ID -> D), 
+    # whilst the python code has time in each compartment.
+    # Additionally, the R code is in days whilst python is in weeks,
+    # so the python results should be 1/(7*R results). 
+
+    # This is because if the rate of moving from ID->D is 0.1, meaning that we would expect 10% 
+    # of people to move there in 1 day, then the average time in ID is 10 days = 1/0.1 days. 
+    # In weeks this is 10/7 days = 1/(0.1 * 7) days.
+
     def setUp(self):
         # Setup common parameters
         self.R_params = {'nun': 1/((7.7*7)/math.log(2)),
