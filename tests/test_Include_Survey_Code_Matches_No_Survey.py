@@ -90,6 +90,7 @@ class Check_Function_Including_Survey_Matches_Function_Without_Survey(unittest.T
                   'min_ID':11, #Parameters relating to duration of infection period, including ID period
                   'av_D_duration':300/7,
                   'min_D':1, #Parameters relating to duration of disease period
+                  'dis_red':0.3,
                   'v_1':1,
                   'v_2':2.6,
                   'phi':1.4,
