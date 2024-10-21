@@ -266,10 +266,15 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
     b = len(o_children)/params['N']
     c = len(adults)/params['N']
     epsm = 1 - params['epsilon']
+    eps =  params['epsilon']
+    # this was previously incorrectly specified in the python code, due to social mixing being wrong
+    # and not accounting for all mixing done by age groups.
+    # update with correct formulation which is described in equation 3 of the supplementary 
+    # material of this paper https://journals.plos.org/plosntds/article?id=10.1371/journal.pntd.0000462
     A = [
-        prevLambda[0]*a + prevLambda[1]*epsm*b + prevLambda[2]*epsm*c,
-        prevLambda[0]*a*epsm + prevLambda[1]*b + prevLambda[2]*epsm*c,
-        prevLambda[0]*a*epsm + prevLambda[1]*epsm*b + prevLambda[2]*c,
+        eps * prevLambda[0] + prevLambda[0]*a * epsm + prevLambda[1]*epsm*b + prevLambda[2]*epsm*c,
+        prevLambda[0]*a*epsm + prevLambda[1]*b * epsm + eps * prevLambda[1] + prevLambda[2]*epsm*c,
+        prevLambda[0]*a*epsm + prevLambda[1]*epsm*b + prevLambda[2]*c * epsm + eps * prevLambda[2],
     ]
     returned = np.ones(params['N'])
     returned[y_children] = A[0]
@@ -285,7 +290,8 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
 
     returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
 
-    return returned
+    # the factor of (0.5 + 0.5 * (1 - IndD)) reduces the infections pressure on people who are already diseased by 50%.
+    return returned  * (0.5 + 0.5 * (1 - IndD))
 
 def Reset(Age, demog, params):
 
