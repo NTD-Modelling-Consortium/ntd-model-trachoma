@@ -78,7 +78,7 @@ class TestMDAFunctionality(unittest.TestCase):
         self.vals = Set_inits(params=self.params, demog=self.demog, sim_params=self.sim_params, MDAData=self.MDAData, numpy_state=numpy_states[0])  
         self.vals['IndI'] = np.ones(self.params['N'])
         self.vals['No_Inf'] = np.ones(self.params['N'])
-        self.vals['bact_load'] = bacterialLoad(range(self.params['N']), params=self.params, vals=self.vals)
+        self.vals['bact_load'] = bacterialLoad(params=self.params, vals=self.vals)
         # set a number of repetitions for the MDA so that we are likely to reach the level of tolerance we want
         # as with only one MDA there will be enough randomness to possibly be outside of this tolerance range
         self.nReps = 100

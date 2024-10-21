@@ -173,7 +173,9 @@ def stepF_fixed(vals, params, demog, bet):
     # Step 1: Identify individuals available for infection.
     # Susceptible individuals available for infection.
     Ss = np.where(vals['IndI'] == 0)[0]
-
+    # we only care about bacterial load when we use it to calculate infection probabilities.
+    # This is done in the getlambdaStep function, so update the bacterial loads before calling this function
+    vals['bact_load'] = bacterialLoad(params = params, vals = vals)
     # Step 2: Calculate infection pressure from previous time step and choose infected individuals
     # Susceptible individuals acquiring new infections. This gives a lambda
     # for each individual dependent on age and disease status.
@@ -207,12 +209,8 @@ def stepF_fixed(vals, params, demog, bet):
     # When individual clears infection, their diseased only is set
     vals['T_D'][newClearInf] = D_period_function(Ind_D_period_base=vals['Ind_D_period_base'][newClearInf],
     No_Inf=vals['No_Inf'][newClearInf], params=params, Age = vals['Age'][newClearInf])
-    # Stop being infectious too
-    vals['bact_load'][newClearInf] = 0
     # Transition: Clear disease
     vals['IndD'][newClearDis] = 0  # clear disease they become D=0
-    # Transition: Become infectious
-    vals['bact_load'][newInfectious] = bacterialLoad(newInfectious,params = params, vals = vals)
 
     # Step 6: implement infections
     # Transition: become infected
@@ -268,10 +266,15 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
     b = len(o_children)/params['N']
     c = len(adults)/params['N']
     epsm = 1 - params['epsilon']
+    eps =  params['epsilon']
+    # this was previously incorrectly specified in the python code, due to social mixing being wrong
+    # and not accounting for all mixing done by age groups.
+    # update with correct formulation which is described in equation 3 of the supplementary 
+    # material of this paper https://journals.plos.org/plosntds/article?id=10.1371/journal.pntd.0000462
     A = [
-        prevLambda[0]*a + prevLambda[1]*epsm*b + prevLambda[2]*epsm*c,
-        prevLambda[0]*a*epsm + prevLambda[1]*b + prevLambda[2]*epsm*c,
-        prevLambda[0]*a*epsm + prevLambda[1]*epsm*b + prevLambda[2]*c,
+        eps * prevLambda[0] + prevLambda[0]*a * epsm + prevLambda[1]*epsm*b + prevLambda[2]*epsm*c,
+        prevLambda[0]*a*epsm + prevLambda[1]*b * epsm + eps * prevLambda[1] + prevLambda[2]*epsm*c,
+        prevLambda[0]*a*epsm + prevLambda[1]*epsm*b + prevLambda[2]*c * epsm + eps * prevLambda[2],
     ]
     returned = np.ones(params['N'])
     returned[y_children] = A[0]
@@ -287,7 +290,8 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
 
     returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
 
-    return returned
+    # the factor of (0.5 + 0.5 * (1 - IndD)) reduces the infections pressure on people who are already diseased by 50%.
+    return returned  * (0.5 + 0.5 * (1 - IndD))
 
 def Reset(Age, demog, params):
 
@@ -410,7 +414,7 @@ def D_period_function(Ind_D_period_base, No_Inf, params, Age):
     T_D = np.round(1/((1/Ind_D_period_base - 1/params['min_D']) * np.exp(- params['dis_red'] * (No_Inf - 1)) + 1/params['min_D']))
     return T_D
 
-def bacterialLoad(newInfectious,params,vals):
+def bacterialLoad(params,vals):
 
     '''
     Function to scale bacterial load according to infection history.
@@ -428,15 +432,18 @@ def bacterialLoad(newInfectious,params,vals):
     np.array
         array of bacterial loads subsetted by newInfectious
     '''
-    No_Inf = vals['No_Inf'][newInfectious]
+    No_Inf = vals['No_Inf']
     b1 = 1
     ep2 = 0.114
-
-    bacterial_loads = b1 * np.exp((No_Inf - 1) * - ep2)
+    # we can calculate the bacterial load for everyone and then just see which
+    # people have active infection and then multiply by an indicator of this.
+    # the following line finds the people who have an active infection
+    peopleWithNonZeroBactLoad = vals['T_ID'] > 0 
+    bacterial_loads = b1 * np.exp(- (No_Inf-1) * ep2) * (peopleWithNonZeroBactLoad)
     
     # If vaccinated reduce bacterial load by a fixed proportion
     prob_reduction = params["vacc_reduce_bacterial_load"]
-    vaccinated = vals['vaccinated'][newInfectious]
+    vaccinated = vals['vaccinated']
 
     bacterial_loads[vaccinated] = (1 - prob_reduction) * bacterial_loads[vaccinated]
 
