@@ -113,7 +113,9 @@ class Check_Function_Including_Survey_Matches_Function_Without_Survey(unittest.T
                   'vacc_prob_block_transmission':  0.8,
                   'vacc_reduce_bacterial_load': 0.5,
                   'vacc_reduce_duration': 0.5,
-                  'vacc_waning_length': 52 * 5}
+                  'vacc_waning_length': 52 * 5,
+                  'importation_rate': 0,
+                  'importation_reduction_rate': 1}
 
 
         sim_params = {'timesim':52*23,

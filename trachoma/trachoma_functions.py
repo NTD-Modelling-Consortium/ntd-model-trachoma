@@ -170,6 +170,12 @@ def stepF_fixed(vals, params, demog, bet):
     '''
     Step function i.e. transitions in each time non-MDA timestep.
     '''
+
+    #Step 0: do importation of infection 
+    import_indivs = np.where(np.random.uniform(size = params['N']) < params['importation_rate'])[0]
+    if len(import_indivs) > 0:
+        vals = Import_individual(vals, import_indivs, params, demog)
+
     # Step 1: Identify individuals available for infection.
     # Susceptible individuals available for infection.
     Ss = np.where(vals['IndI'] == 0)[0]
@@ -588,6 +594,36 @@ def Reset_vals(vals, reset_indivs, params):
     vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance'])
     return vals
 
+def Import_individual(vals, import_indivs, params, demog):
+    '''
+    When someone is imported, we assume that they are infected and diseased and some random proportion
+    of time through their infection period. We will assume that they are at the average number of infecteds
+    for the whole population in order to draw these times too.
+    '''
+    ages = np.arange(1, 1 + demog['max_age'])
+
+    # ensure the population is in equilibrium
+    propAges = np.empty(len(ages))
+    propAges[:-1] = np.exp(-ages[:-1] / demog['mean_age']) - np.exp(-ages[1:] / demog['mean_age'])
+    propAges[-1] = 1 - np.sum(propAges[:-1])
+    numImportIndivs = len(import_indivs)
+    vals['Age'][import_indivs] = np.random.choice(a=ages, size=numImportIndivs, replace=True, p=propAges)
+
+    vals['IndI'][import_indivs] = 1
+    vals['IndD'][import_indivs] = 1
+    vals['No_Inf'][import_indivs] = max(1, round(np.mean(vals['No_Inf'])))
+    vals['Ind_ID_period_base'][import_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numImportIndivs)
+    vals['Ind_D_period_base'][import_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numImportIndivs)
+    vals['T_latent'][import_indivs] = 0
+    vals['T_ID'][import_indivs] = ID_period_function(import_indivs, params, vals) * np.random.uniform()
+    vals['T_D'][import_indivs] = 0
+    vals['vaccinated'][import_indivs] = False
+    vals['time_since_vaccinated'][import_indivs] = 0
+
+    vals['bact_load'] = bacterialLoad(params, vals)
+    vals['treatProbability'][import_indivs] = drawTreatmentProbabilities(numImportIndivs, vals['MDA_coverage'], vals['systematic_non_compliance'])
+    return vals
+
 
 def Seed_infection(params, vals):
 
@@ -724,7 +760,8 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
     prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
     
     for i in range(1, 1 + timesim):
-
+        if i % 52 == 0:
+            params['importation_rate'] *= params['importation_reduction_rate']
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
             for l in range(len(MDA_round)):
@@ -873,7 +910,9 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
 
     for i in range(1, 1 + timesim):
-        
+        if i % 52 == 0:
+            params['importation_rate'] *= params['importation_reduction_rate']
+            
         if doIHMEOutput and i == nextOutputTime:
             
             # has the disease truly eliminated in the population
