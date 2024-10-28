@@ -344,6 +344,8 @@ def MDA_timestep_Age_range(vals, params, ageStart, ageEnd):
     # Set treated/cured indivs infection status and bacterial load to 0
     vals['IndI'][cured_people.astype(int)] = 0       # clear infection they become I=0
     vals['bact_load'][cured_people.astype(int)] = 0  # stop being infectious
+    vals['T_ID'][cured_people.astype(int)] = 0
+    vals['T_latent'][cured_people.astype(int)] = 0
 
     return vals, len(treated_people)
 
@@ -1261,4 +1263,3 @@ def seed_to_state(seed):
 
 
 
-    
