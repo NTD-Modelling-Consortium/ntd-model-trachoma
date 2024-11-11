@@ -570,7 +570,9 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state):
 
         MDA_coverage = MDA_coverage,
 
-        systematic_non_compliance = systematic_non_compliance
+        systematic_non_compliance = systematic_non_compliance,
+
+        ids = np.array(np.arange(params['N']))
     )
 
     return vals
@@ -581,6 +583,7 @@ def Reset_vals(vals, reset_indivs, params):
     Set initial values.
     '''
     numResetIndivs = len(reset_indivs)
+    maxID = max(vals['ids'])
     vals['Age'][reset_indivs] = 0
     vals['IndI'][reset_indivs] = 0
     vals['IndD'][reset_indivs] = 0
@@ -593,7 +596,9 @@ def Reset_vals(vals, reset_indivs, params):
     vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
     vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs),
     vals['bact_load'][reset_indivs] = 0
-    vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance'])
+    vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance']),
+    new_ids = np.arange(maxID + 1, maxID + numResetIndivs + 1)
+    vals['ids'][reset_indivs] = new_ids
     return vals
 
 def Import_individual(vals, import_indivs, params, demog):
@@ -644,6 +649,30 @@ def Seed_infection(params, vals):
 
     # set number of infections to 1 for those infected at start of simulation
     vals['No_Inf'][Init_infected] = 1
+
+    return vals
+
+def Check_for_IDs(vals):
+    '''
+    Check if "id" key is in `vals`. If they are
+    not then initialize for population
+    
+    Parameters
+    ----------
+    
+    params : dict 
+        Parameter dictionary with all parameters not associated with MDA
+
+    vals : dict
+        Contains current state of simulation
+    Returns
+    -------
+    dict 
+        vals dictionary modified with vaccination state
+    '''
+
+    if not set(["ids"]).issubset(vals.keys()):
+        vals["ids"] = np.array(range(len(vals['IndI'])))
 
     return vals
 
@@ -1241,6 +1270,7 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
     vals = copy.deepcopy(pickleData)
     vals = Check_and_init_vaccination_state(params,vals)
     vals = Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state)
+    vals = Check_for_IDs(vals)
     params['N'] = len(vals['IndI'])
     results = sim_Ind_MDA_Include_Survey(params=params,
                                         vals = vals, timesim = timesim,
