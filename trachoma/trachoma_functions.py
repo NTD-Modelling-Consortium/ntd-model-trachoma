@@ -652,6 +652,30 @@ def Seed_infection(params, vals):
 
     return vals
 
+def Check_for_IDs(vals):
+    '''
+    Check if "id" key is in `vals`. If they are
+    not then initialize for population
+    
+    Parameters
+    ----------
+    
+    params : dict 
+        Parameter dictionary with all parameters not associated with MDA
+
+    vals : dict
+        Contains current state of simulation
+    Returns
+    -------
+    dict 
+        vals dictionary modified with vaccination state
+    '''
+
+    if not set(["id"]).issubset(vals.keys()):
+        vals["id"] = range(len(vals['IndI']))
+
+    return vals
+
 def Check_and_init_vaccination_state(params,vals):
     '''
     Check if "vaccinated" and "time_since_vaccinated" keys are in `vals`. If they are
@@ -1246,6 +1270,7 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
     vals = copy.deepcopy(pickleData)
     vals = Check_and_init_vaccination_state(params,vals)
     vals = Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state)
+    vals = Check_for_IDs(vals)
     params['N'] = len(vals['IndI'])
     results = sim_Ind_MDA_Include_Survey(params=params,
                                         vals = vals, timesim = timesim,
