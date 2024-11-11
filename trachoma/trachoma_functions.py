@@ -572,7 +572,7 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state):
 
         systematic_non_compliance = systematic_non_compliance,
 
-        ids = np.arange(params['N'])
+        ids = np.array(np.arange(params['N']))
     )
 
     return vals
@@ -671,8 +671,8 @@ def Check_for_IDs(vals):
         vals dictionary modified with vaccination state
     '''
 
-    if not set(["id"]).issubset(vals.keys()):
-        vals["id"] = range(len(vals['IndI']))
+    if not set(["ids"]).issubset(vals.keys()):
+        vals["ids"] = np.array(range(len(vals['IndI'])))
 
     return vals
 
