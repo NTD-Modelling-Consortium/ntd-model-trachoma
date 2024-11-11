@@ -332,21 +332,36 @@ def doMDAAgeRange(vals, params, ageStart, ageEnd):
         cured_older = treated_older[np.random.uniform(size=len(treated_older)) < (params['MDA_Eff'])]
     return np.append(cured_babies, cured_older), np.append(treated_babies, treated_older)
 
-def MDA_timestep_Age_range(vals, params, ageStart, ageEnd):
+def MDA_timestep_Age_range(vals, params, ageStart, ageEnd, t, label, demog):
 
     '''
     This is time step in which MDA occurs
     '''
-
+    mda_t = t + label * 0.0001
     # Id who is treated and cured
     cured_people, treated_people = doMDAAgeRange(vals = vals, params=params, ageStart = ageStart, ageEnd = ageEnd)
 
     # Set treated/cured indivs infection status and bacterial load to 0
     vals['IndI'][cured_people.astype(int)] = 0       # clear infection they become I=0
     vals['bact_load'][cured_people.astype(int)] = 0  # stop being infectious
-    vals['T_ID'][cured_people.astype(int)] = 0
-    vals['T_latent'][cured_people.astype(int)] = 0
+    vals['T_ID'][cured_people.astype(int)] = 0 # reset time in ID compartment
+    vals['T_latent'][cured_people.astype(int)] = 0 # reset time in latent compartment
 
+    treatedAges, _ = np.histogram(
+                            vals["Age"][treated_people.astype(int)]/52, 
+                            bins=np.arange(int(demog['max_age']/52) + 1))
+    vals["n_treatments"][
+            str(mda_t) + ", MDA (campaign " + str(label) + ")"
+        ] = treatedAges
+        
+    n_people_by_age, _ = np.histogram(
+            vals["Age"],
+            bins=np.arange(0, int(demog['max_age']/52)+ 1),
+        )
+    vals["n_treatments_population"][
+            str(mda_t) + ", MDA (campaign " + str(label) + ")"
+        ] = n_people_by_age
+    
     return vals, len(treated_people)
 
 def vacc_timestep_Age_range(params, vals, vacc_round, VaccData):
@@ -572,7 +587,11 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state):
 
         systematic_non_compliance = systematic_non_compliance,
 
-        ids = np.array(np.arange(params['N']))
+        ids = np.array(np.arange(params['N'])),
+        n_treatments = {},
+        n_treatments_population = {},
+        n_surveys = {},
+        n_surveys_population = {},
     )
 
     return vals
@@ -673,6 +692,36 @@ def Check_for_IDs(vals):
 
     if not set(["ids"]).issubset(vals.keys()):
         vals["ids"] = np.array(range(len(vals['IndI'])))
+
+    return vals
+
+
+def Check_for_MDAAndSurveyData(vals):
+    '''
+    Check if "n_treatments", "n_treatments_population", "n_surveys", "n_surveys_population" keys are in `vals`.
+    These will store all the information of ages of treated and surveyed people
+    If they are
+    not then initialize for population
+    
+    Parameters
+    ----------
+    
+    params : dict 
+        Parameter dictionary with all parameters not associated with MDA
+
+    vals : dict
+        Contains current state of simulation
+    Returns
+    -------
+    dict 
+        vals dictionary modified with vaccination state
+    '''
+
+    if not set(["n_treatments", "n_treatments_population", "n_surveys", "n_surveys_population"]).issubset(vals.keys()):
+        vals["n_treatments"] = {}
+        vals["n_treatments_populations"] = {}
+        vals["n_surveys"] = {}
+        vals["n_surveys_population"] = {}
 
     return vals
 
@@ -798,12 +847,12 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
             for l in range(len(MDA_round)):
                 MDA_round_current = MDA_round[l]
                 # we want to get the data corresponding to this MDA from the MDAdata
-                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
+                ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
                 # check if these have changed here, and if they have, then we re-draw the probabilities
                 vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
                 # do the MDA for the age range specified by ageStart and ageEnd
-                vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
+                vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd, i/52, label, demog)
                 # keep track of doses and coverage of the MDA to be output later.
                 # currently within this function, these aren't output 
                 nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
@@ -864,8 +913,9 @@ def get_MDA_params(MDAData, MDA_round_current, vals):
     ageStart = MDAData[MDA_round_current][1]
     ageEnd = MDAData[MDA_round_current][2]
     cov = MDAData[MDA_round_current][3]
+    label = MDAData[MDA_round_current][4]
     systematic_non_compliance = vals['systematic_non_compliance']
-    return ageStart, ageEnd, cov, systematic_non_compliance
+    return ageStart, ageEnd, cov, label, systematic_non_compliance
 
 def check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals):
     if(cov != vals['MDA_coverage'])| (systematic_non_compliance != vals['systematic_non_compliance']):
@@ -991,12 +1041,12 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                 for l in range(len(MDA_round)):
                     MDA_round_current = MDA_round[l]
                     # we want to get the data corresponding to this MDA from the MDAdata
-                    ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
+                    ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
                     # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
                     # check if these have changed here, and if they have, then we re-draw the probabilities
                     vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
                     # do the MDA for the age range specified by ageStart and ageEnd
-                    vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd)
+                    vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd, i/52, label, demog)
                     # keep track of doses and coverage of the MDA to be output later.
                     nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
                                                                                     vals, ageStart, ageEnd, nDoses, numMDA, coverage)
@@ -1258,7 +1308,17 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRange
         df = df.rename(columns={i+4: "draw_"+ str(i)}) 
     return df
 
+def resetMDAAndSurveyData(vals):
+    '''
+    reset the MDA and survey data before running a simulation
+    '''
 
+    vals["n_treatments"] = {}
+    vals["n_treatments_population"] = {}
+    vals["n_surveys"] = {}
+    vals['n_surveys_population'] = {}
+
+    return vals
 
 def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_times, MDAData, vacc_times, VaccData,
                           outputTimes, doSurvey, doIHMEOutput, index, numpy_state):
@@ -1271,6 +1331,8 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
     vals = Check_and_init_vaccination_state(params,vals)
     vals = Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state)
     vals = Check_for_IDs(vals)
+    vals = Check_for_MDAAndSurveyData(vals)
+    vals = resetMDAAndSurveyData(vals)
     params['N'] = len(vals['IndI'])
     results = sim_Ind_MDA_Include_Survey(params=params,
                                         vals = vals, timesim = timesim,
@@ -1289,6 +1351,7 @@ def seed_to_state(seed):
 ##########################################################################################
 ##########################################################################################
 ##########################################################################################
+
 
 
 
