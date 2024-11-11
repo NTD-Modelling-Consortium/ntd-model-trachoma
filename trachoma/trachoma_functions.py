@@ -570,7 +570,9 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state):
 
         MDA_coverage = MDA_coverage,
 
-        systematic_non_compliance = systematic_non_compliance
+        systematic_non_compliance = systematic_non_compliance,
+
+        ids = np.arange(params['N'])
     )
 
     return vals
@@ -581,6 +583,7 @@ def Reset_vals(vals, reset_indivs, params):
     Set initial values.
     '''
     numResetIndivs = len(reset_indivs)
+    maxID = max(vals['ids'])
     vals['Age'][reset_indivs] = 0
     vals['IndI'][reset_indivs] = 0
     vals['IndD'][reset_indivs] = 0
@@ -593,7 +596,9 @@ def Reset_vals(vals, reset_indivs, params):
     vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
     vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs),
     vals['bact_load'][reset_indivs] = 0
-    vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance'])
+    vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance']),
+    new_ids = np.arange(maxID + 1, maxID + numResetIndivs + 1)
+    vals['ids'][reset_indivs] = new_ids
     return vals
 
 def Import_individual(vals, import_indivs, params, demog):
