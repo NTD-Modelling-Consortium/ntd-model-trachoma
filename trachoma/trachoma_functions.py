@@ -470,14 +470,14 @@ def drawTreatmentProbabilities(n, cov, snc):
     """
 
     if(cov == 0):
-        treatmentProb = np.zeros(n)
+        return np.zeros(n)
+    elif(cov == 1):
+        return np.ones(n)
     elif(snc > 0):
         alpha = cov * (1-snc)/snc
         beta = (1-cov)*(1-snc)/snc
-        treatmentProb = np.random.beta(alpha, beta, n)
-    else:
-        treatmentProb = np.ones(n) * cov 
-    return treatmentProb
+        return np.random.beta(alpha, beta, n)
+    return np.ones(n) * cov 
 
 
 def editTreatProbability(vals, cov, snc):
