@@ -696,7 +696,7 @@ def Check_for_IDs(vals):
     return vals
 
 
-def Check_for_MDAAndSurveyData(vals):
+def Check_for_MDA_And_Survey_Data(vals):
     '''
     Check if "n_treatments", "n_treatments_population", "n_surveys", "n_surveys_population" keys are in `vals`.
     These will store all the information of ages of treated and surveyed people
@@ -1331,7 +1331,7 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
     vals = Check_and_init_vaccination_state(params,vals)
     vals = Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state)
     vals = Check_for_IDs(vals)
-    vals = Check_for_MDAAndSurveyData(vals)
+    vals = Check_for_MDA_And_Survey_Data(vals)
     vals = resetMDAAndSurveyData(vals)
     params['N'] = len(vals['IndI'])
     results = sim_Ind_MDA_Include_Survey(params=params,
