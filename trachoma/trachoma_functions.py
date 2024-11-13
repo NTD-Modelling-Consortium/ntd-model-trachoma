@@ -889,8 +889,6 @@ def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, v
     vals['True_Prev_Infection'] = infections_All # save the infections in children aged 1-9
     vals['State'] = np.random.get_state() # save the state of the simulations
 
-
-
     return vals
 
 
@@ -950,9 +948,11 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
     surveyPass = 0
+    surveyTime = min(MDA_times) + (5 * 52) + 26
+    impactSurveyTime = timesim + 10
     if doSurvey:
         surveyPrev  = 0.5
-        surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
+        surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, 0/52, params['surveyCoverage'])
     # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
         #surveyPass = 0
         surveyPass = 1 if surveyPrev <= 0.05 else 0
@@ -1021,7 +1021,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
             
         if doSurvey and np.logical_or(i == surveyTime, i == impactSurveyTime) :     
-            surveyPrev = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'])
+            surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, params['surveyCoverage'])
                
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
             surveyPass = 1 if surveyPrev <= 0.05 else 0
@@ -1036,20 +1036,21 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             vals['nSurvey'] += 1
         
         if i in MDA_times:
-            if surveyPass == 0:
-                MDA_round = np.where(MDA_times == i)[0]
-                for l in range(len(MDA_round)):
-                    MDA_round_current = MDA_round[l]
-                    # we want to get the data corresponding to this MDA from the MDAdata
-                    ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
-                    # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
-                    # check if these have changed here, and if they have, then we re-draw the probabilities
-                    vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
-                    # do the MDA for the age range specified by ageStart and ageEnd
-                    vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd, i/52, label, demog)
-                    # keep track of doses and coverage of the MDA to be output later.
-                    nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
-                                                                                    vals, ageStart, ageEnd, nDoses, numMDA, coverage)
+            MDA_round = np.where(MDA_times == i)[0]
+            for l in range(len(MDA_round)):
+                MDA_round_current = MDA_round[l]
+                # we want to get the data corresponding to this MDA from the MDAdata
+                ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
+                if surveyPass == 1:
+                    cov = 0
+                # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
+                # check if these have changed here, and if they have, then we re-draw the probabilities
+                vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
+                # do the MDA for the age range specified by ageStart and ageEnd
+                vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd, i/52, label, demog)
+                # keep track of doses and coverage of the MDA to be output later.
+                nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
+                                                                                vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 
                 
         if i in vacc_times:
@@ -1095,7 +1096,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
 
 
 
-def returnSurveyPrev(vals, TestSensitivity, TestSpecificity):
+def returnSurveyPrev(vals, TestSensitivity, TestSpecificity, demog, t, surveyCoverage = 1):
     '''
     Function to run a return the tested prevalence of 1-9 year olds.
     This includes sensitivity and specificity of the test.
@@ -1103,18 +1104,39 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity):
     '''
     # survey 1-9 year olds
     children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
-    
+
+    # Draw random uniform numbers between 0 and 1 for each individual
+    random_draw = np.random.uniform(0, 1, size = len(vals['Age']))
+
+    # Combine conditions: children ages 1-9 and random draw below surveyCoverage
+    surveyed_children  = np.logical_and(children_ages_1_9, random_draw < surveyCoverage)
+
     # calculate true number of diseased 1-9 year olds
-    Diseased = vals['IndD'][children_ages_1_9].sum()
-    
+    Diseased = vals['IndD'][surveyed_children].sum()
+
     # how many 1-9 year olds are not diseased
-    NonDiseased = children_ages_1_9.sum() - Diseased
-    
+    NonDiseased = surveyed_children.sum() - Diseased
+
     # perform test with given sensitivity and specificity to get test positives
     positive = int(np.random.binomial(n=Diseased, size=1, p = TestSensitivity)) + int(np.random.binomial(n=NonDiseased, size=1, p = 1- TestSpecificity)) 
+    n_surveys_by_age, _ = np.histogram(
+                vals['Age'][surveyed_children]/52,
+                bins=np.arange(0, int(demog['max_age']/52) + 1),
+            )
     
+    n_people_by_age, _ = np.histogram(
+                vals['Age']/52,
+                bins=np.arange(0, int(demog['max_age']/52) + 1),
+            )
+    # add this to the SD n survey population dict
+    vals["n_surveys_population"][
+                str(t) + "," + str("surveys population")
+            ] = n_people_by_age
+    vals["n_surveys"][
+                str(t) + "," + str("surveys")
+            ] = n_surveys_by_age
     # return prevalence,calculated as number who tested positive divided by number of 1-9 year olds
-    return positive/children_ages_1_9.sum()
+    return positive/surveyed_children.sum(), vals
 
 
 
