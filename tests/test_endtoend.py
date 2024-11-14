@@ -111,7 +111,8 @@ class EndToEndTest(unittest.TestCase):
                   'vacc_reduce_duration': 0.5,
                   'vacc_waning_length': 52 * 5,
                   'importation_rate': 0,
-                  'importation_reduction_rate': 1}
+                  'importation_reduction_rate': 1,
+                  'surveyCoverage':0.4}
 
 
         sim_params = {'timesim':52*23,
