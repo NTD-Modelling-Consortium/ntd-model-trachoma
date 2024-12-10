@@ -355,7 +355,7 @@ def MDA_timestep_Age_range(vals, params, ageStart, ageEnd, t, label, demog):
         ] = treatedAges
         
     n_people_by_age, _ = np.histogram(
-            vals["Age"],
+            vals["Age"]/52,
             bins=np.arange(0, int(demog['max_age']/52)+ 1),
         )
     vals["n_treatments_population"][
