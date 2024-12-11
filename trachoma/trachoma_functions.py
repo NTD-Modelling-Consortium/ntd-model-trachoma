@@ -1229,7 +1229,7 @@ def getMDAInfo(res, Start_date, sim_params, demog):
         for key, value in out['n_treatments'].items():
             #print(key)
             t = math.floor(float(key.split(",")[0]))
-            t = Start_date.year - sim_params['burnin'] + t
+            t = Start_date.year - sim_params['burnin']/52 + t
             measure = str(key.split(",")[1])
             if i == 0:
                 newrows = pd.DataFrame(
