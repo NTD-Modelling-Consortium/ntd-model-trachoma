@@ -3,6 +3,7 @@ from datetime import date
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
+import math
 from numpy import ndarray
 from numpy.typing import NDArray
 from dataclasses import dataclass
@@ -1214,6 +1215,76 @@ def getResultsIHME(results, demog, params, outputYear):
         df = df.rename(columns={i+4: "draw_"+ str(i)}) 
     return df
 
+
+def getMDAInfo(res, Start_date, sim_params, demog):
+    max_age = demog['max_age'] // 52 # max_age in weeks
+
+    d = None
+
+    max_age = demog['max_age'] // 52 # max_age in weeks
+    for i in range(len(res)):
+        out = copy.deepcopy(res[i][0])
+        mdaCount = 1
+        count = 0
+        for key, value in out['n_treatments'].items():
+            #print(key)
+            t = math.floor(float(key.split(",")[0]))
+            t = Start_date.year - sim_params['burnin'] + t
+            measure = str(key.split(",")[1])
+            if i == 0:
+                newrows = pd.DataFrame(
+                        {
+                            "Time": np.repeat(t, len(value)),
+                            "age_start": range(int(max_age)),
+                            "age_end": range(1, 1 + int(max_age)),
+                            "measure": np.repeat(measure + " round " + str(mdaCount), len(value)),
+                            "draw_0": value,
+                        }
+                    )
+            else:
+                 newrows = pd.DataFrame(
+                        {
+                            "draw_0": value,
+                        }
+                    )
+            
+            if count == 0:
+                    count += 1
+                    d = newrows
+            else:
+                    assert d is not None
+                    count += 1
+                    d = pd.concat([d, newrows], ignore_index = True)
+                
+            value = out['n_treatments_population'][key]
+            
+            if i == 0:
+                newrows = pd.DataFrame(
+                        {
+                            "Time": np.repeat(t, len(value)),
+                            "age_start": range(int(max_age)),
+                            "age_end": range(1, 1 + int(max_age)),
+                            "measure": np.repeat(measure + " round " + str(mdaCount) + " population", len(value)),
+                            "draw_0": value,
+                        }
+                    )
+            else:
+                newrows = pd.DataFrame(
+                        {
+                            "draw_0": value,
+                        }
+                    )
+            mdaCount += 1
+            d = pd.concat([d, newrows], ignore_index = True)
+            if count == len(out['n_treatments'].items()):
+                if i == 0:
+                    output = d
+                else:
+                    cname = 'draw_' + str(i)
+                    output[cname] = d
+    
+    return output
+            
 
 def getInterventionAgeRanges(coverageFileName, intervention, data_path=None):
     PlatCov = pd.read_csv(
