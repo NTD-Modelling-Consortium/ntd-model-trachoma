@@ -995,10 +995,12 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
 
+        if ((i+1) % 52) == 0:
             if doneSurveyThisYear == False and i > burnin:
                 surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, 0)
+                
             doneSurveyThisYear = False
-            
+
         if doIHMEOutput and i == nextOutputTime:
             
             # has the disease truly eliminated in the population
@@ -1284,7 +1286,7 @@ def getMDAInfo(res, Start_date, sim_params, demog):
             mdaCount += 1
             d = pd.concat([d, newrows], ignore_index = True)
             
-            if key == list(out['n_surveys'].keys())[-1]:
+            if count == len(out['n_treatments'].items()):
                 if i == 0:
                     output = d
                 else:
@@ -1362,7 +1364,13 @@ def getSurveyInfo(res, Start_date, sim_params, demog):
                         output[cname] = d
         
     return output
-            
+
+def combineIHME_MDA_SurveyData(results, demog, params, outputYear, Start_date, sim_params):
+    IHME = getResultsIHME(results, demog, params, outputYear)
+    MDA = getMDAInfo(results, Start_date, sim_params, demog)
+    Survey = getSurveyInfo(results, Start_date, sim_params, demog)
+    return  pd.concat([IHME, MDA, Survey], ignore_index = True)
+
 
 def getInterventionAgeRanges(coverageFileName, intervention, data_path=None):
     PlatCov = pd.read_csv(
