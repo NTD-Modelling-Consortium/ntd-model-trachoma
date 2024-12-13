@@ -956,7 +956,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, 0/52, params['surveyCoverage'])
     # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
         #surveyPass = 0
-        surveyPass = 1 if surveyPrev <= 0.05 else 0
+        #surveyPass = 1 if surveyPrev <= 0.05 else 0
     # if the prevalence is > 5%, then we will do another survey after given number of MDAs
     # call this value nextSurvey    
         nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
@@ -988,12 +988,16 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
     vals['prevNVacc'] = np.zeros(VaccData[0][-1], dtype=object)
     
-    
+    doneSurveyThisYear = False
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
 
     for i in range(1, 1 + timesim):
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
+
+            if doneSurveyThisYear == False and i > burnin:
+                surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, 0)
+            doneSurveyThisYear = False
             
         if doIHMEOutput and i == nextOutputTime:
             
@@ -1023,7 +1027,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             
         if doSurvey and np.logical_or(i == surveyTime, i == impactSurveyTime) :     
             surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, params['surveyCoverage'])
-               
+            doneSurveyThisYear = True
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
             surveyPass = 1 if surveyPrev <= 0.05 else 0
             if surveyPass == 1:
@@ -1131,13 +1135,16 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity, demog, t, surveyCov
             )
     # add this to the SD n survey population dict
     vals["n_surveys_population"][
-                str(t) + "," + str("surveys population")
+                str(t) + ", surveys"
             ] = n_people_by_age
     vals["n_surveys"][
-                str(t) + "," + str("surveys")
+                str(t) + ", surveys"
             ] = n_surveys_by_age
-    # return prevalence,calculated as number who tested positive divided by number of 1-9 year olds
-    return positive/surveyed_children.sum(), vals
+    if surveyCoverage == 0:
+        return 0, vals
+    else:
+        # return prevalence,calculated as number who tested positive divided by number of 1-9 year olds
+        return positive/surveyed_children.sum(), vals
 
 
 
@@ -1276,13 +1283,84 @@ def getMDAInfo(res, Start_date, sim_params, demog):
                     )
             mdaCount += 1
             d = pd.concat([d, newrows], ignore_index = True)
-            if count == len(out['n_treatments'].items()):
+            
+            if key == list(out['n_surveys'].keys())[-1]:
                 if i == 0:
                     output = d
                 else:
                     cname = 'draw_' + str(i)
                     output[cname] = d
     
+    return output
+
+
+def getSurveyInfo(res, Start_date, sim_params, demog):
+
+    d = None
+
+    max_age = demog['max_age'] // 52 # max_age in weeks
+    for i in range(len(res)):
+        out = copy.deepcopy(res[i][0])
+        mdaCount = 1
+        count = 0
+        for key, value in out['n_surveys'].items():
+            t = math.floor(float(key.split(",")[0]))
+            if t > 0:
+                t = Start_date.year - sim_params['burnin']/52 + t
+                measure = str(key.split(",")[1])
+                if i == 0:
+                    newrows = pd.DataFrame(
+                            {
+                                "Time": np.repeat(t, len(value)),
+                                "age_start": range(int(max_age)),
+                                "age_end": range(1, 1 + int(max_age)),
+                                "measure": np.repeat(measure, len(value)),
+                                "draw_0": value,
+                            }
+                        )
+                else:
+                    newrows = pd.DataFrame(
+                            {
+                                "draw_0": value,
+                            }
+                        )
+                
+                if count == 0:
+                        count += 1
+                        d = newrows
+                else:
+                        assert d is not None
+                        count += 1
+                        d = pd.concat([d, newrows], ignore_index = True)
+                    
+                value = out['n_surveys_population'][key]
+                
+                if i == 0:
+                    newrows = pd.DataFrame(
+                            {
+                                "Time": np.repeat(t, len(value)),
+                                "age_start": range(int(max_age)),
+                                "age_end": range(1, 1 + int(max_age)),
+                                "measure": np.repeat(measure + " population", len(value)),
+                                "draw_0": value,
+                            }
+                        )
+                else:
+                    newrows = pd.DataFrame(
+                            {
+                                "draw_0": value,
+                            }
+                        )
+                mdaCount += 1
+                d = pd.concat([d, newrows], ignore_index = True)
+
+                if key == list(out['n_surveys'].keys())[-1]:
+                    if i == 0:
+                        output = d
+                    else:
+                        cname = 'draw_' + str(i)
+                        output[cname] = d
+        
     return output
             
 
