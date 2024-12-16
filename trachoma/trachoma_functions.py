@@ -955,6 +955,8 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
 
         # get a value for the number of MDAs to do before the next survey
         numMDAForSurvey = nMDAWholePop + numMDAsBeforeNextSurvey(surveyPrev)
+        if surveyPrev <= 0.05:
+            surveyTime = min(MDA_times) + 104  
 
     nextOutputTime = min(outputTimes2)
     w = np.where(outputTimes2 == nextOutputTime)
