@@ -41,6 +41,11 @@ class EndToEndTest(unittest.TestCase):
         with open('endtoendIHMEOuts.csv', newline='') as actual_IHME_file:
             actual_IHME_data = list(csv.reader(actual_IHME_file))
         self.assertListEqual(expected_IHME_data, actual_IHME_data)
+        with open('reference_output/endtoendNTDMC.csv', newline='') as expected_NTDMC_file:
+            expected_NTDMC_data = list(csv.reader(expected_NTDMC_file))
+        with open('endtoendNTDMC.csv', newline='') as actual_NTDMC_file:
+            actual_NTDMC_data = list(csv.reader(actual_NTDMC_file))
+        self.assertListEqual(expected_NTDMC_data, actual_NTDMC_data)
 
     def test_seed_not_0(self):
         """
@@ -59,6 +64,11 @@ class EndToEndTest(unittest.TestCase):
         with open('endtoendIHMEOuts.csv', newline='') as actual_IHME_file:
             actual_IHME_data = list(csv.reader(actual_IHME_file))
         self.assertNotEqual(expected_IHME_data, actual_IHME_data)
+        with open('reference_output/endtoendNTDMC.csv', newline='') as expected_NTDMC_file:
+            expected_NTDMC_data = list(csv.reader(expected_NTDMC_file))
+        with open('endtoendNTDMC.csv', newline='') as actual_NTDMC_file:
+            actual_NTDMC_data = list(csv.reader(actual_NTDMC_file))
+        self.assertNotEqual(expected_NTDMC_data, actual_NTDMC_data)
 
     @staticmethod
     def run_simulation(seed):
@@ -131,7 +141,7 @@ class EndToEndTest(unittest.TestCase):
 
 
         Start_date = date(2019,1, 1)
-        End_date = date(2029,12,31)
+        End_date = date(2042,12,31)
         #############################################################################################################################
         #############################################################################################################################
         # import pickle file and beta values.
@@ -222,3 +232,7 @@ class EndToEndTest(unittest.TestCase):
         VaccAgeRanges = tf.getInterventionAgeRanges(coverageFileName, "Vaccine")
         outsIPM = tf.getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRanges)
         outsIPM.to_csv('endtoendIPMOuts.csv',index=False)
+
+
+        NTDMC =  tf.getResultsNTDMC(results, Start_date, sim_params['burnin'])
+        NTDMC.to_csv('endtoendNTDMC.csv',index=False)
