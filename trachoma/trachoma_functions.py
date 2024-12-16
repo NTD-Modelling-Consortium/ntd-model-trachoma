@@ -976,7 +976,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, 0/52, params['surveyCoverage'])
     # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
         #surveyPass = 0
-        #surveyPass = 1 if surveyPrev <= 0.05 else 0
+        surveyPass = 1 if surveyPrev <= 0.05 else 0
     # if the prevalence is > 5%, then we will do another survey after given number of MDAs
     # call this value nextSurvey    
         nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
@@ -1360,9 +1360,9 @@ def getVaccInfo(res, Start_date, sim_params, demog):
                     assert d is not None
                     count += 1
                     d = pd.concat([d, newrows], ignore_index = True)
-                
+
             value = out['n_vaccinated_population'][key]
-            
+
             if i == 0:
                 newrows = pd.DataFrame(
                         {
@@ -1381,14 +1381,14 @@ def getVaccInfo(res, Start_date, sim_params, demog):
                     )
             vaccCount += 1
             d = pd.concat([d, newrows], ignore_index = True)
-            
+
             if count == len(out['n_vaccinated'].items()):
                 if i == 0:
                     output = d
                 else:
                     cname = 'draw_' + str(i)
                     output[cname] = d
-    
+
     return output
 
 
