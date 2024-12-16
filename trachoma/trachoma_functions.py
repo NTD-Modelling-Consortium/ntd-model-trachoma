@@ -1149,8 +1149,8 @@ def getResultsNTDMC(results, Start_date, burnin):
     for i in range(len(results)):
         d = copy.deepcopy(results[i][0])
         prevs = np.array(d['True_Prev_Disease_children_1_9']) 
-        start = burnin
-        step = 52
+        start = burnin # get prevalence from the end of the burnin onwards
+        step = 52 # step forward 52 weeks
         chosenPrevs = prevs[start::step] 
         if i == 0:
            df = pd.DataFrame(0, range(len(chosenPrevs)), columns= range(len(results)+4))
