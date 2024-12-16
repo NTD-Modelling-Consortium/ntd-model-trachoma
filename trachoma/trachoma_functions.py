@@ -1140,6 +1140,30 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity, demog, t, surveyCov
 
 
 
+def getResultsNTDMC(results, Start_date, burnin):
+    '''
+    Function to collate results for NTDMC
+    '''
+
+    
+    for i in range(len(results)):
+        d = copy.deepcopy(results[i][0])
+        prevs = np.array(d['True_Prev_Disease_children_1_9']) 
+        start = burnin
+        step = 52
+        chosenPrevs = prevs[start::step] 
+        if i == 0:
+           df = pd.DataFrame(0, range(len(chosenPrevs)), columns= range(len(results)+4))
+           df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
+           df.iloc[:, 0] = range(Start_date.year, Start_date.year + len(chosenPrevs))
+           df.iloc[:, 1] = np.repeat(1, len(chosenPrevs))
+           df.iloc[:, 2] = np.repeat(9, len(chosenPrevs))
+           df.iloc[:, 3] = np.repeat("prevalence", len(chosenPrevs))
+        df.iloc[:,i+4] = chosenPrevs
+    for i in range(len(results)):
+        df = df.rename(columns={i+4: "draw_"+ str(i)}) 
+    return df
+
 def getResultsIHME(results, demog, params, outputYear):
     '''
     Function to collate results for IHME
