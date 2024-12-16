@@ -998,7 +998,6 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if ((i+1) % 52) == 0:
             if doneSurveyThisYear == False and i > burnin:
                 surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, 0)
-                
             doneSurveyThisYear = False
 
         if doIHMEOutput and i == nextOutputTime:
@@ -1238,7 +1237,7 @@ def getMDAInfo(res, Start_date, sim_params, demog):
         for key, value in out['n_treatments'].items():
             #print(key)
             t = math.floor(float(key.split(",")[0]))
-            t = Start_date.year - sim_params['burnin']/52 + t
+            t = math.floor(Start_date.year - sim_params['burnin']/52 + t)
             measure = str(key.split(",")[1])
             if i == 0:
                 newrows = pd.DataFrame(
@@ -1308,7 +1307,7 @@ def getSurveyInfo(res, Start_date, sim_params, demog):
         for key, value in out['n_surveys'].items():
             t = math.floor(float(key.split(",")[0]))
             if t > 0:
-                t = Start_date.year - sim_params['burnin']/52 + t
+                t = math.floor(Start_date.year - sim_params['burnin']/52 + t)
                 measure = str(key.split(",")[1])
                 if i == 0:
                     newrows = pd.DataFrame(
