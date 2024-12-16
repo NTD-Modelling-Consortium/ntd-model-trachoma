@@ -988,7 +988,10 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
     vals['prevNVacc'] = np.zeros(VaccData[0][-1], dtype=object)
     
-    doneSurveyThisYear = False
+    doneSurveyThisYear = False # require this indicator so that we can output data for a survey even if 
+    # no survey occurred in a year. Without this, we are likely to get outputs with different
+    # number of rows in them for different simulations, as there may be different numbers of 
+    # surveys based on the dynamics.
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
 
     for i in range(1, 1 + timesim):
