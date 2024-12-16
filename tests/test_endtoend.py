@@ -162,7 +162,7 @@ class EndToEndTest(unittest.TestCase):
         # generate MDA data from coverage file
         # this is currently using something outside of the test folder which is bad
         # but readPlatformData is hardcoded for this
-        scenario = '2c'
+        scenario = '3a_10'
         coverageFileName = 'scen' + scenario + '.csv'
         MDAData = tf.readPlatformData(coverageFileName, "MDA")
         MDA_dates = tf.getInterventionDates(MDAData)
