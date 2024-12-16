@@ -210,11 +210,8 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         # collate and output IHME data
 
-        outsIHME = tf.getResultsIHME(results, demog, params, outputYear)
-        outsIHME.to_csv('endtoendIHMEOuts.csv',index=False)
-
-
-
+        IHMEData = tf.combineIHME_MDA_SurveyData(results, demog, params, outputYear, Start_date, sim_params)
+        IHMEData.to_csv('endtoendIHMEOuts.csv',index=False)
         #############################################################################################################################
         #############################################################################################################################
         # collate and output IPM data
