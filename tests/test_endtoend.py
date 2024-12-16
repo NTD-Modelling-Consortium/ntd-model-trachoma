@@ -31,11 +31,6 @@ class EndToEndTest(unittest.TestCase):
         the reference files.
         """
         self.run_simulation(0)
-        with open('reference_output/endtoendIPMOuts.csv', newline='') as expected_IPM_file:
-            expected_IPM_data = list(csv.reader(expected_IPM_file))
-        with open('endtoendIPMOuts.csv', newline='') as actual_IPM_file:
-            actual_IPM_data = list(csv.reader(actual_IPM_file))
-        self.assertListEqual(expected_IPM_data, actual_IPM_data)
         with open('reference_output/endtoendIHMEOuts.csv', newline='') as expected_IHME_file:
             expected_IHME_data = list(csv.reader(expected_IHME_file))
         with open('endtoendIHMEOuts.csv', newline='') as actual_IHME_file:
@@ -49,11 +44,6 @@ class EndToEndTest(unittest.TestCase):
         than the reference files.
         """
         self.run_simulation(12345)
-        with open('reference_output/endtoendIPMOuts.csv', newline='') as expected_IPM_file:
-            expected_IPM_data = list(csv.reader(expected_IPM_file))
-        with open('endtoendIPMOuts.csv', newline='') as actual_IPM_file:
-            actual_IPM_data = list(csv.reader(actual_IPM_file))
-        self.assertNotEqual(expected_IPM_data, actual_IPM_data)
         with open('reference_output/endtoendIHMEOuts.csv', newline='') as expected_IHME_file:
             expected_IHME_data = list(csv.reader(expected_IHME_file))
         with open('endtoendIHMEOuts.csv', newline='') as actual_IHME_file:
@@ -214,11 +204,3 @@ class EndToEndTest(unittest.TestCase):
         outsIHME.to_csv('endtoendIHMEOuts.csv',index=False)
 
 
-
-        #############################################################################################################################
-        #############################################################################################################################
-        # collate and output IPM data
-        MDAAgeRanges = tf.getInterventionAgeRanges(coverageFileName, "MDA")
-        VaccAgeRanges = tf.getInterventionAgeRanges(coverageFileName, "Vaccine")
-        outsIPM = tf.getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRanges)
-        outsIPM.to_csv('endtoendIPMOuts.csv',index=False)

@@ -239,6 +239,8 @@ Time,age_start,age_end,measure,draw_0
 2019,57,58,number,8.0
 2019,58,59,number,15.0
 2019,59,60,number,15.0
+2019,None,None,nSurvey,0.0
+2019,None,None,surveyPass,1.0
 2020,0,1,TruePrevalence,0.4864864864864865
 2020,1,2,TruePrevalence,0.4722222222222222
 2020,2,3,TruePrevalence,0.4523809523809524
@@ -479,6 +481,8 @@ Time,age_start,age_end,measure,draw_0
 2020,57,58,number,12.0
 2020,58,59,number,8.0
 2020,59,60,number,16.0
+2020,None,None,nSurvey,0.0
+2020,None,None,surveyPass,1.0
 2021,0,1,TruePrevalence,0.6153846153846154
 2021,1,2,TruePrevalence,0.6
 2021,2,3,TruePrevalence,0.5142857142857142
@@ -719,6 +723,8 @@ Time,age_start,age_end,measure,draw_0
 2021,57,58,number,13.0
 2021,58,59,number,12.0
 2021,59,60,number,8.0
+2021,None,None,nSurvey,0.0
+2021,None,None,surveyPass,1.0
 2022,0,1,TruePrevalence,0.09090909090909091
 2022,1,2,TruePrevalence,0.2777777777777778
 2022,2,3,TruePrevalence,0.20588235294117646
@@ -959,6 +965,8 @@ Time,age_start,age_end,measure,draw_0
 2022,57,58,number,16.0
 2022,58,59,number,12.0
 2022,59,60,number,11.0
+2022,None,None,nSurvey,1.0
+2022,None,None,surveyPass,0.0
 2023,0,1,TruePrevalence,0.10526315789473684
 2023,1,2,TruePrevalence,0.0625
 2023,2,3,TruePrevalence,0.02857142857142857
@@ -1199,6 +1207,8 @@ Time,age_start,age_end,measure,draw_0
 2023,57,58,number,10.0
 2023,58,59,number,14.0
 2023,59,60,number,14.0
+2023,None,None,nSurvey,0.0
+2023,None,None,surveyPass,0.0
 2024,0,1,TruePrevalence,0.030303030303030304
 2024,1,2,TruePrevalence,0.0
 2024,2,3,TruePrevalence,0.0
@@ -1439,6 +1449,8 @@ Time,age_start,age_end,measure,draw_0
 2024,57,58,number,19.0
 2024,58,59,number,9.0
 2024,59,60,number,17.0
+2024,None,None,nSurvey,0.0
+2024,None,None,surveyPass,0.0
 2025,0,1,TruePrevalence,0.0
 2025,1,2,TruePrevalence,0.0
 2025,2,3,TruePrevalence,0.0
@@ -1679,6 +1691,8 @@ Time,age_start,age_end,measure,draw_0
 2025,57,58,number,4.0
 2025,58,59,number,5.0
 2025,59,60,number,21.0
+2025,None,None,nSurvey,0.0
+2025,None,None,surveyPass,0.0
 2026,0,1,TruePrevalence,0.0
 2026,1,2,TruePrevalence,0.0
 2026,2,3,TruePrevalence,0.0
@@ -1919,6 +1933,8 @@ Time,age_start,age_end,measure,draw_0
 2026,57,58,number,8.0
 2026,58,59,number,4.0
 2026,59,60,number,19.0
+2026,None,None,nSurvey,0.0
+2026,None,None,surveyPass,0.0
 2027,0,1,TruePrevalence,0.0
 2027,1,2,TruePrevalence,0.0
 2027,2,3,TruePrevalence,0.0
@@ -2159,6 +2175,8 @@ Time,age_start,age_end,measure,draw_0
 2027,57,58,number,8.0
 2027,58,59,number,7.0
 2027,59,60,number,4.0
+2027,None,None,nSurvey,0.0
+2027,None,None,surveyPass,0.0
 2028,0,1,TruePrevalence,0.0
 2028,1,2,TruePrevalence,0.0
 2028,2,3,TruePrevalence,0.0
@@ -2399,3 +2417,5 @@ Time,age_start,age_end,measure,draw_0
 2028,57,58,number,7.0
 2028,58,59,number,8.0
 2028,59,60,number,7.0
+2028,None,None,nSurvey,1.0
+2028,None,None,surveyPass,0.0
