@@ -1336,12 +1336,19 @@ def getVaccInfo(res, Start_date, sim_params, demog):
         out = copy.deepcopy(res[i][0])
         vaccCount = 1
         count = 0
+        previousT = -1 # we want to keep track of the number of vaccination rounds per year, so keep track of the time of 
+        # the last vaccination. Initialize this at -1 as no vaccination 's will take place then, so we will update correctly for first vaccination 
         if len(out['n_vaccinated'].items()) == 0:
             return {}
         for key, value in out['n_vaccinated'].items():
             #print(key)
             t = math.floor(float(key.split(",")[0]))
             t = math.floor(Start_date.year - sim_params['burnin']/52 + t)
+            if t != previousT:
+                VaccRoundNumber = 1
+                previousT = t
+            else:
+                VaccRoundNumber += 1
             measure = str(key.split(",")[1])
             if i == 0:
                 newrows = pd.DataFrame(
@@ -1349,7 +1356,7 @@ def getVaccInfo(res, Start_date, sim_params, demog):
                             "Time": np.repeat(t, len(value)),
                             "age_start": range(int(max_age)),
                             "age_end": range(1, 1 + int(max_age)),
-                            "measure": np.repeat(measure + " round " + str(vaccCount), len(value)),
+                            "measure": np.repeat(measure + " round " + str(VaccRoundNumber), len(value)),
                             "draw_0": value,
                         }
                     )
@@ -1376,7 +1383,7 @@ def getVaccInfo(res, Start_date, sim_params, demog):
                             "Time": np.repeat(t, len(value)),
                             "age_start": range(int(max_age)),
                             "age_end": range(1, 1 + int(max_age)),
-                            "measure": np.repeat(measure + " round " + str(vaccCount) + " population", len(value)),
+                            "measure": np.repeat(measure + " round " + str(VaccRoundNumber) + " population", len(value)),
                             "draw_0": value,
                         }
                     )
