@@ -968,7 +968,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             
         if doSurvey and i == surveyTime:    
             surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, params['surveyCoverage'])
-               
+            doneSurveyThisYear = True
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
             if surveyPrev <= 0.05:
                 surveyPass += 1
