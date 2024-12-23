@@ -162,7 +162,7 @@ class EndToEndTest(unittest.TestCase):
         # generate MDA data from coverage file
         # this is currently using something outside of the test folder which is bad
         # but readPlatformData is hardcoded for this
-        scenario = '2c'
+        scenario = '3a_10'
         coverageFileName = 'scen' + scenario + '.csv'
         MDAData = tf.readPlatformData(coverageFileName, "MDA")
         MDA_dates = tf.getInterventionDates(MDAData)
@@ -210,11 +210,8 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         # collate and output IHME data
 
-        outsIHME = tf.getResultsIHME(results, demog, params, outputYear)
-        outsIHME.to_csv('endtoendIHMEOuts.csv',index=False)
-
-
-
+        IHMEData = tf.combineIHME_MDA_SurveyData(results, demog, params, outputYear, Start_date, sim_params)
+        IHMEData.to_csv('endtoendIHMEOuts.csv',index=False)
         #############################################################################################################################
         #############################################################################################################################
         # collate and output IPM data

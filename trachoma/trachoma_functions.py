@@ -3,6 +3,7 @@ from datetime import date
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
+import math
 from numpy import ndarray
 from numpy.typing import NDArray
 from dataclasses import dataclass
@@ -355,7 +356,7 @@ def MDA_timestep_Age_range(vals, params, ageStart, ageEnd, t, label, demog):
         ] = treatedAges
         
     n_people_by_age, _ = np.histogram(
-            vals["Age"],
+            vals["Age"]/52,
             bins=np.arange(0, int(demog['max_age']/52)+ 1),
         )
     vals["n_treatments_population"][
@@ -364,28 +365,30 @@ def MDA_timestep_Age_range(vals, params, ageStart, ageEnd, t, label, demog):
     
     return vals, len(treated_people)
 
-def vacc_timestep_Age_range(params, vals, vacc_round, VaccData):
+def vacc_timestep_Age_range(params, vals, vacc_round, VaccData, t, demog):
 
     '''
     This is time step in which MDA occurs
     '''
 
     # Do vaccination for this vaccine round
-    vals = doVaccAgeRange(params, vals, vacc_round, VaccData)
+    vals = doVaccAgeRange(params, vals, vacc_round, VaccData, t, demog)
     
    
     return vals
 
 
-def doVaccAgeRange(params, vals, vacc_round, VaccData):
+def doVaccAgeRange(params, vals, vacc_round, VaccData, t, demog):
 
     '''
     Decide who is vaccinated based coverage and age range    
     '''
+    label = VaccData[vacc_round][4]
+    vacc_t = t + label * 0.0001
     Age = vals['Age']
     ageStart = VaccData[vacc_round][1]
     ageEnd = VaccData[vacc_round][2]
-    ageRange = np.logical_and(Age > ageStart * 52, Age <= ageEnd *52)
+    ageRange = np.logical_and(Age >= ageStart * 52, Age < ageEnd *52)
     index_vaccinated = np.random.rand(params['N']) < VaccData[vacc_round][3]
     vaccInAgeRange = np.logical_and(ageRange, index_vaccinated)
     vals['vaccinated'][vaccInAgeRange] = True
@@ -393,6 +396,22 @@ def doVaccAgeRange(params, vals, vacc_round, VaccData):
     vals['nDosesVacc'][VaccData[vacc_round][-2]] += np.count_nonzero(vaccInAgeRange)
     vals['numVacc'][VaccData[vacc_round][-2]] += 1
     vals['coverageVacc'][VaccData[vacc_round][-2]] += np.count_nonzero(vaccInAgeRange)/np.count_nonzero(ageRange)
+
+    vaccAges, _ = np.histogram(
+                            vals["Age"][vaccInAgeRange]/52, 
+                            bins=np.arange(int(demog['max_age']/52) + 1))
+    vals["n_vaccinated"][
+            str(vacc_t) + ", Vaccination (campaign " + str(label) + ")"
+        ] = vaccAges
+        
+    n_people_by_age, _ = np.histogram(
+            vals["Age"]/52,
+            bins=np.arange(0, int(demog['max_age']/52)+ 1),
+        )
+    vals["n_vaccinated_population"][
+            str(vacc_t) + ", Vaccination (campaign " + str(label) + ")"
+        ] = n_people_by_age
+    
     return vals
 
 
@@ -696,7 +715,7 @@ def Check_for_IDs(vals):
     return vals
 
 
-def Check_for_MDA_And_Survey_Data(vals):
+def Check_for_MDA_Vacc_And_Survey_Data(vals):
     '''
     Check if "n_treatments", "n_treatments_population", "n_surveys", "n_surveys_population" keys are in `vals`.
     These will store all the information of ages of treated and surveyed people
@@ -717,11 +736,13 @@ def Check_for_MDA_And_Survey_Data(vals):
         vals dictionary modified with vaccination state
     '''
 
-    if not set(["n_treatments", "n_treatments_population", "n_surveys", "n_surveys_population"]).issubset(vals.keys()):
+    if not set(["n_treatments", "n_treatments_population", "n_surveys", "n_surveys_population", "n_vaccinated", "n_vaccinated_population"]).issubset(vals.keys()):
         vals["n_treatments"] = {}
         vals["n_treatments_populations"] = {}
         vals["n_surveys"] = {}
         vals["n_surveys_population"] = {}
+        vals["n_vaccinated_population"] = {}
+        vals["n_vaccinated_population"] = {}
 
     return vals
 
@@ -906,13 +927,23 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
     vals['prevNVacc'] = np.zeros(VaccData[0][-1], dtype=object)
     
-    
+    doneSurveyThisYear = False # require this indicator so that we can output data for a survey even if 
+    # no survey occurred in a year. Without this, we are likely to get outputs with different
+    # number of rows in them for different simulations, as there may be different numbers of 
+    # surveys based on the dynamics.
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
 
     for i in range(1, 1 + timesim):
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
-            
+
+        if ((i+1) % 52) == 0:
+            # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
+            # so that it is stored in the output later.
+            if doneSurveyThisYear == False and i > burnin:
+                surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, 0)
+            doneSurveyThisYear = False
+
         if doIHMEOutput and i == nextOutputTime:
             
             # has the disease truly eliminated in the population
@@ -941,7 +972,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             
         if doSurvey and np.logical_or(i == surveyTime, i == impactSurveyTime) :     
             surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, params['surveyCoverage'])
-               
+            doneSurveyThisYear = True
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
             surveyPass = 1 if surveyPrev <= 0.05 else 0
             if surveyPass == 1:
@@ -977,12 +1008,12 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             vacc_round = np.where(vacc_times == i)[0]
             if(len(vacc_round) == 1):
                 vacc_round = vacc_round[0]
-                vals = vacc_timestep_Age_range(params, vals, vacc_round, VaccData)
+                vals = vacc_timestep_Age_range(params, vals, vacc_round, VaccData, i/52, demog)
                 
             else:
                 for l in range(len(vacc_round)):
                     vacc_round2 = copy.deepcopy(vacc_round[l])
-                    vals = vacc_timestep_Age_range(params, vals, vacc_round2, VaccData)
+                    vals = vacc_timestep_Age_range(params, vals, vacc_round2, VaccData, i/52, demog)
                    
             #vals = vaccinate_population(vals = vals, params = params)
         #else:  removed and deleted one indent in the line below to correct mistake.
@@ -1049,13 +1080,16 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity, demog, t, surveyCov
             )
     # add this to the SD n survey population dict
     vals["n_surveys_population"][
-                str(t) + "," + str("surveys population")
+                str(t) + ", surveys"
             ] = n_people_by_age
     vals["n_surveys"][
-                str(t) + "," + str("surveys")
+                str(t) + ", surveys"
             ] = n_surveys_by_age
-    # return prevalence,calculated as number who tested positive divided by number of 1-9 year olds
-    return positive/surveyed_children.sum(), vals
+    if surveyCoverage == 0:
+        return 0, vals
+    else:
+        # return prevalence,calculated as number who tested positive divided by number of 1-9 year olds
+        return positive/surveyed_children.sum(), vals
 
 
 
@@ -1174,6 +1208,246 @@ def getResultsIHME(results, demog, params, outputYear):
     return df
 
 
+def getMDAInfo(res, Start_date, sim_params, demog):
+    max_age = demog['max_age'] // 52 # max_age in weeks
+
+    d = None
+
+    max_age = demog['max_age'] // 52 # max_age in weeks
+    for i in range(len(res)):
+        out = copy.deepcopy(res[i][0])
+        mdaCount = 1
+        count = 0
+        previousT = -1 # we want to keep track of the number of MDA rounds per year, so keep track of the time of 
+        # the last MDA. Initialize this at -1 as no MDA's will take place then, so we will update correctly for first MDA
+        for key, value in out['n_treatments'].items():
+            #print(key)
+            t = math.floor(float(key.split(",")[0]))
+            t = math.floor(Start_date.year - sim_params['burnin']/52 + t)
+            if t != previousT:
+                MDAroundNumber = 1
+                previousT = t
+            else:
+                MDAroundNumber += 1
+            measure = str(key.split(",")[1])
+            if i == 0:
+                newrows = pd.DataFrame(
+                        {
+                            "Time": np.repeat(t, len(value)),
+                            "age_start": range(int(max_age)),
+                            "age_end": range(1, 1 + int(max_age)),
+                            "measure": np.repeat(measure + " round " + str(MDAroundNumber), len(value)),
+                            "draw_0": value,
+                        }
+                    )
+            else:
+                 newrows = pd.DataFrame(
+                        {
+                            "draw_0": value,
+                        }
+                    )
+            
+            if count == 0:
+                    count += 1
+                    d = newrows
+            else:
+                    assert d is not None
+                    count += 1
+                    d = pd.concat([d, newrows], ignore_index = True)
+                
+            value = out['n_treatments_population'][key]
+            
+            if i == 0:
+                newrows = pd.DataFrame(
+                        {
+                            "Time": np.repeat(t, len(value)),
+                            "age_start": range(int(max_age)),
+                            "age_end": range(1, 1 + int(max_age)),
+                            "measure": np.repeat(measure + " round " + str(MDAroundNumber) + " population", len(value)),
+                            "draw_0": value,
+                        }
+                    )
+            else:
+                newrows = pd.DataFrame(
+                        {
+                            "draw_0": value,
+                        }
+                    )
+            mdaCount += 1
+            d = pd.concat([d, newrows], ignore_index = True)
+            
+            if count == len(out['n_treatments'].items()):
+                if i == 0:
+                    output = d
+                else:
+                    cname = 'draw_' + str(i)
+                    output[cname] = d
+    
+    return output
+
+
+def getVaccInfo(res, Start_date, sim_params, demog):
+    max_age = demog['max_age'] // 52 # max_age in weeks
+
+    d = None
+
+    for i in range(len(res)):
+        out = copy.deepcopy(res[i][0])
+        vaccCount = 1
+        count = 0
+        previousT = -1 # we want to keep track of the number of vaccination rounds per year, so keep track of the time of 
+        # the last vaccination. Initialize this at -1 as no vaccination 's will take place then, so we will update correctly for first vaccination 
+        if len(out['n_vaccinated'].items()) == 0:
+            return {}
+        for key, value in out['n_vaccinated'].items():
+            #print(key)
+            t = math.floor(float(key.split(",")[0]))
+            t = math.floor(Start_date.year - sim_params['burnin']/52 + t)
+            if t != previousT:
+                VaccRoundNumber = 1
+                previousT = t
+            else:
+                VaccRoundNumber += 1
+            measure = str(key.split(",")[1])
+            if i == 0:
+                newrows = pd.DataFrame(
+                        {
+                            "Time": np.repeat(t, len(value)),
+                            "age_start": range(int(max_age)),
+                            "age_end": range(1, 1 + int(max_age)),
+                            "measure": np.repeat(measure + " round " + str(VaccRoundNumber), len(value)),
+                            "draw_0": value,
+                        }
+                    )
+            else:
+                 newrows = pd.DataFrame(
+                        {
+                            "draw_0": value,
+                        }
+                    )
+            
+            if count == 0:
+                    count += 1
+                    d = newrows
+            else:
+                    assert d is not None
+                    count += 1
+                    d = pd.concat([d, newrows], ignore_index = True)
+
+            value = out['n_vaccinated_population'][key]
+
+            if i == 0:
+                newrows = pd.DataFrame(
+                        {
+                            "Time": np.repeat(t, len(value)),
+                            "age_start": range(int(max_age)),
+                            "age_end": range(1, 1 + int(max_age)),
+                            "measure": np.repeat(measure + " round " + str(VaccRoundNumber) + " population", len(value)),
+                            "draw_0": value,
+                        }
+                    )
+            else:
+                newrows = pd.DataFrame(
+                        {
+                            "draw_0": value,
+                        }
+                    )
+            vaccCount += 1
+            d = pd.concat([d, newrows], ignore_index = True)
+
+            if count == len(out['n_vaccinated'].items()):
+                if i == 0:
+                    output = d
+                else:
+                    cname = 'draw_' + str(i)
+                    output[cname] = d
+
+    return output
+
+
+def getSurveyInfo(res, Start_date, sim_params, demog):
+
+    d = None
+
+    max_age = demog['max_age'] // 52 # max_age in weeks
+    for i in range(len(res)):
+        out = copy.deepcopy(res[i][0])
+        mdaCount = 1
+        count = 0
+        for key, value in out['n_surveys'].items():
+            t = math.floor(float(key.split(",")[0]))
+            if t > 0:
+                t = math.floor(Start_date.year - sim_params['burnin']/52 + t)
+                measure = str(key.split(",")[1])
+                if i == 0:
+                    newrows = pd.DataFrame(
+                            {
+                                "Time": np.repeat(t, len(value)),
+                                "age_start": range(int(max_age)),
+                                "age_end": range(1, 1 + int(max_age)),
+                                "measure": np.repeat(measure, len(value)),
+                                "draw_0": value,
+                            }
+                        )
+                else:
+                    newrows = pd.DataFrame(
+                            {
+                                "draw_0": value,
+                            }
+                        )
+                
+                if count == 0:
+                        count += 1
+                        d = newrows
+                else:
+                        assert d is not None
+                        count += 1
+                        d = pd.concat([d, newrows], ignore_index = True)
+                    
+                value = out['n_surveys_population'][key]
+                
+                if i == 0:
+                    newrows = pd.DataFrame(
+                            {
+                                "Time": np.repeat(t, len(value)),
+                                "age_start": range(int(max_age)),
+                                "age_end": range(1, 1 + int(max_age)),
+                                "measure": np.repeat(measure + " population", len(value)),
+                                "draw_0": value,
+                            }
+                        )
+                else:
+                    newrows = pd.DataFrame(
+                            {
+                                "draw_0": value,
+                            }
+                        )
+                mdaCount += 1
+                d = pd.concat([d, newrows], ignore_index = True)
+
+                if key == list(out['n_surveys'].keys())[-1]:
+                    if i == 0:
+                        output = d
+                    else:
+                        cname = 'draw_' + str(i)
+                        output[cname] = d
+        
+    return output
+
+def combineIHME_MDA_SurveyData(results, demog, params, outputYear, Start_date, sim_params):
+    IHME = getResultsIHME(results, demog, params, outputYear)
+    MDA = getMDAInfo(results, Start_date, sim_params, demog)
+    Vacc = getVaccInfo(results, Start_date, sim_params, demog)
+    Survey = getSurveyInfo(results, Start_date, sim_params, demog)
+    if len(MDA) > 0:
+        IHME = pd.concat([IHME, MDA], ignore_index = True)
+    if len(Vacc) > 0:
+        IHME = pd.concat([IHME, Vacc], ignore_index = True)
+    if len(Survey) > 0:
+        IHME = pd.concat([IHME, Survey], ignore_index = True)
+    return  IHME
+
+
 def getInterventionAgeRanges(coverageFileName, intervention, data_path=None):
     PlatCov = pd.read_csv(
         _validate_data_path(data_path) / coverageFileName
@@ -1289,7 +1563,7 @@ def getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRange
         df = df.rename(columns={i+4: "draw_"+ str(i)}) 
     return df
 
-def resetMDAAndSurveyData(vals):
+def resetMDAVaccAndSurveyData(vals):
     '''
     reset the MDA and survey data before running a simulation
     '''
@@ -1298,6 +1572,8 @@ def resetMDAAndSurveyData(vals):
     vals["n_treatments_population"] = {}
     vals["n_surveys"] = {}
     vals['n_surveys_population'] = {}
+    vals['n_vaccinated'] = {}
+    vals['n_vaccinated_population'] = {}
 
     return vals
 
@@ -1312,8 +1588,8 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
     vals = Check_and_init_vaccination_state(params,vals)
     vals = Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state)
     vals = Check_for_IDs(vals)
-    vals = Check_for_MDA_And_Survey_Data(vals)
-    vals = resetMDAAndSurveyData(vals)
+    vals = Check_for_MDA_Vacc_And_Survey_Data(vals)
+    vals = resetMDAVaccAndSurveyData(vals)
     params['N'] = len(vals['IndI'])
     results = sim_Ind_MDA_Include_Survey(params=params,
                                         vals = vals, timesim = timesim,
