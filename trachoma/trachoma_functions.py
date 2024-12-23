@@ -1089,7 +1089,7 @@ def getResultsIHME(results, demog, params, outputYear):
     '''
     max_age = demog['max_age'] // 52 # max_age in weeks
 
-    df = pd.DataFrame(0, range(len(outputYear)*4*60 ), columns= range(len(results)+4))
+    df = pd.DataFrame(0, range(len(outputYear)*4*60 + len(outputYear)*2 ), columns= range(len(results)+4))
     df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
     
     for i in range(len(results)):
@@ -1144,6 +1144,18 @@ def getResultsIHME(results, demog, params, outputYear):
                 df.iloc[range(ind, ind+max_age), 3] = np.repeat("number", max_age)
                 df.iloc[range(ind, ind+max_age), i+4] = nums
                 ind += max_age
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 3] = "nSurvey"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].nSurvey
+                ind += 1
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 3] = "surveyPass"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].surveyPass
+                ind += 1
             else:
                 df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
                 ind += max_age
@@ -1153,6 +1165,10 @@ def getResultsIHME(results, demog, params, outputYear):
                 ind += max_age
                 df.iloc[range(ind, ind+max_age), i+4] = nums
                 ind += max_age
+                df.iloc[ind, i+4] = d[j].nSurvey
+                ind += 1
+                df.iloc[ind, i+4] = d[j].surveyPass
+                ind += 1
     for i in range(len(results)):
         df = df.rename(columns={i+4: "draw_"+ str(i)}) 
     return df
