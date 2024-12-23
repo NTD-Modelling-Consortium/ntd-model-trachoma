@@ -2659,6 +2659,8 @@ Time,age_start,age_end,measure,draw_0
 2029,57,58,number,7.0
 2029,58,59,number,10.0
 2029,59,60,number,8.0
+2029,None,None,nSurvey,0.0
+2029,None,None,surveyPass,0.0
 2030,0,1,TruePrevalence,0.034482758620689655
 2030,1,2,TruePrevalence,0.0
 2030,2,3,TruePrevalence,0.043478260869565216
@@ -2899,6 +2901,8 @@ Time,age_start,age_end,measure,draw_0
 2030,57,58,number,12.0
 2030,58,59,number,9.0
 2030,59,60,number,8.0
+2030,None,None,nSurvey,0.0
+2030,None,None,surveyPass,0.0
 2031,0,1,TruePrevalence,0.045454545454545456
 2031,1,2,TruePrevalence,0.125
 2031,2,3,TruePrevalence,0.0
@@ -3139,6 +3143,8 @@ Time,age_start,age_end,measure,draw_0
 2031,57,58,number,2.0
 2031,58,59,number,12.0
 2031,59,60,number,9.0
+2031,None,None,nSurvey,0.0
+2031,None,None,surveyPass,0.0
 2032,0,1,TruePrevalence,0.0
 2032,1,2,TruePrevalence,0.0
 2032,2,3,TruePrevalence,0.0
@@ -3379,6 +3385,8 @@ Time,age_start,age_end,measure,draw_0
 2032,57,58,number,10.0
 2032,58,59,number,2.0
 2032,59,60,number,12.0
+2032,None,None,nSurvey,0.0
+2032,None,None,surveyPass,0.0
 2033,0,1,TruePrevalence,0.0
 2033,1,2,TruePrevalence,0.0
 2033,2,3,TruePrevalence,0.0
@@ -3619,6 +3627,8 @@ Time,age_start,age_end,measure,draw_0
 2033,57,58,number,5.0
 2033,58,59,number,7.0
 2033,59,60,number,8.0
+2033,None,None,nSurvey,0.0
+2033,None,None,surveyPass,0.0
 2034,0,1,TruePrevalence,0.0
 2034,1,2,TruePrevalence,0.0
 2034,2,3,TruePrevalence,0.0
@@ -3859,6 +3869,8 @@ Time,age_start,age_end,measure,draw_0
 2034,57,58,number,6.0
 2034,58,59,number,3.0
 2034,59,60,number,11.0
+2034,None,None,nSurvey,0.0
+2034,None,None,surveyPass,0.0
 2035,0,1,TruePrevalence,0.0
 2035,1,2,TruePrevalence,0.0
 2035,2,3,TruePrevalence,0.0
@@ -4099,6 +4111,8 @@ Time,age_start,age_end,measure,draw_0
 2035,57,58,number,7.0
 2035,58,59,number,3.0
 2035,59,60,number,5.0
+2035,None,None,nSurvey,0.0
+2035,None,None,surveyPass,0.0
 2036,0,1,TruePrevalence,0.0
 2036,1,2,TruePrevalence,0.0
 2036,2,3,TruePrevalence,0.0
@@ -4339,6 +4353,8 @@ Time,age_start,age_end,measure,draw_0
 2036,57,58,number,8.0
 2036,58,59,number,5.0
 2036,59,60,number,5.0
+2036,None,None,nSurvey,0.0
+2036,None,None,surveyPass,0.0
 2037,0,1,TruePrevalence,0.0
 2037,1,2,TruePrevalence,0.0
 2037,2,3,TruePrevalence,0.0
@@ -4579,6 +4595,8 @@ Time,age_start,age_end,measure,draw_0
 2037,57,58,number,5.0
 2037,58,59,number,8.0
 2037,59,60,number,8.0
+2037,None,None,nSurvey,0.0
+2037,None,None,surveyPass,0.0
 2038,0,1,TruePrevalence,0.0
 2038,1,2,TruePrevalence,0.0
 2038,2,3,TruePrevalence,0.0
@@ -4819,6 +4837,8 @@ Time,age_start,age_end,measure,draw_0
 2038,57,58,number,10.0
 2038,58,59,number,5.0
 2038,59,60,number,9.0
+2038,None,None,nSurvey,0.0
+2038,None,None,surveyPass,0.0
 2039,0,1,TruePrevalence,0.0
 2039,1,2,TruePrevalence,0.0
 2039,2,3,TruePrevalence,0.0
@@ -5059,6 +5079,8 @@ Time,age_start,age_end,measure,draw_0
 2039,57,58,number,7.0
 2039,58,59,number,10.0
 2039,59,60,number,6.0
+2039,None,None,nSurvey,0.0
+2039,None,None,surveyPass,0.0
 2040,0,1,TruePrevalence,0.0
 2040,1,2,TruePrevalence,0.0
 2040,2,3,TruePrevalence,0.0
@@ -5299,6 +5321,8 @@ Time,age_start,age_end,measure,draw_0
 2040,57,58,number,8.0
 2040,58,59,number,6.0
 2040,59,60,number,11.0
+2040,None,None,nSurvey,0.0
+2040,None,None,surveyPass,0.0
 2041,0,1,TruePrevalence,0.0
 2041,1,2,TruePrevalence,0.0
 2041,2,3,TruePrevalence,0.0
@@ -5539,3 +5563,5 @@ Time,age_start,age_end,measure,draw_0
 2041,57,58,number,12.0
 2041,58,59,number,8.0
 2041,59,60,number,6.0
+2041,None,None,nSurvey,0.0
+2041,None,None,surveyPass,0.0
