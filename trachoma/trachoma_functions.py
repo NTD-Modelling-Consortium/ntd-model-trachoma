@@ -832,87 +832,6 @@ def SecularTrendBetaDecrease(timesim, burnin, bet, params):
                 simbeta[(j * 52) + i] = bet1 - (params['SecularTrendYearlyBetaDecrease'] * bet1 * i/52)
     return simbeta
 
-def sim_Ind_MDA(params, vals, timesim, burnin, demog, bet, MDA_times, MDAData, vacc_times, numpy_state):
-
-    '''
-    Function to run a single simulation with MDA at time points determined by function MDA_times.
-    Output is true prevalence of infection/disease in children aged 1-9.
-    '''
-
-    # extract vaccination time
-    #vacc_time = params["vacc_time"]
-
-    # when we are starting new simulations
-    # we use the provided random seed
-    np.random.set_state(numpy_state)
-
-    prevalence_children_1_9 = []
-    prevalence_All = []
-    infections_children_1_9 = []
-    infections_All = []
-    max_age = demog['max_age'] // 52 # max_age in weeks
-    yearly_threshold_infs = np.zeros((timesim+1, max_age))
-    betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
-
-    nDoses = np.zeros(MDAData[0][-1], dtype=object)
-    coverage = np.zeros(MDAData[0][-1], dtype=object)
-    # initialize count of MDAs
-    numMDA = np.zeros(MDAData[0][-1], dtype=object)
-    prevNMDA = np.zeros(MDAData[0][-1], dtype=object)
-    
-    for i in range(1, 1 + timesim):
-        if i % 52 == 0:
-            params['importation_rate'] *= params['importation_reduction_rate']
-        if i in MDA_times:
-            MDA_round = np.where(MDA_times == i)[0]
-            for l in range(len(MDA_round)):
-                MDA_round_current = MDA_round[l]
-                # we want to get the data corresponding to this MDA from the MDAdata
-                ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
-                # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
-                # check if these have changed here, and if they have, then we re-draw the probabilities
-                vals = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, vals)
-                # do the MDA for the age range specified by ageStart and ageEnd
-                vals, num_treated_people = MDA_timestep_Age_range(vals, params, ageStart, ageEnd, i/52, label, demog)
-                # keep track of doses and coverage of the MDA to be output later.
-                # currently within this function, these aren't output 
-                nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
-                                                                                   vals, ageStart, ageEnd, nDoses, numMDA, coverage)
-                
-        
-        if i in vacc_times:
-            vals = vaccinate_population(vals = vals, params = params)
-
-        #else:  removed and deleted one indent in the line below to correct mistake.
-
-        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=betas[i])
-
-        children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
-        n_children_ages_1_9 = np.count_nonzero(children_ages_1_9)
-        n_true_diseased_children_1_9 = np.count_nonzero(vals['IndD'][children_ages_1_9])
-        n_true_infected_children_1_9 = np.count_nonzero(vals['IndI'][children_ages_1_9])
-        prevalence_children_1_9.append(n_true_diseased_children_1_9 / n_children_ages_1_9)
-        infections_children_1_9.append(n_true_infected_children_1_9 / n_children_ages_1_9)
-
-        n_true_diseased_All = np.count_nonzero(vals['IndD'])
-        n_true_infected_All = np.count_nonzero(vals['IndI'])
-        prevalence_All.append(n_true_diseased_All / len(vals['IndD']))
-        infections_All.append(n_true_infected_All / len(vals['IndI']))
-        large_infection_count = (vals['No_Inf'] > params['n_inf_sev'])
-        # Cast weights to integer to be able to count
-        a, _ = np.histogram(vals['Age'], bins=max_age, weights=large_infection_count.astype(int))
-        yearly_threshold_infs[i, :] = a / params['N']
-
-    vals['Yearly_threshold_infs'] = yearly_threshold_infs
-    vals['True_Prev_Disease_children_1_9'] = prevalence_children_1_9 # save the prevalence in children aged 1-9
-    vals['True_Prev_Infection_children_1_9'] = infections_children_1_9 # save the infections in children aged 1-9
-    vals['True_Prev_Disease'] = prevalence_All # save the prevalence in children aged 1-9
-    vals['True_Prev_Infection'] = infections_All # save the infections in children aged 1-9
-    vals['State'] = np.random.get_state() # save the state of the simulations
-
-    return vals
-
-
 
 def numMDAsBeforeNextSurvey(surveyPrev):
     '''
@@ -1174,13 +1093,37 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity, demog, t, surveyCov
 
 
 
+def getResultsNTDMC(results, Start_date, burnin):
+    '''
+    Function to collate results for NTDMC
+    '''
+
+    
+    for i in range(len(results)):
+        d = copy.deepcopy(results[i][0])
+        prevs = np.array(d['True_Prev_Disease_children_1_9']) 
+        start = burnin # get prevalence from the end of the burnin onwards
+        step = 52 # step forward 52 weeks
+        chosenPrevs = prevs[start::step] 
+        if i == 0:
+           df = pd.DataFrame(0, range(len(chosenPrevs)), columns= range(len(results)+4))
+           df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
+           df.iloc[:, 0] = range(Start_date.year, Start_date.year + len(chosenPrevs))
+           df.iloc[:, 1] = np.repeat(1, len(chosenPrevs))
+           df.iloc[:, 2] = np.repeat(9, len(chosenPrevs))
+           df.iloc[:, 3] = np.repeat("prevalence", len(chosenPrevs))
+        df.iloc[:,i+4] = chosenPrevs
+    for i in range(len(results)):
+        df = df.rename(columns={i+4: "draw_"+ str(i)}) 
+    return df
+
 def getResultsIHME(results, demog, params, outputYear):
     '''
     Function to collate results for IHME
     '''
     max_age = demog['max_age'] // 52 # max_age in weeks
 
-    df = pd.DataFrame(0, range(len(outputYear)*4*60 ), columns= range(len(results)+4))
+    df = pd.DataFrame(0, range(len(outputYear)*4*60 + len(outputYear)*2 ), columns= range(len(results)+4))
     df = df.rename(columns={0: "Time", 1: "age_start", 2: "age_end", 3: "measure"}) 
     
     for i in range(len(results)):
@@ -1235,6 +1178,18 @@ def getResultsIHME(results, demog, params, outputYear):
                 df.iloc[range(ind, ind+max_age), 3] = np.repeat("number", max_age)
                 df.iloc[range(ind, ind+max_age), i+4] = nums
                 ind += max_age
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 3] = "nSurvey"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].nSurvey
+                ind += 1
+                df.iloc[ind, 0] = year
+                df.iloc[ind, 3] = "surveyPass"
+                df.iloc[ind, 1] = "None"
+                df.iloc[ind, 2] = "None"
+                df.iloc[ind, i+4] = d[j].surveyPass
+                ind += 1
             else:
                 df.iloc[range(ind, ind+max_age), i+4] = Infs/nums
                 ind += max_age
@@ -1244,6 +1199,10 @@ def getResultsIHME(results, demog, params, outputYear):
                 ind += max_age
                 df.iloc[range(ind, ind+max_age), i+4] = nums
                 ind += max_age
+                df.iloc[ind, i+4] = d[j].nSurvey
+                ind += 1
+                df.iloc[ind, i+4] = d[j].surveyPass
+                ind += 1
     for i in range(len(results)):
         df = df.rename(columns={i+4: "draw_"+ str(i)}) 
     return df
