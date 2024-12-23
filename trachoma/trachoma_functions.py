@@ -889,18 +889,14 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
     surveyPass = 0
     surveyTime = min(MDA_times) + (5 * 52) + 26
-    impactSurveyTime = timesim + 10
+    nMDAWholePop = 0
     if doSurvey:
-        surveyPrev  = 0.5
-        surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, 0/52, params['surveyCoverage'])
-    # if the prevalence is <= 5%, then we have passed the survey and won't do any MDA
-        #surveyPass = 0
-        surveyPass = 1 if surveyPrev <= 0.05 else 0
-    # if the prevalence is > 5%, then we will do another survey after given number of MDAs
-    # call this value nextSurvey    
-        nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
-        # initialize time for next survey 
-        surveyTime = min(MDA_times) + (nextSurvey * 52) + 26
+        surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, 0, params['surveyCoverage'])
+
+        # get a value for the number of MDAs to do before the next survey
+        numMDAForSurvey = nMDAWholePop + numMDAsBeforeNextSurvey(surveyPrev)
+        if surveyPrev <= 0.05:
+            surveyTime = min(MDA_times) + 104  
     
     # initialize time for impact survey dependent on surveyed prevalence
         if surveyPrev <= 0.05:
@@ -970,19 +966,26 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             vals['nDosesVacc'] = np.zeros(VaccData[0][-1], dtype=object)
             vals['coverageVacc'] = np.zeros(VaccData[0][-1], dtype=object)
             
-        if doSurvey and np.logical_or(i == surveyTime, i == impactSurveyTime) :     
+        if doSurvey and i == surveyTime:    
             surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, i/52, params['surveyCoverage'])
-            doneSurveyThisYear = True
+               
             # if the prevalence is <= 5%, then we have passed the survey and won't do any more MDA
-            surveyPass = 1 if surveyPrev <= 0.05 else 0
-            if surveyPass == 1:
-                impactSurveyTime = i + 104  
-            # if the prevalence is > 5%, then we will do another survey after given number of MDAs
-            # call this value nextSurvey    
-            nextSurvey = numMDAsBeforeNextSurvey(surveyPrev)
-            # add the number of MDAs already done to the number of MDAs to be done before the next survey
-            surveyTime = i + (nextSurvey * 52) + 26
-            
+            if surveyPrev <= 0.05:
+                surveyPass += 1
+            else:
+                surveyPass = 0
+
+            # if we have passed 2 surveys, we won't do another one, so set the surveytime to be after simulation ends
+            if surveyPass == 2:
+                surveyTime = timesim + 10
+            # if we have passed 1 survey, we will do another in 2 years time
+            elif surveyPass == 1:
+                surveyTime = i + 104  
+            else: # if we didn't pass the survey, we will do another survey after a number of MDAs based on the prevalence. 
+                # Assume that these MDAs must cover a significant portion of the population so call these nMDAWholePop.
+                # add the number of MDAs already done to the number of MDAs to be done before the next survey
+                numMDAForSurvey = nMDAWholePop + numMDAsBeforeNextSurvey(surveyPrev)
+           
             vals['nSurvey'] += 1
         
         if i in MDA_times:
