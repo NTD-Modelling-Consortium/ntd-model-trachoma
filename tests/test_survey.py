@@ -97,11 +97,11 @@ class TestSurvey(unittest.TestCase):
             self.params['TestSpecificity'],
             self.demog,
             0 / 52,
-            1
+            self.params['surveyCoverage']
         )
 
         # Check the prevalence value
-        npt.assert_array_almost_equal(prev, 0.115202)
+        npt.assert_array_almost_equal(prev, 0.121212)
 
 
     def test_surveyPrev_Higher_initial_prevalence(self):
@@ -119,9 +119,30 @@ class TestSurvey(unittest.TestCase):
             self.params['TestSpecificity'],
             self.demog,
             0 / 52,
-            1
+            self.params['surveyCoverage']
         )
 
         # Check the prevalence value
-        npt.assert_array_almost_equal(prev, 0.216704)
+        npt.assert_array_almost_equal(prev, 0.218919)
+
+    def test_surveyPrev_Higher_initial_prevalence_higher_surveycoverage(self):
+        # Set parameters for the test
+        seed = 2
+        initial_prevalence = 0.2
+
+        # Run setup
+        self.run_setup_for_Survey_test(seed, initial_prevalence)
+        self.params['surveyCoverage'] = 0.8
+        # Run the survey prevalence function and test against expected value
+        prev, _ = returnSurveyPrev(
+            self.vals,
+            self.params['TestSensitivity'],
+            self.params['TestSpecificity'],
+            self.demog,
+            0 / 52,
+            self.params['surveyCoverage']
+        )
+
+        # Check the prevalence value
+        npt.assert_array_almost_equal(prev, 0.20781)
 
