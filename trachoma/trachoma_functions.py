@@ -890,7 +890,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     surveyPass = 0
     surveyTime = min(MDA_times) + (5 * 52) + 26
     nMDAWholePop = 0
-    numMDAForSurvey = 0
+    numMDAForSurvey = -1
     if doSurvey:
         surveyPrev, vals = returnSurveyPrev(vals, params['TestSensitivity'], params['TestSpecificity'], demog, 0, params['surveyCoverage'])
 
