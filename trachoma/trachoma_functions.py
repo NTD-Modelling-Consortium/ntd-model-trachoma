@@ -166,7 +166,7 @@ def vaccinate_population(vals = None, params = None):
 
     return vals
 
-def stepF_fixed(vals, params, demog, bet):
+def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
 
     '''
     Step function i.e. transitions in each time non-MDA timestep.
@@ -175,7 +175,7 @@ def stepF_fixed(vals, params, demog, bet):
     #Step 0: do importation of infection 
     import_indivs = np.where(np.random.uniform(size = params['N']) < params['importation_rate'])[0]
     if len(import_indivs) > 0:
-        vals = Import_individual(vals, import_indivs, params, demog)
+        vals = Import_individual(vals, import_indivs, params, demog, distToUse)
 
     # Step 1: Identify individuals available for infection.
     # Susceptible individuals available for infection.
@@ -242,7 +242,7 @@ def stepF_fixed(vals, params, demog, bet):
 
     # Resetting new parameters for all new individuals created
     if(len(reset_indivs) > 0):
-        vals = Reset_vals(vals, reset_indivs, params)
+        vals = Reset_vals(vals, reset_indivs, params, distToUse)
     
     #me = 2
     #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
@@ -541,7 +541,7 @@ def editTreatProbability(vals, cov, snc):
         vals['treatProbability'] = np.ones(len(vals['IndI'])) * cov
 
 
-def Set_inits(params, demog, sim_params, MDAData, numpy_state):
+def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse = "Poisson"):
 
     '''
     Set initial values.
@@ -551,6 +551,16 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state):
     MDA_coverage = 0
     treatProbability = np.full(shape=params['N'], fill_value=np.nan, dtype=float)
     systematic_non_compliance = params['rho']
+    if distToUse == "Poisson":
+        Ind_ID_period_base=np.random.poisson(lam=params['av_ID_duration'], size=params['N'])
+
+            # Individual's baseline diseased period (first infection)
+        Ind_D_period_base=np.random.poisson(lam=params['av_D_duration'], size=params['N'])
+    else:
+        Ind_ID_period_base=np.random.exponential(scale=params['av_ID_duration'], size=params['N'])
+
+            # Individual's baseline diseased period (first infection)
+        Ind_D_period_base=np.random.exponential(scale=params['av_D_duration'], size=params['N'])
 
     if (len(MDAData) > 0):
         MDA_coverage = MDAData[0][3]
@@ -579,10 +589,10 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state):
         Ind_latent=params['av_I_duration'] * np.ones(params['N']),
 
         # Individual's baseline ID period (first infection)
-        Ind_ID_period_base=np.random.poisson(lam=params['av_ID_duration'], size=params['N']),
+        Ind_ID_period_base=Ind_ID_period_base,
 
         # Individual's baseline diseased period (first infection)
-        Ind_D_period_base=np.random.poisson(lam=params['av_D_duration'], size=params['N']),
+        Ind_D_period_base=Ind_D_period_base,
 
         # Baseline bacterial load set to zero
         bact_load=np.zeros(params['N']),
@@ -615,7 +625,7 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state):
 
     return vals
 
-def Reset_vals(vals, reset_indivs, params):
+def Reset_vals(vals, reset_indivs, params, distToUse = "Poisson"):
 
     '''
     Set initial values.
@@ -631,15 +641,20 @@ def Reset_vals(vals, reset_indivs, params):
     vals['T_D'][reset_indivs] = 0
     vals['vaccinated'][reset_indivs] = False
     vals['time_since_vaccinated'][reset_indivs] = 0
-    vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
-    vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs),
+    if distToUse == "Poisson":
+        vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
+        vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs)
+    else:
+        vals['Ind_ID_period_base'][reset_indivs] = np.random.exponential(scale=params['av_ID_duration'], size=numResetIndivs)
+        vals['Ind_D_period_base'][reset_indivs] = np.random.exponential(scale=params['av_D_duration'], size=numResetIndivs)
+    
     vals['bact_load'][reset_indivs] = 0
     vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance']),
     new_ids = np.arange(maxID + 1, maxID + numResetIndivs + 1)
     vals['ids'][reset_indivs] = new_ids
     return vals
 
-def Import_individual(vals, import_indivs, params, demog):
+def Import_individual(vals, import_indivs, params, demog, distToUse = "Poisson"):
     '''
     When someone is imported, we assume that they are infected and diseased and some random proportion
     of time through their infection period. We will assume that they are at the average number of infecteds
@@ -657,8 +672,12 @@ def Import_individual(vals, import_indivs, params, demog):
     vals['IndI'][import_indivs] = 1
     vals['IndD'][import_indivs] = 1
     vals['No_Inf'][import_indivs] = max(1, round(np.mean(vals['No_Inf'])))
-    vals['Ind_ID_period_base'][import_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numImportIndivs)
-    vals['Ind_D_period_base'][import_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numImportIndivs)
+    if distToUse == "Poisson":
+        vals['Ind_ID_period_base'][import_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numImportIndivs)
+        vals['Ind_D_period_base'][import_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numImportIndivs)
+    else:
+        vals['Ind_ID_period_base'][import_indivs] = np.random.exponential(scale=params['av_ID_duration'], size=numImportIndivs)
+        vals['Ind_D_period_base'][import_indivs] = np.random.exponential(scale=params['av_D_duration'], size=numImportIndivs)
     vals['T_latent'][import_indivs] = 0
     vals['T_ID'][import_indivs] = ID_period_function(import_indivs, params, vals) * np.random.uniform()
     vals['T_D'][import_indivs] = 0
@@ -871,7 +890,8 @@ def update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_pe
 
 def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                                demog, bet, MDA_times, MDAData,
-                               vacc_times, VaccData, outputTimes, doSurvey, doIHMEOutput, numpy_state):
+                               vacc_times, VaccData, outputTimes, 
+                               doSurvey, doIHMEOutput, numpy_state, distToUse  = "Poisson"):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -1019,7 +1039,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         #else:  removed and deleted one indent in the line below to correct mistake.
         #if np.logical_and(i == surveyTime, surveyPass==0):     
        
-        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=betas[i])
+        vals = stepF_fixed(vals=vals, params=params, demog=demog, bet=betas[i], distToUse = distToUse)
 
         children_ages_1_9 = np.logical_and(vals['Age'] < 10 * 52, vals['Age'] >= 52)
         n_children_ages_1_9 = np.count_nonzero(children_ages_1_9)
