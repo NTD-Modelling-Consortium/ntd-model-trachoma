@@ -8,7 +8,7 @@ from trachoma.trachoma_functions import *
 class TestMDAFunctionality(unittest.TestCase):
     # start by defining parameters for the run
     def setUp(self):
-        self.params = {'N': 2500,
+        self.params = {'N': 5000,
                        'av_I_duration': 2,
                        'av_ID_duration': 200/7,
                        'inf_red': 0.45,
