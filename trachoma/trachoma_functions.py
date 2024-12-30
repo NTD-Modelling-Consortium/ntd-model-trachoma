@@ -557,10 +557,12 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse = "Pois
             # Individual's baseline diseased period (first infection)
         Ind_D_period_base=np.random.poisson(lam=params['av_D_duration'], size=params['N'])
     else:
-        Ind_ID_period_base=np.random.exponential(scale=params['av_ID_duration'], size=params['N'])
+        Ind_ID_period_base= np.round(np.random.exponential(scale=params['av_ID_duration'], size=params['N']))
 
             # Individual's baseline diseased period (first infection)
-        Ind_D_period_base=np.random.exponential(scale=params['av_D_duration'], size=params['N'])
+        Ind_D_period_base= np.round(np.random.exponential(scale=params['av_D_duration'], size=params['N']))
+        Ind_ID_period_base[Ind_ID_period_base == 0] = 1
+        Ind_D_period_base[Ind_D_period_base == 0] = 1
 
     if (len(MDAData) > 0):
         MDA_coverage = MDAData[0][3]
@@ -645,8 +647,12 @@ def Reset_vals(vals, reset_indivs, params, distToUse = "Poisson"):
         vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
         vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs)
     else:
-        vals['Ind_ID_period_base'][reset_indivs] = np.random.exponential(scale=params['av_ID_duration'], size=numResetIndivs)
-        vals['Ind_D_period_base'][reset_indivs] = np.random.exponential(scale=params['av_D_duration'], size=numResetIndivs)
+        ID_periods = np.round(np.random.exponential(scale=params['av_ID_duration'], size=numResetIndivs))
+        ID_periods[ID_periods == 0] = 1
+        vals['Ind_ID_period_base'][reset_indivs] = ID_periods
+        D_periods = np.round(np.random.exponential(scale=params['av_D_duration'], size=numResetIndivs))
+        D_periods[D_periods == 0] = 1
+        vals['Ind_D_period_base'][reset_indivs] = D_periods
     
     vals['bact_load'][reset_indivs] = 0
     vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance']),
@@ -676,8 +682,12 @@ def Import_individual(vals, import_indivs, params, demog, distToUse = "Poisson")
         vals['Ind_ID_period_base'][import_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numImportIndivs)
         vals['Ind_D_period_base'][import_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numImportIndivs)
     else:
-        vals['Ind_ID_period_base'][import_indivs] = np.random.exponential(scale=params['av_ID_duration'], size=numImportIndivs)
-        vals['Ind_D_period_base'][import_indivs] = np.random.exponential(scale=params['av_D_duration'], size=numImportIndivs)
+        ID_periods = np.round(np.random.exponential(scale=params['av_ID_duration'], size=numImportIndivs))
+        ID_periods[ID_periods == 0] = 1
+        vals['Ind_ID_period_base'][import_indivs] = ID_periods
+        D_periods = np.round(np.random.exponential(scale=params['av_D_duration'], size=numImportIndivs))
+        D_periods[D_periods == 0] = 1
+        vals['Ind_D_period_base'][import_indivs] = D_periods
     vals['T_latent'][import_indivs] = 0
     vals['T_ID'][import_indivs] = ID_period_function(import_indivs, params, vals) * np.random.uniform()
     vals['T_D'][import_indivs] = 0
