@@ -888,7 +888,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     yearly_threshold_infs = np.zeros(( timesim+1, int(demog['max_age']/52)))
    # get initial prevalence in 1-9 year olds. will decide how many MDAs (if any) to do before another survey
     surveyPass = 0
-    surveyTime = min(MDA_times) + (5 * 52) + 26
+    surveyTime = min(MDA_times) + (5 * 52) + 25
     nMDAWholePop = 0
     numMDAForSurvey = -1
     if doSurvey:
@@ -897,7 +897,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         # get a value for the number of MDAs to do before the next survey
         numMDAForSurvey = nMDAWholePop + numMDAsBeforeNextSurvey(surveyPrev)
         if surveyPrev <= 0.05:
-            surveyTime = min(MDA_times) + 26 
+            surveyTime = min(MDA_times) + 25
     
     
     nextOutputTime = min(outputTimes2)
@@ -1006,7 +1006,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                 nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
                                                                                 vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 if nMDAWholePop == numMDAForSurvey:
-                    surveyTime = i + 26
+                    surveyTime = i + 25
                 
                 
         if i in vacc_times:
