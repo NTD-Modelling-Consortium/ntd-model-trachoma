@@ -1075,22 +1075,23 @@ def returnSurveyPrev(vals, TestSensitivity, TestSpecificity, demog, t, surveyCov
 
     # perform test with given sensitivity and specificity to get test positives
     positive = int(np.random.binomial(n=Diseased, size=1, p = TestSensitivity)) + int(np.random.binomial(n=NonDiseased, size=1, p = 1- TestSpecificity)) 
-    n_surveys_by_age, _ = np.histogram(
-                vals['Age'][surveyed_children]/52,
-                bins=np.arange(0, int(demog['max_age']/52) + 1),
-            )
-    
-    n_people_by_age, _ = np.histogram(
-                vals['Age']/52,
-                bins=np.arange(0, int(demog['max_age']/52) + 1),
-            )
-    # add this to the SD n survey population dict
-    vals["n_surveys_population"][
-                str(t) + ", surveys"
-            ] = n_people_by_age
-    vals["n_surveys"][
-                str(t) + ", surveys"
-            ] = n_surveys_by_age
+    if t > 0:
+        n_surveys_by_age, _ = np.histogram(
+                    vals['Age'][surveyed_children]/52,
+                    bins=np.arange(0, int(demog['max_age']/52) + 1),
+                )
+        
+        n_people_by_age, _ = np.histogram(
+                    vals['Age']/52,
+                    bins=np.arange(0, int(demog['max_age']/52) + 1),
+                )
+        # add this to the SD n survey population dict
+        vals["n_surveys_population"][
+                    str(t) + ", surveys"
+                ] = n_people_by_age
+        vals["n_surveys"][
+                    str(t) + ", surveys"
+                ] = n_surveys_by_age
     if surveyCoverage == 0:
         return 0, vals
     else:
