@@ -899,11 +899,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if surveyPrev <= 0.05:
             surveyTime = min(MDA_times) + 104  
     
-    # initialize time for impact survey dependent on surveyed prevalence
-        if surveyPrev <= 0.05:
-            impactSurveyTime = min(MDA_times) + 104
-        else:
-            impactSurveyTime = timesim + 10
+    
     nextOutputTime = min(outputTimes2)
     w = np.where(outputTimes2 == nextOutputTime)
     outputTimes2[w] = timesim + 10
