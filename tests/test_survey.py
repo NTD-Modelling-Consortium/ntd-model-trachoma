@@ -6,6 +6,33 @@ from trachoma.trachoma_functions import *
 
 class TestSurvey(unittest.TestCase): 
 
+    def initialSurvey(self, surveyPrev, MDA_times, nMDAWholePop):
+        numMDAForSurvey = nMDAWholePop + numMDAsBeforeNextSurvey(surveyPrev)
+        surveyTime = min(MDA_times) + (5 * 52) + 25
+        if surveyPrev <= 0.05:
+            surveyTime = min(MDA_times) + 25
+        return numMDAForSurvey, surveyTime
+    
+    def subsequentSurvey(self, surveyPrev, timesim, nMDAWholePop, MDA_times, i, surveyPass):
+        numMDAForSurvey = 0
+        surveyTime = min(MDA_times) + (5 * 52) + 25
+        if surveyPrev <= 0.05:
+                surveyPass += 1
+        else:
+            surveyPass = 0
+
+        # if we have passed 2 surveys, we won't do another one, so set the surveytime to be after simulation ends
+        if surveyPass == 2:
+            surveyTime = timesim + 10
+        # if we have passed 1 survey, we will do another in 2 years time
+        elif surveyPass == 1:
+            surveyTime = i + 104  
+        else: # if we didn't pass the survey, we will do another survey after a number of MDAs based on the prevalence. 
+            # Assume that these MDAs must cover a significant portion of the population so call these nMDAWholePop.
+            # add the number of MDAs already done to the number of MDAs to be done before the next survey
+            numMDAForSurvey = nMDAWholePop + numMDAsBeforeNextSurvey(surveyPrev)
+        return numMDAForSurvey, surveyTime, surveyPass
+
     def create_diseased(self, initial_prevalence: float):
         vals = Set_inits(self.params, self.demog, self.sim_params, self.MDAData, np.random.get_state())
         ids = np.random.choice(
@@ -79,7 +106,9 @@ class TestSurvey(unittest.TestCase):
             [2020.0, 1, 100, 0.8, 0, 2],
             [2020.5, 1, 15, 0.8, 1, 2]
         ]
-
+        self.Start_date = date(2010,1, 1)
+        self.MDA_dates = getInterventionDates(self.MDAData)
+        self.MDA_times = get_Intervention_times(self.MDA_dates, self.Start_date, self.sim_params['burnin'])
         self.vals = self.create_diseased(initial_prevalence)
 
     def test_surveyPrev(self):
@@ -146,3 +175,47 @@ class TestSurvey(unittest.TestCase):
         # Check the prevalence value
         npt.assert_array_almost_equal(prev, 0.20781)
 
+    def test_initialSurvey(self):
+        # Run setup
+        self.run_setup_for_Survey_test(0, 0.1)
+        surveyPrev = 0.1
+        nMDAWholePop = 0
+        numMDAsForSurvey, surveyTime = self.initialSurvey(surveyPrev, self.MDA_times, nMDAWholePop)
+        npt.assert_array_equal(numMDAsForSurvey, nMDAWholePop + 3)
+        npt.assert_array_equal(surveyTime, min(self.MDA_times) + (5 * 52) + 25)
+
+        surveyPrev = 0.01
+        nMDAWholePop = 0
+        numMDAsForSurvey, surveyTime =  self.initialSurvey(surveyPrev, self.MDA_times, nMDAWholePop)
+        npt.assert_array_equal(numMDAsForSurvey, nMDAWholePop + 100)
+        npt.assert_array_equal(surveyTime, min(self.MDA_times) + 25)
+
+    def test_subsequentSurvey(self):
+
+        self.run_setup_for_Survey_test(0, 0.1)
+        surveyPrev = 0.1
+        nMDAWholePop = 0
+        i = 0
+        surveyPass = 0
+        numMDAsForSurvey, surveyTime, surveyPass = self.subsequentSurvey(surveyPrev, self.sim_params['timesim'], nMDAWholePop, self.MDA_times, i, surveyPass)
+        npt.assert_array_equal(numMDAsForSurvey, nMDAWholePop + 3)
+        npt.assert_array_equal(surveyTime, min(self.MDA_times) + (5 * 52) + 25)
+        npt.assert_array_equal(surveyPass, 0)
+
+        surveyPrev = 0.01
+        nMDAWholePop = 0
+        i = 0
+        surveyPass = 0
+        numMDAsForSurvey, surveyTime, surveyPass = self.subsequentSurvey(surveyPrev, self.sim_params['timesim'], nMDAWholePop, self.MDA_times, i, surveyPass)
+        npt.assert_array_equal(numMDAsForSurvey, 0)
+        npt.assert_array_equal(surveyTime, i + 104)
+        npt.assert_array_equal(surveyPass, 1)
+
+        surveyPrev = 0.01
+        nMDAWholePop = 0
+        i = 0
+        surveyPass = 1
+        numMDAsForSurvey, surveyTime, surveyPass = self.subsequentSurvey(surveyPrev, self.sim_params['timesim'], nMDAWholePop, self.MDA_times, i, surveyPass)
+        npt.assert_array_equal(numMDAsForSurvey, 0)
+        npt.assert_array_equal(surveyTime, self.sim_params['timesim'] + 10)
+        npt.assert_array_equal(surveyPass, 2)
