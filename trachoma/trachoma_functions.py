@@ -1035,7 +1035,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                 # keep track of doses and coverage of the MDA to be output later.
                 nDoses, numMDA, coverage = update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people,
                                                                                 vals, ageStart, ageEnd, nDoses, numMDA, coverage)
-                if nMDAWholePop == numMDAForSurvey:
+                if nMDAWholePop == numMDAForSurvey and surveyPass < 2:
                     surveyTime = i + 25
                 
                 
