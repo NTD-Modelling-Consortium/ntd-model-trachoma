@@ -956,7 +956,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     # surveys based on the dynamics.
     betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
 
-    for i in range(1, 1 + timesim):
+    for i in range( timesim):
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
 
