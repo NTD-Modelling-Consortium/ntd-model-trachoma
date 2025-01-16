@@ -1615,7 +1615,7 @@ def resetMDAVaccAndSurveyData(vals):
     return vals
 
 def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_times, MDAData, vacc_times, VaccData,
-                          outputTimes, doSurvey, doIHMEOutput, index, numpy_state):
+                          outputTimes, doSurvey, doIHMEOutput, index, numpy_state, distToUse = "Poisson"):
 
     '''
     Function to run a single instance of the simulation. The starting point for these simulations
@@ -1634,7 +1634,7 @@ def run_single_simulation(pickleData, params, timesim, burnin, demog, beta, MDA_
                                         demog=demog, bet=beta, MDA_times = MDA_times, 
                                         MDAData=MDAData, vacc_times = vacc_times, VaccData = VaccData,
                                         outputTimes= outputTimes, doSurvey=doSurvey, doIHMEOutput=doIHMEOutput,
-                                        numpy_state=numpy_state)
+                                        numpy_state=numpy_state, distToUse= distToUse)
     return results
 
 def seed_to_state(seed):
