@@ -793,7 +793,7 @@ def Check_for_MDA_Vacc_And_Survey_Data(vals):
 
     return vals
 
-def Check_and_init_vaccination_and_mda_state(params,vals):
+def Check_and_init_vaccination_state(params,vals):
     '''
     Check if "vaccinated" and "time_since_vaccinated" keys are in `vals`. If they are
     not then initialize for population
@@ -1665,7 +1665,6 @@ def seed_to_state(seed):
 ##########################################################################################
 ##########################################################################################
 ##########################################################################################
-
 
 
 
