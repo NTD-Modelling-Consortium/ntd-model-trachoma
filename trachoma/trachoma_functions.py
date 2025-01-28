@@ -901,7 +901,8 @@ def update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_pe
 def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                                demog, bet, MDA_times, MDAData,
                                vacc_times, VaccData, outputTimes, 
-                               doSurvey, doIHMEOutput, numpy_state, distToUse  = "Poisson"):
+                               doSurvey, doIHMEOutput, numpy_state, distToUse  = "Poisson",
+                               postMDAImportationReduction = False):
 
     '''
     Function to run a single simulation with MDA at time points determined by function MDA_times.
@@ -910,7 +911,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     outputTimes2 = copy.deepcopy(outputTimes)
     # when we are resuming previous simulations we use the provided random state
     np.random.set_state(numpy_state)
-
+    timeForImpReduction = timesim+10
     #vacc_time = params['vacc_time']
     prevalence = []
     infections = []
@@ -959,6 +960,14 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     for i in range( timesim):
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
+
+        if postMDAImportationReduction and i == timeForImpReduction:
+            postMDAPrev = vals['IndI'].sum()/len(vals['IndI'])
+            if postMDAPrev == 0:
+                params['importation_rate'] = 0
+            elif preMDAPrev > 0:
+                importationRatio = min(1, postMDAPrev / preMDAPrev)
+                params['importation_rate'] *= importationRatio
 
         if ((i+1) % 52) == 0:
             # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
@@ -1018,6 +1027,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
             for l in range(len(MDA_round)):
+                preMDAPrev = vals['IndI'].sum()/len(vals['IndI'])
                 MDA_round_current = MDA_round[l]
                 # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
@@ -1037,7 +1047,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                                                                                 vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 if nMDAWholePop == numMDAForSurvey and surveyPass < 2:
                     surveyTime = i + 25
-                
+                timeForImpReduction = i + params['importation_reduction_length']
                 
         if i in vacc_times:
       
