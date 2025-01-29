@@ -19,7 +19,8 @@ class TestGetLambdaStep(unittest.TestCase):
                     'vacc_waning_length': 52 * 5}
 
         self.vals = dict(
-            IndD=np.zeros(self.params['N']), 
+            IndD=np.ones(self.params['N']), 
+            IndI=np.ones(self.params['N']), 
             vaccinated=np.full(self.params['N'], fill_value=False, dtype=bool),
             time_since_vaccinated=np.zeros(self.params['N']),
             No_Inf = np.ones(self.params['N']), 
@@ -36,7 +37,7 @@ class TestGetLambdaStep(unittest.TestCase):
     
     def test_WhenNotActivelyInfected(self):
         # Modify vals and recalculate bacterialLoad
-        self.vals['T_ID'][0] = 0
+        self.vals['IndI'][0] = 0
         
         bact_load = bacterialLoad(self.params, self.vals)
         # Assert array is as expected
