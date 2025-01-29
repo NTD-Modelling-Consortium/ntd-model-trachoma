@@ -20,8 +20,8 @@ class TestGetLambdaStep(unittest.TestCase):
                     'vacc_prob_block_transmission': 0.5,
                     'vacc_waning_length': 52 * 5,
                     'mda_waning_length': 52 * 1,
-                    'mda_prob_block_transmission':0, 
-                    'mda_reduce_bacterial_load': 0 }
+                    'mda_prob_block_transmission':0.4, 
+                    'mda_reduce_bacterial_load': 0.4 }
 
         self.Age = np.array([1 * 52, 10 * 51, 50 * 52])
         self.vals = dict(
@@ -34,7 +34,7 @@ class TestGetLambdaStep(unittest.TestCase):
         
         )
 
-    def getLambdaViaDirectCalculation(self, totalLoad, IndD, vaccinated, time_since_vaccinated):
+    def getLambdaViaDirectCalculation(self, totalLoad, IndD, vaccinated, time_since_vaccinated, treated, time_since_mda):
         prevLambda = self.bet * (self.params['v_1'] * totalLoad + self.params['v_2'] * (totalLoad ** (self.params['phi'] + 1)))
         a = 1/3
         b = 1/3
@@ -52,9 +52,15 @@ class TestGetLambdaStep(unittest.TestCase):
         # add impact of waning using a linear slope. After waning period assumed vaccine has zero impact.
         prob_reduction = prob_reduction * (- time_since_vaccinated / self.params["vacc_waning_length"] + 1)
         prob_reduction = np.maximum(prob_reduction,0)
-
+        
         returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
 
+        prob_reduction = self.params["mda_prob_block_transmission"]
+        # add impact of waning using a linear slope. After waning period assumed vaccine has zero impact.
+        prob_reduction = prob_reduction * (- time_since_mda / self.params["mda_waning_length"] + 1)
+        prob_reduction = np.maximum(prob_reduction,0)
+
+        returned[treated] = (1 - prob_reduction[treated]) * returned[treated]
         return 1-np.exp(-returned)
     
     def test_WhenAllInfectedNoneDiseased(self):
@@ -69,7 +75,9 @@ class TestGetLambdaStep(unittest.TestCase):
         npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([1,1,1]),
                                                                          IndD = np.array([0,0,0]), 
                                                                          vaccinated = np.array([False,False,False]),
-                                                                         time_since_vaccinated = np.array([0,0,0])),
+                                                                         time_since_vaccinated = np.array([0,0,0]),
+                                                                         treated = np.array([False,False,False]),
+                                                                         time_since_mda = np.array([0,0,0])),
                                     lambda_step)
     
     def test_WhenFirstPersonNotInfectedButIsDiseased(self):
@@ -88,7 +96,9 @@ class TestGetLambdaStep(unittest.TestCase):
         npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([0,1,1]),
                                                                          IndD = np.array([1,0,0]), 
                                                                          vaccinated = np.array([False,False,False]),
-                                                                         time_since_vaccinated = np.array([0,0,0])),
+                                                                         time_since_vaccinated = np.array([0,0,0]),
+                                                                         treated = np.array([False,False,False]),
+                                                                         time_since_mda = np.array([0,0,0])),
                                     lambda_step)
         
     def test_WhenFirstPersonNotInfectedButIsDisease_SecondPersonWasVaccinatedLastWeek(self):
@@ -109,7 +119,9 @@ class TestGetLambdaStep(unittest.TestCase):
         npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([0,1,1]),
                                                                          IndD = np.array([1,0,0]), 
                                                                          vaccinated = np.array([False,True,False]),
-                                                                         time_since_vaccinated = np.array([0,1,0])),
+                                                                         time_since_vaccinated = np.array([0,1,0]),
+                                                                         treated = np.array([False,False,False]),
+                                                                         time_since_mda = np.array([0,0,0])),
                                     lambda_step)
         
     def test_WhenFirstPersonNotInfectedButIsDisease_SecondPersonWasVaccinatedWaningLengthAgo(self):
@@ -132,5 +144,35 @@ class TestGetLambdaStep(unittest.TestCase):
         npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([0,1,1]),
                                                                          IndD = np.array([1,0,0]), 
                                                                          vaccinated = np.array([False,False,False]),
-                                                                         time_since_vaccinated = np.array([0,self.params["vacc_waning_length"],0])),
+                                                                         time_since_vaccinated = np.array([0,self.params["vacc_waning_length"],0]),
+                                                                         treated = np.array([False,False,False]),
+                                                                         time_since_mda = np.array([0,0,0])),
+                                    lambda_step)
+        
+    def test_WhenFirstPersonNotInfectedButIsDisease_SecondPersonWasTreatedLastTimeStep(self):
+        # Change vaccinated and time_since_vaccinated and recalculate lambda_step
+        self.vals['bact_load'][0] = 0
+        self.vals['IndD'][0] = 1
+        # when the time_since_vaccinated = params["vacc_waning_length"], then it should be equivalent to
+        # that person not being vaccinated. We will assume this when doing the direct calculation
+        self.vals['time_since_vaccinated'] = np.array([0, self.params["vacc_waning_length"], 0])
+        self.vals['vaccinated'] = np.array([False, True, False])
+
+        self.vals['time_since_mda'] = np.array([0, 1, 0])
+        self.vals['treated'] = np.array([False, True, False])
+        
+        lambda_step = 1 - np.exp(-getlambdaStep(
+            params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
+            IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            treated = self.vals['treated'], time_since_mda=self.vals['time_since_mda'],
+            time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
+        ))
+
+        # Assert new values
+        npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([0,1,1]),
+                                                                         IndD = np.array([1,0,0]), 
+                                                                         vaccinated = np.array([False,False,False]),
+                                                                         time_since_vaccinated = np.array([0,self.params["vacc_waning_length"],0]),
+                                                                         treated = np.array([False,True,False]),
+                                                                         time_since_mda = np.array([0,1,0])),
                                     lambda_step)
