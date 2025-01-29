@@ -240,7 +240,7 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
 
     # if time since this person got an mda reaches the waning length of the mda, then set
     # the treated status to False so that they will no longer have any protection effects due to the mda
-    vals['treated'][np.where(vals['time_since_mda'] == params['mda_waning_length'])] = False
+    vals['treated'][np.where(vals['time_since_mda'] >= params['mda_waning_length'])] = False
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
     vals['Age'] += 1
