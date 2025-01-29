@@ -171,7 +171,7 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     '''
     Step function i.e. transitions in each time non-MDA timestep.
     '''
-
+    
     #Step 0: do importation of infection 
     import_indivs = np.where(np.random.uniform(size = params['N']) < params['importation_rate'])[0]
     if len(import_indivs) > 0:
@@ -220,6 +220,8 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     vals['IndD'][newClearDis] = 0  # clear disease they become D=0
 
     # Step 6: implement infections
+    # Tracking infection history
+    vals['No_Inf'][newInf] += 1
     # Transition: become infected
     vals['IndI'][newInf] = 1  # if they've become infected, become I=1
     # When individual becomes infected, set their latent period;
@@ -229,8 +231,7 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     vals['T_D'][newInf] = 0
     vals['T_ID'][newInf] = 0
 
-    # Tracking infection history
-    vals['No_Inf'][newInf] += 1
+    
 
     # update vaccination history
     vals['time_since_vaccinated'][np.where(vals['vaccinated'])] += 1
@@ -244,9 +245,6 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     if(len(reset_indivs) > 0):
         vals = Reset_vals(vals, reset_indivs, params, distToUse)
     
-    #me = 2
-    #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
-
     return vals
 
 
@@ -482,7 +480,8 @@ def bacterialLoad(params,vals):
     # we can calculate the bacterial load for everyone and then just see which
     # people have active infection and then multiply by an indicator of this.
     # the following line finds the people who have an active infection
-    peopleWithNonZeroBactLoad = vals['T_ID'] > 0 
+    
+    peopleWithNonZeroBactLoad = np.logical_and(vals['IndI'] == 1, vals['IndD'] == 1)
     bacterial_loads = b1 * np.exp(- (No_Inf-1) * ep2) * (peopleWithNonZeroBactLoad)
     
     # If vaccinated reduce bacterial load by a fixed proportion
@@ -967,6 +966,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
 
+
         if postMDAImportationReduction:
             if i == timeForImpReduction:
                 postMDAPrev = vals['IndI'].sum()/params["N"]
@@ -975,6 +975,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                 elif preMDAPrev > 1/params["N"]:
                     importationRatio = min(1, postMDAPrev / preMDAPrev)
                     params['importation_rate'] *= importationRatio
+
 
         if ((i+1) % 52) == 0:
             # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
