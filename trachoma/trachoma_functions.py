@@ -911,7 +911,13 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     outputTimes2 = copy.deepcopy(outputTimes)
     # when we are resuming previous simulations we use the provided random state
     np.random.set_state(numpy_state)
-    timeForImpReduction = timesim+10
+
+    # if we are going to allow reduction of importation by ratio of pre and post MDA prevalence
+    # then set the timeForImpReduction to be after the simulation as this is the timepoint
+    # at which we will check whether we want to reduce the importation. Later in the simulation
+    # when an MDA is done, this value will be set to some different time after that MDA
+    if postMDAImportationReduction:
+        timeForImpReduction = timesim + 10
     #vacc_time = params['vacc_time']
     prevalence = []
     infections = []
@@ -961,13 +967,14 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
 
-        if postMDAImportationReduction and i == timeForImpReduction:
-            postMDAPrev = vals['IndI'].sum()/params["N"]
-            if postMDAPrev < 1/params["N"]:
-                params['importation_rate'] = 0
-            elif preMDAPrev > 1/params["N"]:
-                importationRatio = min(1, postMDAPrev / preMDAPrev)
-                params['importation_rate'] *= importationRatio
+        if postMDAImportationReduction:
+            if i == timeForImpReduction:
+                postMDAPrev = vals['IndI'].sum()/params["N"]
+                if postMDAPrev < 1/params["N"]:
+                    params['importation_rate'] = 0
+                elif preMDAPrev > 1/params["N"]:
+                    importationRatio = min(1, postMDAPrev / preMDAPrev)
+                    params['importation_rate'] *= importationRatio
 
         if ((i+1) % 52) == 0:
             # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
@@ -1047,7 +1054,8 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                                                                                 vals, ageStart, ageEnd, nDoses, numMDA, coverage)
                 if nMDAWholePop == numMDAForSurvey and surveyPass < 2:
                     surveyTime = i + 25
-                timeForImpReduction = i + params['importation_reduction_length']
+                if postMDAImportationReduction:
+                    timeForImpReduction = i + params['importation_reduction_length']
                 
         if i in vacc_times:
       
