@@ -238,7 +238,9 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     vals['time_since_vaccinated'][np.where(vals['vaccinated'])] += 1
     vals['time_since_mda'][np.where(vals['treated'])] += 1
 
-    vals['treated'][np.where(vals['time_since_mda'] == params['mda_waning_length'])] = 0
+    # if time since this person got an mda reaches the waning length of the mda, then set
+    # the treated status to False so that they will no longer have any protection effects due to the mda
+    vals['treated'][np.where(vals['time_since_mda'] == params['mda_waning_length'])] = False
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
     vals['Age'] += 1
@@ -355,6 +357,7 @@ def MDA_timestep_Age_range(vals, params, ageStart, ageEnd, t, label, demog):
     vals['bact_load'][cured_people.astype(int)] = 0  # stop being infectious
     vals['T_ID'][cured_people.astype(int)] = 0 # reset time in ID compartment
     vals['T_latent'][cured_people.astype(int)] = 0 # reset time in latent compartment
+    # give treated people a treated label and set the time since they got treated to be 0 even if they are not cured
     vals['treated'][treated_people.astype(int)] = True
     vals['time_since_mda'][treated_people.astype(int)] = 0
     treatedAges, _ = np.histogram(
