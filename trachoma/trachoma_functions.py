@@ -962,10 +962,10 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             params['importation_rate'] *= params['importation_reduction_rate']
 
         if postMDAImportationReduction and i == timeForImpReduction:
-            postMDAPrev = vals['IndI'].sum()/len(vals['IndI'])
-            if postMDAPrev == 0:
+            postMDAPrev = vals['IndI'].sum()/params["N"]
+            if postMDAPrev < 1/params["N"]:
                 params['importation_rate'] = 0
-            elif preMDAPrev > 0:
+            elif preMDAPrev > 1/params["N"]:
                 importationRatio = min(1, postMDAPrev / preMDAPrev)
                 params['importation_rate'] *= importationRatio
 
@@ -1027,7 +1027,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
             for l in range(len(MDA_round)):
-                preMDAPrev = vals['IndI'].sum()/len(vals['IndI'])
+                preMDAPrev = vals['IndI'].sum()/params["N"]
                 MDA_round_current = MDA_round[l]
                 # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(MDAData, MDA_round_current, vals)
