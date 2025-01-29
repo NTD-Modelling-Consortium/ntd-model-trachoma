@@ -14,9 +14,12 @@ class TestGetLambdaStep(unittest.TestCase):
         self.bet = 1
         self.params = {'N': 2,
                     'ep2':0.114,
-                    'vacc_prob_block_transmission': 0.5,
-                    'vacc_reduce_bacterial_load': 0.5, 
-                    'vacc_waning_length': 52 * 5}
+                    'vacc_prob_block_transmission': 0.23,
+                    'vacc_reduce_bacterial_load': 0.26, 
+                    'vacc_waning_length': 52 * 5,
+                    'mda_waning_length': 52 * 10,
+                    'mda_prob_block_transmission':0.1, 
+                    'mda_reduce_bacterial_load': 0.1, }
 
         self.vals = dict(
             IndD=np.ones(self.params['N']), 
@@ -24,7 +27,8 @@ class TestGetLambdaStep(unittest.TestCase):
             time_since_vaccinated=np.zeros(self.params['N']),
             No_Inf = np.ones(self.params['N']), 
             T_ID = 10*np.ones(self.params['N']), 
-            IndI=np.ones(self.params['N'])
+            IndI=np.ones(self.params['N']),
+            treated = np.full(self.params['N'], fill_value=False, dtype=bool)
         )
         
     
@@ -60,7 +64,7 @@ class TestGetLambdaStep(unittest.TestCase):
 
         bact_load = bacterialLoad(self.params, self.vals)
         # Assert array is as expected
-        npt.assert_array_almost_equal(np.array([1 * self.params["vacc_reduce_bacterial_load"],1]),
+        npt.assert_array_almost_equal(np.array([1 * (1-self.params["vacc_reduce_bacterial_load"]),1]),
                                     bact_load)
         
     def test_When10thInfectionButVaccinated(self):
@@ -72,7 +76,20 @@ class TestGetLambdaStep(unittest.TestCase):
         bact_load = bacterialLoad(self.params, self.vals)
         # Assert array is as expected
         npt.assert_array_almost_equal(np.array([1 * np.exp(-(numberOfInfection-1)*self.params['ep2']) *
-                                       self.params["vacc_reduce_bacterial_load"],1]),
+                                       (1-self.params["vacc_reduce_bacterial_load"]),1]),
+                                    bact_load)
+        
+    def test_When10thInfectionButTreated(self):
+        # Change 
+        numberOfInfection = 10
+        self.vals['No_Inf'][0] = numberOfInfection
+        self.vals['vaccinated'][0] = False
+        self.vals['treated'][0] = True
+
+        bact_load = bacterialLoad(self.params, self.vals)
+        # Assert array is as expected
+        npt.assert_array_almost_equal(np.array([1 * np.exp(-(numberOfInfection-1)*self.params['ep2']) *
+                                      (1- self.params["mda_reduce_bacterial_load"]),1]),
                                     bact_load)
         
         

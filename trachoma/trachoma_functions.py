@@ -504,6 +504,12 @@ def bacterialLoad(params,vals):
 
     bacterial_loads[vaccinated] = (1 - prob_reduction) * bacterial_loads[vaccinated]
 
+     # If treated reduce bacterial load by a fixed proportion
+    prob_reduction_MDA = params["mda_reduce_bacterial_load"]
+    treated = vals['treated']
+
+    bacterial_loads[treated] = (1 - prob_reduction_MDA) * bacterial_loads[treated]
+
     return bacterial_loads
 
 
