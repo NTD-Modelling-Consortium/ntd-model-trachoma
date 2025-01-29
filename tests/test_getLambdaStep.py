@@ -18,7 +18,10 @@ class TestGetLambdaStep(unittest.TestCase):
                     'phi': 1.4,
                     'epsilon': 0.5,
                     'vacc_prob_block_transmission': 0.5,
-                    'vacc_waning_length': 52 * 5}
+                    'vacc_waning_length': 52 * 5,
+                    'mda_waning_length': 52 * 1,
+                    'mda_prob_block_transmission':0, 
+                    'mda_reduce_bacterial_load': 0 }
 
         self.Age = np.array([1 * 52, 10 * 51, 50 * 52])
         self.vals = dict(
@@ -26,6 +29,9 @@ class TestGetLambdaStep(unittest.TestCase):
             bact_load=np.ones(self.params['N']),  # Baseline bacterial load set to one => all people are infected
             vaccinated=np.full(self.params['N'], fill_value=False, dtype=bool),
             time_since_vaccinated=np.zeros(self.params['N']),
+            treated = np.full(self.params['N'], fill_value=False, dtype=bool),
+            time_since_mda = np.zeros(self.params['N']) ,
+        
         )
 
     def getLambdaViaDirectCalculation(self, totalLoad, IndD, vaccinated, time_since_vaccinated):
@@ -56,6 +62,7 @@ class TestGetLambdaStep(unittest.TestCase):
         lambda_step = 1 - np.exp(-getlambdaStep(
             params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
             IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            treated = self.vals['treated'], time_since_mda=self.vals['time_since_mda'],
             time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
         ))
         # Assert array is as expected
@@ -73,6 +80,7 @@ class TestGetLambdaStep(unittest.TestCase):
         lambda_step = 1 - np.exp(-getlambdaStep(
             params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
             IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            treated = self.vals['treated'], time_since_mda=self.vals['time_since_mda'],
             time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
         ))
 
@@ -93,6 +101,7 @@ class TestGetLambdaStep(unittest.TestCase):
         lambda_step = 1 - np.exp(-getlambdaStep(
             params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
             IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            treated = self.vals['treated'], time_since_mda=self.vals['time_since_mda'],
             time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
         ))
 
@@ -115,6 +124,7 @@ class TestGetLambdaStep(unittest.TestCase):
         lambda_step = 1 - np.exp(-getlambdaStep(
             params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
             IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            treated = self.vals['treated'], time_since_mda=self.vals['time_since_mda'],
             time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
         ))
 
