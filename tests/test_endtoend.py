@@ -112,7 +112,10 @@ class EndToEndTest(unittest.TestCase):
                   'vacc_waning_length': 52 * 5,
                   'importation_rate': 0,
                   'importation_reduction_rate': 1,
-                  'surveyCoverage':0.4}
+                  'surveyCoverage':0.4,
+                  'mda_waning_length': 52 * 10,
+                  'mda_prob_block_transmission':0, 
+                  'mda_reduce_bacterial_load': 0 }
 
 
         sim_params = {'timesim':52*23,
