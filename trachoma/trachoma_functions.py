@@ -171,7 +171,7 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     '''
     Step function i.e. transitions in each time non-MDA timestep.
     '''
-
+    
     #Step 0: do importation of infection 
     import_indivs = np.where(np.random.uniform(size = params['N']) < params['importation_rate'])[0]
     if len(import_indivs) > 0:
@@ -187,7 +187,8 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     # Susceptible individuals acquiring new infections. This gives a lambda
     # for each individual dependent on age and disease status.
     lambda_step = 1 - np.exp(- getlambdaStep(params=params, Age=vals['Age'], bact_load=vals['bact_load'],
-    IndD=vals['IndD'], vaccinated=vals['vaccinated'],time_since_vaccinated=vals['time_since_vaccinated'],
+    IndD=vals['IndD'], vaccinated=vals['vaccinated'], time_since_vaccinated=vals['time_since_vaccinated'],
+    treated = vals['treated'], time_since_mda=vals['time_since_mda'],
     bet=bet, demog=demog))
     # New infections
     newInf = Ss[np.random.uniform(size=len(Ss)) < lambda_step[Ss]]
@@ -220,6 +221,8 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     vals['IndD'][newClearDis] = 0  # clear disease they become D=0
 
     # Step 6: implement infections
+    # Tracking infection history
+    vals['No_Inf'][newInf] += 1
     # Transition: become infected
     vals['IndI'][newInf] = 1  # if they've become infected, become I=1
     # When individual becomes infected, set their latent period;
@@ -229,12 +232,15 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     vals['T_D'][newInf] = 0
     vals['T_ID'][newInf] = 0
 
-    # Tracking infection history
-    vals['No_Inf'][newInf] += 1
+    
 
     # update vaccination history
     vals['time_since_vaccinated'][np.where(vals['vaccinated'])] += 1
+    vals['time_since_mda'][np.where(vals['treated'])] += 1
 
+    # if time since this person got an mda reaches the waning length of the mda, then set
+    # the treated status to False so that they will no longer have any protection effects due to the mda
+    vals['treated'][np.where(vals['time_since_mda'] >= params['mda_waning_length'])] = False
     # Update age, all age by 1w at each timestep, and resetting all "reset indivs" age to zero
     # Reset_indivs - Identify individuals who die in this timestep, either reach max age or random death rate
     vals['Age'] += 1
@@ -244,9 +250,6 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     if(len(reset_indivs) > 0):
         vals = Reset_vals(vals, reset_indivs, params, distToUse)
     
-    #me = 2
-    #print(vals['Age'][me],vals['No_Inf'][me],vals['bact_load'][me],':',vals['IndI'][me],vals['IndD'][me],vals['T_latent'][me],vals['T_ID'][me],vals['T_D'][me])
-
     return vals
 
 
@@ -259,7 +262,7 @@ def get_Intervention_times(Intervention_dates, Start_date, burnin):
 
 
 def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
-    vaccinated,time_since_vaccinated):
+    vaccinated,time_since_vaccinated, treated, time_since_mda):
 
     y_children = np.where(np.logical_and(Age >= 0, Age < 9 * 52))[0]  # Young children
     o_children = np.where(np.logical_and(Age >= 9 * 52, Age < 15 * 52))[0]  # Older children
@@ -297,6 +300,13 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
 
     returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
 
+    prob_reduction = params["mda_prob_block_transmission"]
+
+    # add impact of waning using a linear slope. After waning period assumed vaccine has zero impact.
+    prob_reduction = prob_reduction * (- time_since_mda / params["mda_waning_length"] + 1)
+    prob_reduction = np.maximum(prob_reduction,0)
+
+    returned[treated] = (1 - prob_reduction[treated]) * returned[treated]
     # the factor of (0.5 + 0.5 * (1 - IndD)) reduces the infections pressure on people who are already diseased by 50%.
     return returned  * (0.5 + 0.5 * (1 - IndD))
 
@@ -347,7 +357,9 @@ def MDA_timestep_Age_range(vals, params, ageStart, ageEnd, t, label, demog):
     vals['bact_load'][cured_people.astype(int)] = 0  # stop being infectious
     vals['T_ID'][cured_people.astype(int)] = 0 # reset time in ID compartment
     vals['T_latent'][cured_people.astype(int)] = 0 # reset time in latent compartment
-
+    # give treated people a treated label and set the time since they got treated to be 0 even if they are not cured
+    vals['treated'][treated_people.astype(int)] = True
+    vals['time_since_mda'][treated_people.astype(int)] = 0
     treatedAges, _ = np.histogram(
                             vals["Age"][treated_people.astype(int)]/52, 
                             bins=np.arange(int(demog['max_age']/52) + 1))
@@ -482,7 +494,8 @@ def bacterialLoad(params,vals):
     # we can calculate the bacterial load for everyone and then just see which
     # people have active infection and then multiply by an indicator of this.
     # the following line finds the people who have an active infection
-    peopleWithNonZeroBactLoad = vals['T_ID'] > 0 
+    
+    peopleWithNonZeroBactLoad = np.logical_and(vals['IndI'] == 1, vals['IndD'] == 1)
     bacterial_loads = b1 * np.exp(- (No_Inf-1) * ep2) * (peopleWithNonZeroBactLoad)
     
     # If vaccinated reduce bacterial load by a fixed proportion
@@ -490,6 +503,12 @@ def bacterialLoad(params,vals):
     vaccinated = vals['vaccinated']
 
     bacterial_loads[vaccinated] = (1 - prob_reduction) * bacterial_loads[vaccinated]
+
+     # If treated reduce bacterial load by a fixed proportion
+    prob_reduction_MDA = params["mda_reduce_bacterial_load"]
+    treated = vals['treated']
+
+    bacterial_loads[treated] = (1 - prob_reduction_MDA) * bacterial_loads[treated]
 
     return bacterial_loads
 
@@ -611,6 +630,10 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse = "Pois
         vaccinated = np.full(params['N'], fill_value=False, dtype=bool),
         
         time_since_vaccinated = np.zeros(params['N']) ,
+
+        treated = np.full(params['N'], fill_value=False, dtype=bool),
+
+        time_since_mda = np.zeros(params['N']) ,
         
         treatProbability = treatProbability,
 
@@ -643,6 +666,8 @@ def Reset_vals(vals, reset_indivs, params, distToUse = "Poisson"):
     vals['T_D'][reset_indivs] = 0
     vals['vaccinated'][reset_indivs] = False
     vals['time_since_vaccinated'][reset_indivs] = 0
+    vals['treated'][reset_indivs] = False
+    vals['time_since_mda'][reset_indivs] = 0
     if distToUse == "Poisson":
         vals['Ind_ID_period_base'][reset_indivs] = np.random.poisson(lam=params['av_ID_duration'], size=numResetIndivs)
         vals['Ind_D_period_base'][reset_indivs] = np.random.poisson(lam=params['av_D_duration'], size=numResetIndivs)
@@ -693,6 +718,8 @@ def Import_individual(vals, import_indivs, params, demog, distToUse = "Poisson")
     vals['T_D'][import_indivs] = 0
     vals['vaccinated'][import_indivs] = False
     vals['time_since_vaccinated'][import_indivs] = 0
+    vals['treated'][import_indivs] = False
+    vals['time_since_mda'][import_indivs] = 0
 
     vals['bact_load'] = bacterialLoad(params, vals)
     vals['treatProbability'][import_indivs] = drawTreatmentProbabilities(numImportIndivs, vals['MDA_coverage'], vals['systematic_non_compliance'])
@@ -819,7 +846,7 @@ def Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state):
         vals dictionary modified with vaccination state
     '''
     np.random.set_state(numpy_state)
-    if not set(["treatProbability","MDA_coverage", "systematic_non_compliance"]).issubset(vals.keys()):
+    if not set(["treatProbability","MDA_coverage", "systematic_non_compliance", "treated", "time_since_mda"]).issubset(vals.keys()):
         MDA_coverage = 0
         treatProbability = np.full(shape=params['N'], fill_value=np.nan, dtype=float)
         systematic_non_compliance = params['rho']
@@ -829,7 +856,8 @@ def Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state):
             vals["treatProbability"] = drawTreatmentProbabilities(params['N'], MDA_coverage, systematic_non_compliance)
         vals["MDA_coverage"] = MDA_coverage
         vals["systematic_non_compliance"] = systematic_non_compliance
-
+        vals["treated"] = np.zeros(params['N'],dtype=bool)
+        vals["time_since_mda"] = np.zeros(params['N'])
     return vals
 
 def init_ages(params, demog, numpy_state):
@@ -959,6 +987,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     for i in range( timesim):
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
+
 
         if ((i+1) % 52) == 0:
             # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
@@ -1645,7 +1674,6 @@ def seed_to_state(seed):
 ##########################################################################################
 ##########################################################################################
 ##########################################################################################
-
 
 
 

@@ -40,7 +40,10 @@ class TestMDAFunctionality(unittest.TestCase):
                        'vacc_coverage': 0,  
                        'vacc_waning_length': 52 * 5,
                        'importation_rate': 0,
-                       'importation_reduction_rate': 1}
+                       'importation_reduction_rate': 1,
+                       'mda_waning_length': 52 * 10,
+                       'mda_prob_block_transmission': 0, 
+                       'mda_reduce_bacterial_load': 0, }
 
         burnin = 100 * 52
         timesim = burnin + 21 * 52
