@@ -86,7 +86,8 @@ class TestSurvey(unittest.TestCase):
             'vacc_waning_length': 52 * 5,
             'importation_rate': 0,
             'importation_reduction_rate': 1,
-            'surveyCoverage': 0.4
+            'surveyCoverage': 0.4,
+            'infection_risk_shape' : 1
         }
 
         self.sim_params = {

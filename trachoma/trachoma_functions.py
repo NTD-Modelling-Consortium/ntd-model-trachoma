@@ -187,7 +187,7 @@ def stepF_fixed(vals, params, demog, bet, distToUse = "Poisson"):
     # Susceptible individuals acquiring new infections. This gives a lambda
     # for each individual dependent on age and disease status.
     lambda_step = 1 - np.exp(- getlambdaStep(params=params, Age=vals['Age'], bact_load=vals['bact_load'],
-    IndD=vals['IndD'], vaccinated=vals['vaccinated'],time_since_vaccinated=vals['time_since_vaccinated'],
+    IndD=vals['IndD'], Infection_risk= vals['Infection_risk'], vaccinated=vals['vaccinated'],time_since_vaccinated=vals['time_since_vaccinated'],
     bet=bet, demog=demog))
     # New infections
     newInf = Ss[np.random.uniform(size=len(Ss)) < lambda_step[Ss]]
@@ -256,7 +256,7 @@ def get_Intervention_times(Intervention_dates, Start_date, burnin):
 
 
 
-def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
+def getlambdaStep(params, Age, bact_load, IndD, Infection_risk, bet, demog,
     vaccinated,time_since_vaccinated):
 
     y_children = np.where(np.logical_and(Age >= 0, Age < 9 * 52))[0]  # Young children
@@ -282,9 +282,12 @@ def getlambdaStep(params, Age, bact_load, IndD, bet, demog,
         prevLambda[0]*a*epsm + prevLambda[1]*epsm*b + prevLambda[2]*c * epsm + eps * prevLambda[2],
     ]
     returned = np.ones(params['N'])
-    returned[y_children] = A[0]
-    returned[o_children] = A[1]
-    returned[adults] = A[2]
+    # here we multiply the force of infection by the infection risk of each person.
+    # someone who is at high risk of infection will get a larger value for this,
+    # making this equivalent to them being exposed to more infection pressure
+    returned[y_children] = A[0] * Infection_risk[y_children]
+    returned[o_children] = A[1] * Infection_risk[o_children]
+    returned[adults] = A[2] * Infection_risk[adults]
 
     # add reduction in lambda according to who has been vaccinated
     prob_reduction = params["vacc_prob_block_transmission"]
@@ -567,6 +570,8 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse = "Pois
         MDA_coverage = MDAData[0][3]
         treatProbability = drawTreatmentProbabilities(params['N'], MDA_coverage, systematic_non_compliance)
     vals = dict(
+        # generate risk of infection for each person
+        Infection_risk = np.random.gamma(size=params['N'], scale=1 / params['infection_risk_shape'], shape=params['infection_risk_shape']),
 
         # Individual's infected status
         IndI=np.zeros(params['N']),
@@ -657,6 +662,8 @@ def Reset_vals(vals, reset_indivs, params, distToUse = "Poisson"):
     vals['treatProbability'][reset_indivs] = drawTreatmentProbabilities(numResetIndivs, vals['MDA_coverage'], vals['systematic_non_compliance']),
     new_ids = np.arange(maxID + 1, maxID + numResetIndivs + 1)
     vals['ids'][reset_indivs] = new_ids
+    vals['Infection_risk'][reset_indivs] = np.random.gamma(size = len(reset_indivs),shape=params['infection_risk_shape'], 
+                                                            scale=1 / params['infection_risk_shape'])
     return vals
 
 def Import_individual(vals, import_indivs, params, demog, distToUse = "Poisson"):
@@ -695,6 +702,8 @@ def Import_individual(vals, import_indivs, params, demog, distToUse = "Poisson")
 
     vals['bact_load'] = bacterialLoad(params, vals)
     vals['treatProbability'][import_indivs] = drawTreatmentProbabilities(numImportIndivs, vals['MDA_coverage'], vals['systematic_non_compliance'])
+    vals['Infection_risk'][import_indivs] = np.random.gamma(size = len(import_indivs),shape=params['infection_risk_shape'], 
+                                                            scale=1 / params['infection_risk_shape'])
     return vals
 
 
