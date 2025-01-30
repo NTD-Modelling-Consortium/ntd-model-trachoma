@@ -853,10 +853,10 @@ def init_ages(params, demog, numpy_state):
 
 def SecularTrendBetaDecrease(timesim, burnin, bet, params):
     simbeta = bet * np.ones(timesim )
-    decayPerWeek = (1-params['SecularTrendYearlyBetaDecrease']) ** (1/52)
+    weeklyBetaDecrease = (1-params['SecularTrendYearlyBetaDecrease']) ** (1/52)
     if params['SecularTrendIndicator'] == 1:
         for j in range(round(burnin),round(len(simbeta))):
-            simbeta[j] = simbeta[j-1 ] * decayPerWeek
+            simbeta[j] = simbeta[j-1 ] * weeklyBetaDecrease
     return simbeta
 
 def YearlyBetaToWeeklyBeta(timesim, yearlyBetas):
