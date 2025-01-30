@@ -907,6 +907,10 @@ def update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_pe
 
 
 def calculateWeeklyBetas(timesim, burnin, bet, params):
+    # if the specified betas are already the same length as the simulation, then we don't do anything 
+    # to them. If it is just one value or the length of the number of years of the simulation, then we 
+    # extend them to be the length of the simulation
+    
     if isinstance(bet, (list, np.ndarray)) and len(bet) == timesim:
         return bet
     elif np.isscalar(bet):  # Check if bet is a single number
@@ -973,9 +977,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     # number of rows in them for different simulations, as there may be different numbers of 
     # surveys based on the dynamics.
     
-    # if the specified betas are already the same length as the simulation, then we don't do anything 
-    # to them. If it is just one value or the length of the number of years of the simulation, then we 
-    # extend them to be the length of the simulation
+    # get weekly beta values
     betas = calculateWeeklyBetas(timesim, burnin, bet, params)
 
     for i in range(timesim):
