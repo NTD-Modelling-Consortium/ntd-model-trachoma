@@ -861,6 +861,14 @@ def SecularTrendBetaDecrease(timesim, burnin, bet, params):
     return simbeta
 
 
+def YearlyBetaToWeeklyBeta(timesim, yearlyBetas):
+    weeklyBetas = np.zeros(timesim)
+    for i in range(timesim):
+        index = int(i/52)
+        weeklyBetas[i] = yearlyBetas[index]
+    return weeklyBetas
+
+
 def numMDAsBeforeNextSurvey(surveyPrev):
     '''
     Function to return the number of surveys before the next survey
@@ -953,7 +961,10 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     # no survey occurred in a year. Without this, we are likely to get outputs with different
     # number of rows in them for different simulations, as there may be different numbers of 
     # surveys based on the dynamics.
-    betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
+    if len(bet) == 1:
+        betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
+    elif len(bet) == np.round(timesim/52):
+        betas = YearlyBetaToWeeklyBeta(timesim, bet)
 
     for i in range( timesim):
         if i % 52 == 0:
