@@ -896,6 +896,8 @@ def check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_comp
         vals['systematic_non_compliance'] = systematic_non_compliance
     return vals
 
+
+
 def update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_people, vals, ageStart, ageEnd, nDoses, numMDA, coverage):
     nDoses[MDAData[MDA_round_current][-2]] += num_treated_people
                     # increment number of MDAs
@@ -903,6 +905,17 @@ def update_MDA_information_for_output(MDAData, MDA_round_current, num_treated_pe
     coverage[MDAData[MDA_round_current][-2]] += num_treated_people / np.count_nonzero((vals['Age'] > ageStart * 52) & (vals['Age'] <= ageEnd * 52))
     return nDoses, numMDA, coverage
 
+
+def calculateWeeklyBetas(timesim, burnin, bet, params):
+    if isinstance(bet, (list, np.ndarray)) and len(bet) == timesim:
+        return bet
+    elif np.isscalar(bet):  # Check if bet is a single number
+        return SecularTrendBetaDecrease(timesim, burnin, bet, params)
+    elif isinstance(bet, (list, np.ndarray)) and len(bet) == int(timesim / 52):
+        return YearlyBetaToWeeklyBeta(timesim, bet)
+    else:
+        raise ValueError(f"Invalid length for bet. Expected length 1, {int(timesim / 52)}, or {timesim}, but got {len(bet) if isinstance(bet, (list, np.ndarray)) else 'unknown'}.")
+    
 def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
                                demog, bet, MDA_times, MDAData,
                                vacc_times, VaccData, outputTimes, 
@@ -963,10 +976,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     # if the specified betas are already the same length as the simulation, then we don't do anything 
     # to them. If it is just one value or the length of the number of years of the simulation, then we 
     # extend them to be the length of the simulation
-    if np.isscalar(bet):  # Check if bet is a single number
-        betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
-    elif isinstance(bet, (list, np.ndarray)) and len(bet) == int(timesim / 52):
-        betas = YearlyBetaToWeeklyBeta(timesim, bet)
+    betas = calculateWeeklyBetas(timesim, burnin, bet, params)
 
     for i in range(timesim):
         if i % 52 == 0:
