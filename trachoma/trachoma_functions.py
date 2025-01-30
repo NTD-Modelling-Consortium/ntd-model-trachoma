@@ -853,18 +853,14 @@ def init_ages(params, demog, numpy_state):
 
 def SecularTrendBetaDecrease(timesim, burnin, bet, params):
     simbeta = bet * np.ones(timesim )
+    decayPerWeek = (1-params['SecularTrendYearlyBetaDecrease']) ** (1/52)
     if params['SecularTrendIndicator'] == 1:
         for j in range(round(burnin),round(len(simbeta))):
-            simbeta[j] = simbeta[j-1 ] * (1-params['SecularTrendYearlyBetaDecrease']) ** (1/52)
+            simbeta[j] = simbeta[j-1 ] * decayPerWeek
     return simbeta
 
-
 def YearlyBetaToWeeklyBeta(timesim, yearlyBetas):
-    weeklyBetas = np.zeros(timesim)
-    for i in range(timesim):
-        index = int(i/52)
-        weeklyBetas[i] = yearlyBetas[index]
-    return weeklyBetas
+    return np.repeat(yearlyBetas, 52)[:timesim]
 
 
 def numMDAsBeforeNextSurvey(surveyPrev):
