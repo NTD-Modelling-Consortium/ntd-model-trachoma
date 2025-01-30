@@ -852,12 +852,10 @@ def init_ages(params, demog, numpy_state):
 
 
 def SecularTrendBetaDecrease(timesim, burnin, bet, params):
-    simbeta = bet * np.ones(timesim + 1)
+    simbeta = bet * np.ones(timesim )
     if params['SecularTrendIndicator'] == 1:
-        for j in range(round(burnin/52),round(len(simbeta)/52)):
-            bet1 = simbeta[j * 52] 
-            for i in range(52+1):
-                simbeta[(j * 52) + i] = bet1 - (params['SecularTrendYearlyBetaDecrease'] * bet1 * i/52)
+        for j in range(round(burnin),round(len(simbeta))):
+            simbeta[j] = simbeta[j-1 ] * (1-params['SecularTrendYearlyBetaDecrease']) ** (1/52)
     return simbeta
 
 
@@ -970,7 +968,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     elif len(bet) == int(timesim/52):
         betas = YearlyBetaToWeeklyBeta(timesim, bet)
 
-    for i in range( timesim):
+    for i in range(timesim):
         if i % 52 == 0:
             params['importation_rate'] *= params['importation_reduction_rate']
 
