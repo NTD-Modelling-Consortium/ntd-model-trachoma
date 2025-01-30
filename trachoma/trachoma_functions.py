@@ -961,6 +961,10 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     # no survey occurred in a year. Without this, we are likely to get outputs with different
     # number of rows in them for different simulations, as there may be different numbers of 
     # surveys based on the dynamics.
+    
+    # if the specified betas are already the same length as the simulation, then we don't do anything 
+    # to them. If it is just one value or the length of the number of years of the simulation, then we 
+    # extend them to be the length of the simulation
     if len(bet) == 1:
         betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
     elif len(bet) == int(timesim/52):
