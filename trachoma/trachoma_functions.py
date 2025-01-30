@@ -963,9 +963,9 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     # if the specified betas are already the same length as the simulation, then we don't do anything 
     # to them. If it is just one value or the length of the number of years of the simulation, then we 
     # extend them to be the length of the simulation
-    if len(bet) == 1:
+    if np.isscalar(bet):  # Check if bet is a single number
         betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
-    elif len(bet) == int(timesim/52):
+    elif isinstance(bet, (list, np.ndarray)) and len(bet) == int(timesim / 52):
         betas = YearlyBetaToWeeklyBeta(timesim, bet)
 
     for i in range(timesim):
