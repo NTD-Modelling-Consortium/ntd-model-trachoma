@@ -971,7 +971,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
             if i == timeForImpReduction:
                 postMDAPrev = vals['IndI'].sum()/params["N"]
                 if postMDAPrev < 1/params["N"]:
-                    params['importation_rate'] = 0
+                    params['importation_rate'] = params['min_importation_rate']
                 elif preMDAPrev > 1/params["N"]:
                     importationRatio = min(1, postMDAPrev / preMDAPrev)
                     params['importation_rate'] *= importationRatio
