@@ -963,7 +963,7 @@ def sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin,
     # surveys based on the dynamics.
     if len(bet) == 1:
         betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
-    elif len(bet) == np.round(timesim/52):
+    elif len(bet) == int(timesim/52):
         betas = YearlyBetaToWeeklyBeta(timesim, bet)
 
     for i in range( timesim):
