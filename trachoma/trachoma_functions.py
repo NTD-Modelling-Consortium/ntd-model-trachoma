@@ -1165,7 +1165,7 @@ def sim_Ind_MDA_Include_Survey(
         if ((i + 1) % 52) == 0:
             # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
             # so that it is stored in the output later.
-            if doneSurveyThisYear == False and i > burnin:
+            if not doneSurveyThisYear and i > burnin:
                 surveyPrev, vals = returnSurveyPrev(
                     vals,
                     params["TestSensitivity"],
