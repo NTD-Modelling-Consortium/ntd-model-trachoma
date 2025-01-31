@@ -2,7 +2,7 @@ import numpy as np
 import numpy.testing as npt
 import unittest  # Import unittest
 
-from trachoma.trachoma_functions import * 
+from ntdmc_trachoma.trachoma_functions import * 
 
 class TestSurvey(unittest.TestCase): 
 
