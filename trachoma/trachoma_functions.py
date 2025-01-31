@@ -4,9 +4,8 @@ import pandas as pd
 import copy
 import math
 from numpy import ndarray
-from numpy.typing import NDArray
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Optional
 from pathlib import Path
 
 DEFAULT_DATA_PATH = Path(__file__).parent / "data" / "coverage"
