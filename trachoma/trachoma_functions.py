@@ -241,9 +241,6 @@ def stepF_fixed(vals, params, demog, bet, distToUse="Poisson"):
     newClearDis = np.where(vals["T_D"] == 1)[
         0
     ]  # Designated diseased period for that individual is about to expire
-    newInfectious = np.where(np.logical_and(vals["IndI"] == 1, vals["T_latent"] == 1))[
-        0
-    ]  # Only individuals who have avoided MDA become infectious at end of latent
 
     # Step 4: reduce counters
     # Those in latent period should count down with each timestep.
@@ -564,8 +561,6 @@ def D_period_function(Ind_D_period_base, No_Inf, params, Age):
     """
     Function to give duration of disease only period.
     """
-    ag = 0.00179
-    aq = 0.0368
     T_D = np.round(
         1
         / (
