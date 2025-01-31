@@ -24,8 +24,7 @@ class TestGetLambdaStep(unittest.TestCase):
         # Assert array is as expected
         npt.assert_array_almost_equal(len(betas), self.timesim)
         npt.assert_array_almost_equal(betas[0], bet)
-        npt.assert_array_almost_equal(betas[-1], bet)  # Use -1 to get the last element
-
+        npt.assert_array_almost_equal(betas[-1], bet)  
 
     def test_WhenSpecifyBetaAsOneValueWithSecularTrend(self):
         bet = 0.6
@@ -54,7 +53,7 @@ class TestGetLambdaStep(unittest.TestCase):
         npt.assert_array_almost_equal(betas[-1], end_beta)  
         npt.assert_array_almost_equal(betas[52], start_beta + (end_beta - start_beta) * 1/(int(self.timesim/52)-1))  
         npt.assert_array_almost_equal(betas[520], start_beta + (end_beta - start_beta) * 10/(int(self.timesim/52)-1))  
-        
+
     def test_invalid_bet_length(self):
         invalid_bet = np.ones(25)  # Invalid length, not 1, timesim/52, or timesim
         with self.assertRaises(ValueError) as context:
