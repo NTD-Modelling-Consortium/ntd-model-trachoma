@@ -31,16 +31,16 @@ class EndToEndTest(unittest.TestCase):
         the reference files.
         """
         self.run_simulation(0)
-        with open('reference_output/endtoendIPMOuts.csv', newline='') as expected_IPM_file:
-            expected_IPM_data = list(csv.reader(expected_IPM_file))
-        with open('endtoendIPMOuts.csv', newline='') as actual_IPM_file:
-            actual_IPM_data = list(csv.reader(actual_IPM_file))
-        self.assertListEqual(expected_IPM_data, actual_IPM_data)
         with open('reference_output/endtoendIHMEOuts.csv', newline='') as expected_IHME_file:
             expected_IHME_data = list(csv.reader(expected_IHME_file))
         with open('endtoendIHMEOuts.csv', newline='') as actual_IHME_file:
             actual_IHME_data = list(csv.reader(actual_IHME_file))
         self.assertListEqual(expected_IHME_data, actual_IHME_data)
+        with open('reference_output/endtoendNTDMC.csv', newline='') as expected_NTDMC_file:
+            expected_NTDMC_data = list(csv.reader(expected_NTDMC_file))
+        with open('endtoendNTDMC.csv', newline='') as actual_NTDMC_file:
+            actual_NTDMC_data = list(csv.reader(actual_NTDMC_file))
+        self.assertListEqual(expected_NTDMC_data, actual_NTDMC_data)
 
     def test_seed_not_0(self):
         """
@@ -49,16 +49,16 @@ class EndToEndTest(unittest.TestCase):
         than the reference files.
         """
         self.run_simulation(12345)
-        with open('reference_output/endtoendIPMOuts.csv', newline='') as expected_IPM_file:
-            expected_IPM_data = list(csv.reader(expected_IPM_file))
-        with open('endtoendIPMOuts.csv', newline='') as actual_IPM_file:
-            actual_IPM_data = list(csv.reader(actual_IPM_file))
-        self.assertNotEqual(expected_IPM_data, actual_IPM_data)
         with open('reference_output/endtoendIHMEOuts.csv', newline='') as expected_IHME_file:
             expected_IHME_data = list(csv.reader(expected_IHME_file))
         with open('endtoendIHMEOuts.csv', newline='') as actual_IHME_file:
             actual_IHME_data = list(csv.reader(actual_IHME_file))
         self.assertNotEqual(expected_IHME_data, actual_IHME_data)
+        with open('reference_output/endtoendNTDMC.csv', newline='') as expected_NTDMC_file:
+            expected_NTDMC_data = list(csv.reader(expected_NTDMC_file))
+        with open('endtoendNTDMC.csv', newline='') as actual_NTDMC_file:
+            actual_NTDMC_data = list(csv.reader(actual_NTDMC_file))
+        self.assertNotEqual(expected_NTDMC_data, actual_NTDMC_data)
 
     @staticmethod
     def run_simulation(seed):
@@ -86,6 +86,7 @@ class EndToEndTest(unittest.TestCase):
                   'min_ID':11, #Parameters relating to duration of infection period, including ID period
                   'av_D_duration':300/7,
                   'min_D':1, #Parameters relating to duration of disease period
+                  'dis_red':0.3,
                   'v_1':1,
                   'v_2':2.6,
                   'phi':1.4,
@@ -108,7 +109,11 @@ class EndToEndTest(unittest.TestCase):
                   'vacc_prob_block_transmission':  0.8,
                   'vacc_reduce_bacterial_load': 0.5,
                   'vacc_reduce_duration': 0.5,
-                  'vacc_waning_length': 52 * 5}
+                  'vacc_waning_length': 52 * 5,
+                  'importation_rate': 0,
+                  'importation_reduction_rate': 1,
+                  'surveyCoverage':0.4,
+                  'infection_risk_shape': 1}
 
 
         sim_params = {'timesim':52*23,
@@ -127,7 +132,7 @@ class EndToEndTest(unittest.TestCase):
 
 
         Start_date = date(2019,1, 1)
-        End_date = date(2029,12,31)
+        End_date = date(2042,12,31)
         #############################################################################################################################
         #############################################################################################################################
         # import pickle file and beta values.
@@ -158,7 +163,7 @@ class EndToEndTest(unittest.TestCase):
         # generate MDA data from coverage file
         # this is currently using something outside of the test folder which is bad
         # but readPlatformData is hardcoded for this
-        scenario = '2c'
+        scenario = '3a_10'
         coverageFileName = 'scen' + scenario + '.csv'
         MDAData = tf.readPlatformData(coverageFileName, "MDA")
         MDA_dates = tf.getInterventionDates(MDAData)
@@ -179,6 +184,7 @@ class EndToEndTest(unittest.TestCase):
         # this means that when running with different seeds, there are differences in the simulation
         # which isn't guaranteed when there are no infections
         pickleData[0] = tf.Seed_infection(params=params, vals=pickleData[0]) # Seed infection
+        pickleData[0]['Infection_risk'] = np.random.gamma(size = params['N'], shape = params['infection_risk_shape'], scale = 1/params['infection_risk_shape'])
         #############################################################################################################################
         #############################################################################################################################
         # run as many simulations as specified
@@ -195,7 +201,7 @@ class EndToEndTest(unittest.TestCase):
                                                 VaccData = VaccData,
                                                 outputTimes= outputTimes,
                                                 index = i,
-                                                doSurvey = True, 
+                                                doSurvey = False, 
                                                 doIHMEOutput = True, 
                                                 # We use a fresh state for each simulation
                                                 numpy_state=numpy_states[i]) for i in range(numSims))
@@ -206,11 +212,8 @@ class EndToEndTest(unittest.TestCase):
         #############################################################################################################################
         # collate and output IHME data
 
-        outsIHME = tf.getResultsIHME(results, demog, params, outputYear)
-        outsIHME.to_csv('endtoendIHMEOuts.csv',index=False)
-
-
-
+        IHMEData = tf.combineIHME_MDA_SurveyData(results, demog, params, outputYear, Start_date, sim_params)
+        IHMEData.to_csv('endtoendIHMEOuts.csv',index=False)
         #############################################################################################################################
         #############################################################################################################################
         # collate and output IPM data
@@ -218,3 +221,7 @@ class EndToEndTest(unittest.TestCase):
         VaccAgeRanges = tf.getInterventionAgeRanges(coverageFileName, "Vaccine")
         outsIPM = tf.getResultsIPM(results, demog, params, outputYear, MDAAgeRanges, VaccAgeRanges)
         outsIPM.to_csv('endtoendIPMOuts.csv',index=False)
+
+
+        NTDMC =  tf.getResultsNTDMC(results, Start_date, sim_params['burnin'])
+        NTDMC.to_csv('endtoendNTDMC.csv',index=False)

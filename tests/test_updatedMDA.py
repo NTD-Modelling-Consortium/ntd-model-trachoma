@@ -8,13 +8,14 @@ from ntdmc_trachoma.trachoma_functions import *
 class TestMDAFunctionality(unittest.TestCase):
     # start by defining parameters for the run
     def setUp(self):
-        self.params = {'N': 2500,
+        self.params = {'N': 5000,
                        'av_I_duration': 2,
                        'av_ID_duration': 200/7,
                        'inf_red': 0.45,
                        'min_ID': 11, 
                        'av_D_duration': 300/7,
                        'min_D': 1, 
+                       'dis_red':0.3,
                        'v_1': 1,
                        'v_2': 2.6,
                        'phi': 1.4,
@@ -37,7 +38,10 @@ class TestMDAFunctionality(unittest.TestCase):
                        'vacc_reduce_bacterial_load': 0, 
                        'vacc_reduce_duration': 0,
                        'vacc_coverage': 0,  
-                       'vacc_waning_length': 52 * 5}
+                       'vacc_waning_length': 52 * 5,
+                       'importation_rate': 0,
+                       'importation_reduction_rate': 1,
+                       'infection_risk_shape' : 1}
 
         burnin = 100 * 52
         timesim = burnin + 21 * 52
@@ -77,7 +81,7 @@ class TestMDAFunctionality(unittest.TestCase):
         self.vals = Set_inits(params=self.params, demog=self.demog, sim_params=self.sim_params, MDAData=self.MDAData, numpy_state=numpy_states[0])  
         self.vals['IndI'] = np.ones(self.params['N'])
         self.vals['No_Inf'] = np.ones(self.params['N'])
-        self.vals['bact_load'] = bacterialLoad(range(self.params['N']), params=self.params, vals=self.vals)
+        self.vals['bact_load'] = bacterialLoad(params=self.params, vals=self.vals)
         # set a number of repetitions for the MDA so that we are likely to reach the level of tolerance we want
         # as with only one MDA there will be enough randomness to possibly be outside of this tolerance range
         self.nReps = 100
@@ -100,12 +104,12 @@ class TestMDAFunctionality(unittest.TestCase):
             for l in range(len(MDA_round)):
                 MDA_round_current = MDA_round[l]
                 # we want to get the data corresponding to this MDA from the MDAdata
-                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
+                ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
                 # check if these have changed here, and if they have, then we re-draw the probabilities
                 valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
                 # do the MDA for the age range specified by ageStart and ageEnd
-                valsTest, _ = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd)
+                valsTest, _ = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd, 0, label, self.demog)
                 # keep track of how many people are infected after the MDA.
                 # this way we can calculate the mean proportion of people cured
                 postMDAInf = sum(valsTest['IndI'])
@@ -130,12 +134,12 @@ class TestMDAFunctionality(unittest.TestCase):
             for l in range(len(MDA_round)):
                 MDA_round_current = MDA_round[l]
                 # we want to get the data corresponding to this MDA from the MDAdata
-                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
+                ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
                 # check if these have changed here, and if they have, then we re-draw the probabilities
                 valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
                 # do the MDA for the age range specified by ageStart and ageEnd
-                valsTest, _ = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd)
+                valsTest, _ = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd, 0, label, self.demog)
                 # keep track of how many people are infected after the MDA.
                 # this way we can calculate the mean proportion of people cured
                 postMDAInf = sum(valsTest['IndI'])
@@ -157,7 +161,7 @@ class TestMDAFunctionality(unittest.TestCase):
             for l in range(len(MDA_round)):
                 MDA_round_current = MDA_round[l]
                 # we want to get the data corresponding to this MDA from the MDAdata
-                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
+                ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
                 # check if these have changed here, and if they have, then we re-draw the probabilities
                 valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
@@ -189,12 +193,12 @@ class TestMDAFunctionality(unittest.TestCase):
             for l in range(len(MDA_round)):
                 MDA_round_current = MDA_round[l]
                 # we want to get the data corresponding to this MDA from the MDAdata
-                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
+                ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(self.MDAData, MDA_round_current, valsTest)
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
                 # check if these have changed here, and if they have, then we re-draw the probabilities
                 valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
                 # do the MDA for the age range specified by ageStart and ageEnd
-                valsTest, _ = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd)
+                valsTest, _ = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd, 0, label, self.demog)
                 # keep track of how many people are infected after the MDA.
                 # this way we can calculate the mean proportion of people cured
                 postMDAInf = sum(valsTest['IndI'])
@@ -228,12 +232,12 @@ class TestMDAFunctionality(unittest.TestCase):
                     valsTest['Age'] = 0.1 * np.ones(self.params['N']) * 52
                 MDA_round_current = MDA_round[l]
                 # we want to get the data corresponding to this MDA from the MDAdata
-                ageStart, ageEnd, cov, systematic_non_compliance = get_MDA_params(self.MDADataConcurrent, MDA_round_current, valsTest)
+                ageStart, ageEnd, cov, label, systematic_non_compliance = get_MDA_params(self.MDADataConcurrent, MDA_round_current, valsTest)
                 # if cov or systematic non compliance have changed we need to re-draw the treatment probabilities
                 # check if these have changed here, and if they have, then we re-draw the probabilities
                 valsTest = check_if_we_need_to_redraw_probability_of_treatment(cov, systematic_non_compliance, valsTest)
                 # do the MDA for the age range specified by ageStart and ageEnd
-                valsTest, _ = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd)
+                valsTest, _ = MDA_timestep_Age_range(valsTest, self.params, ageStart, ageEnd, 0, label, self.demog)
                 # keep track of how many people are infected after the MDA.
                 # this way we can calculate the mean proportion of people cured
                 postMDAInf = sum(valsTest['IndI'])
