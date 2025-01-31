@@ -1244,8 +1244,8 @@ def sim_Ind_MDA_Include_Survey(
 
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
-            for l in range(len(MDA_round)):
-                MDA_round_current = MDA_round[l]
+            for round_idx in range(len(MDA_round)):
+                MDA_round_current = MDA_round[round_idx]
                 # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, label, systematic_non_compliance = (
                     get_MDA_params(MDAData, MDA_round_current, vals)
@@ -1289,8 +1289,8 @@ def sim_Ind_MDA_Include_Survey(
                 )
 
             else:
-                for l in range(len(vacc_round)):
-                    vacc_round2 = copy.deepcopy(vacc_round[l])
+                for round_idx in range(len(vacc_round)):
+                    vacc_round2 = copy.deepcopy(vacc_round[round_idx])
                     vals = vacc_timestep_Age_range(
                         params, vals, vacc_round2, VaccData, i / 52, demog
                     )
