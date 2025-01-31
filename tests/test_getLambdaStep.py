@@ -18,7 +18,8 @@ class TestGetLambdaStep(unittest.TestCase):
                     'phi': 1.4,
                     'epsilon': 0.5,
                     'vacc_prob_block_transmission': 0.5,
-                    'vacc_waning_length': 52 * 5}
+                    'vacc_waning_length': 52 * 5,
+                    'infection_risk_shape': 1}
 
         self.Age = np.array([1 * 52, 10 * 51, 50 * 52])
         self.vals = dict(
@@ -26,9 +27,10 @@ class TestGetLambdaStep(unittest.TestCase):
             bact_load=np.ones(self.params['N']),  # Baseline bacterial load set to one => all people are infected
             vaccinated=np.full(self.params['N'], fill_value=False, dtype=bool),
             time_since_vaccinated=np.zeros(self.params['N']),
+            Infection_risk = np.random.gamma(size = self.params['N'], shape = self.params['infection_risk_shape'], scale = 1/self.params['infection_risk_shape'])
         )
 
-    def getLambdaViaDirectCalculation(self, totalLoad, IndD, vaccinated, time_since_vaccinated):
+    def getLambdaViaDirectCalculation(self, totalLoad, IndD, Infection_risk, vaccinated, time_since_vaccinated):
         prevLambda = self.bet * (self.params['v_1'] * totalLoad + self.params['v_2'] * (totalLoad ** (self.params['phi'] + 1)))
         a = 1/3
         b = 1/3
@@ -38,7 +40,7 @@ class TestGetLambdaStep(unittest.TestCase):
         returned = [eps * prevLambda[0] + prevLambda[0]*a * epsm + prevLambda[1]*epsm*b + prevLambda[2]*epsm*c,
                     prevLambda[0]*a*epsm + prevLambda[1]*b * epsm + eps * prevLambda[1] + prevLambda[2]*epsm*c,
                     prevLambda[0]*a*epsm + prevLambda[1]*epsm*b + prevLambda[2]*c * epsm + eps * prevLambda[2],
-                ] * (0.5 + 0.5 * (1 - IndD))
+                ] * (0.5 + 0.5 * (1 - IndD)) * Infection_risk
 
         # add reduction in lambda according to who has been vaccinated
         prob_reduction = self.params["vacc_prob_block_transmission"]
@@ -49,18 +51,20 @@ class TestGetLambdaStep(unittest.TestCase):
 
         returned[vaccinated] = (1 - prob_reduction[vaccinated]) * returned[vaccinated]
 
+
         return 1-np.exp(-returned)
     
     def test_WhenAllInfectedNoneDiseased(self):
         # First lambda_step calculation
         lambda_step = 1 - np.exp(-getlambdaStep(
             params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
-            IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            IndD=self.vals['IndD'], Infection_risk=self.vals['Infection_risk'], vaccinated=self.vals['vaccinated'],
             time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
         ))
         # Assert array is as expected
         npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([1,1,1]),
                                                                          IndD = np.array([0,0,0]), 
+                                                                         Infection_risk=self.vals['Infection_risk'],
                                                                          vaccinated = np.array([False,False,False]),
                                                                          time_since_vaccinated = np.array([0,0,0])),
                                     lambda_step)
@@ -72,13 +76,14 @@ class TestGetLambdaStep(unittest.TestCase):
 
         lambda_step = 1 - np.exp(-getlambdaStep(
             params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
-            IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            IndD=self.vals['IndD'], Infection_risk=self.vals['Infection_risk'], vaccinated=self.vals['vaccinated'],
             time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
         ))
 
         # Assert new values
         npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([0,1,1]),
                                                                          IndD = np.array([1,0,0]), 
+                                                                         Infection_risk=self.vals['Infection_risk'],
                                                                          vaccinated = np.array([False,False,False]),
                                                                          time_since_vaccinated = np.array([0,0,0])),
                                     lambda_step)
@@ -92,13 +97,14 @@ class TestGetLambdaStep(unittest.TestCase):
 
         lambda_step = 1 - np.exp(-getlambdaStep(
             params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
-            IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            IndD=self.vals['IndD'], Infection_risk=self.vals['Infection_risk'], vaccinated=self.vals['vaccinated'],
             time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
         ))
 
         # Assert new values
         npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([0,1,1]),
                                                                          IndD = np.array([1,0,0]), 
+                                                                         Infection_risk=self.vals['Infection_risk'],
                                                                          vaccinated = np.array([False,True,False]),
                                                                          time_since_vaccinated = np.array([0,1,0])),
                                     lambda_step)
@@ -114,13 +120,15 @@ class TestGetLambdaStep(unittest.TestCase):
         
         lambda_step = 1 - np.exp(-getlambdaStep(
             params=self.params, Age=self.Age, bact_load=self.vals['bact_load'],
-            IndD=self.vals['IndD'], vaccinated=self.vals['vaccinated'],
+            IndD=self.vals['IndD'], Infection_risk=self.vals['Infection_risk'],
+            vaccinated=self.vals['vaccinated'],
             time_since_vaccinated=self.vals['time_since_vaccinated'], bet=self.bet, demog=self.demog
         ))
 
         # Assert new values
         npt.assert_array_almost_equal(self.getLambdaViaDirectCalculation(totalLoad = np.array([0,1,1]),
                                                                          IndD = np.array([1,0,0]), 
+                                                                         Infection_risk=self.vals['Infection_risk'],
                                                                          vaccinated = np.array([False,False,False]),
                                                                          time_since_vaccinated = np.array([0,self.params["vacc_waning_length"],0])),
                                     lambda_step)
