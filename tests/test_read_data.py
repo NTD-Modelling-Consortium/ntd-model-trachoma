@@ -1,6 +1,6 @@
 import pytest
 
-from trachoma.trachoma_functions import readPlatformData
+from ntdmc_trachoma.trachoma_functions import readPlatformData
 
 EXPECTED = [
     [2020.0, 0, 100, 0.8, 0, 2],

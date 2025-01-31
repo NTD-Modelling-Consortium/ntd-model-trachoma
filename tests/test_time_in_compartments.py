@@ -3,7 +3,7 @@ import numpy.testing as npt
 import math
 import unittest  # Import unittest
 
-from trachoma.trachoma_functions import * 
+from ntdmc_trachoma.trachoma_functions import * 
 
 class TestTimeInCompartmentsIsSameAsRModel(unittest.TestCase): 
 
