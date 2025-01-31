@@ -95,7 +95,7 @@ def readPlatformData(coverageFileName, Platform, data_path=None):
         fy = 10000
         fy_index = 7
         for i in range(len(PlatCov.columns)):
-            if type(PlatCov.columns[i]) == int:
+            if isinstance(PlatCov.columns[i], int):
                 fy = min(fy, PlatCov.columns[i])
                 fy_index = min(fy_index, i)
 
