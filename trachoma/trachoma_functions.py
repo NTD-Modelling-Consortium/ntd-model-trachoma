@@ -652,6 +652,23 @@ def editTreatProbability(vals, cov, snc):
         vals["treatProbability"] = np.ones(len(vals["IndI"])) * cov
 
 
+def set_infection_risk(params, N):
+    """
+    Set the infection risk values for each individual.
+    If the params["infection_risk_shape"] is <=0 then this indicates that we don't need this 
+    for the current runs, as these values aren't permissible in the gamma distribution.
+    In this case set everyone to have infection risk of 1 (they are all identical in their risk of infection)
+    Otherwise set from gamma dsitribution
+    """
+    if params["infection_risk_shape"] <= 0:
+        return np.ones(N)
+    else:
+        return np.random.gamma(
+            size=N,
+            scale=1 / params["infection_risk_shape"],
+            shape=params["infection_risk_shape"],
+        )
+
 def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse="Poisson"):
     """
     Set initial values.
@@ -689,11 +706,7 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse="Poisso
         )
     vals = dict(
         # generate risk of infection for each person
-        Infection_risk=np.random.gamma(
-            size=params["N"],
-            scale=1 / params["infection_risk_shape"],
-            shape=params["infection_risk_shape"],
-        ),
+        Infection_risk = set_infection_risk(params, params['N']),
         # Individual's infected status
         IndI=np.zeros(params["N"]),
         # Individual's disease status
@@ -777,11 +790,7 @@ def Reset_vals(vals, reset_indivs, params, distToUse="Poisson"):
     )
     new_ids = np.arange(maxID + 1, maxID + numResetIndivs + 1)
     vals["ids"][reset_indivs] = new_ids
-    vals["Infection_risk"][reset_indivs] = np.random.gamma(
-        size=len(reset_indivs),
-        shape=params["infection_risk_shape"],
-        scale=1 / params["infection_risk_shape"],
-    )
+    vals["Infection_risk"][reset_indivs] = set_infection_risk(params, len(reset_indivs))
     return vals
 
 
@@ -837,11 +846,7 @@ def Import_individual(vals, import_indivs, params, demog, distToUse="Poisson"):
     vals["treatProbability"][import_indivs] = drawTreatmentProbabilities(
         numImportIndivs, vals["MDA_coverage"], vals["systematic_non_compliance"]
     )
-    vals["Infection_risk"][import_indivs] = np.random.gamma(
-        size=len(import_indivs),
-        shape=params["infection_risk_shape"],
-        scale=1 / params["infection_risk_shape"],
-    )
+    vals["Infection_risk"][import_indivs] = set_infection_risk(params, len(import_indivs))
     return vals
 
 
@@ -930,6 +935,32 @@ def Check_for_MDA_Vacc_And_Survey_Data(vals):
 
     return vals
 
+
+def Check_for_Infection_risk(vals, params):
+    """
+    Check if "Infection_risk" key is in `vals`. If they are
+    not then initialize for population
+    Parameters
+    ----------
+    vals : dict
+        Contains current state of simulation
+    params : dict
+        Parameter dictionary
+    Returns
+    -------
+    dict
+        vals dictionary modified with infection risk
+    dict 
+        params dictionary with infection_risk_shape added as -1
+        if there is no infection risk already in vals, as this
+        means that this parameter wasn't used in setting up the
+        population, so we don't want to use it in these simulations.
+    """
+
+    if not set(["Infection_risk"]).issubset(vals.keys()):
+        vals["Infection_risk"] = np.ones(len(vals["IndI"]))
+        params['infection_risk_shape'] = -1
+    return vals, params
 
 def Check_and_init_vaccination_state(params, vals):
     """
@@ -1926,6 +1957,7 @@ def run_single_simulation(
     vals = Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state)
     vals = Check_for_IDs(vals)
     vals = Check_for_MDA_Vacc_And_Survey_Data(vals)
+    vals, params = Check_for_Infection_risk(vals, params)
     vals = resetMDAVaccAndSurveyData(vals)
     params["N"] = len(vals["IndI"])
     results = sim_Ind_MDA_Include_Survey(
