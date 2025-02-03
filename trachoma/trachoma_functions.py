@@ -1,12 +1,12 @@
+import sys
 import numpy as np
 from datetime import date
 import pandas as pd
 import copy
 import math
 from numpy import ndarray
-from numpy.typing import NDArray
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Optional
 from pathlib import Path
 
 DEFAULT_DATA_PATH = Path(__file__).parent / "data" / "coverage"
@@ -95,7 +95,7 @@ def readPlatformData(coverageFileName, Platform, data_path=None):
         fy = 10000
         fy_index = 7
         for i in range(len(PlatCov.columns)):
-            if type(PlatCov.columns[i]) == int:
+            if isinstance(PlatCov.columns[i], int):
                 fy = min(fy, PlatCov.columns[i])
                 fy_index = min(fy_index, i)
 
@@ -241,9 +241,6 @@ def stepF_fixed(vals, params, demog, bet, distToUse="Poisson"):
     newClearDis = np.where(vals["T_D"] == 1)[
         0
     ]  # Designated diseased period for that individual is about to expire
-    newInfectious = np.where(np.logical_and(vals["IndI"] == 1, vals["T_latent"] == 1))[
-        0
-    ]  # Only individuals who have avoided MDA become infectious at end of latent
 
     # Step 4: reduce counters
     # Those in latent period should count down with each timestep.
@@ -564,8 +561,6 @@ def D_period_function(Ind_D_period_base, No_Inf, params, Age):
     """
     Function to give duration of disease only period.
     """
-    ag = 0.00179
-    aq = 0.0368
     T_D = np.round(
         1
         / (
@@ -1170,7 +1165,7 @@ def sim_Ind_MDA_Include_Survey(
         if ((i + 1) % 52) == 0:
             # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
             # so that it is stored in the output later.
-            if doneSurveyThisYear == False and i > burnin:
+            if not doneSurveyThisYear and i > burnin:
                 surveyPrev, vals = returnSurveyPrev(
                     vals,
                     params["TestSensitivity"],
@@ -1249,8 +1244,8 @@ def sim_Ind_MDA_Include_Survey(
 
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
-            for l in range(len(MDA_round)):
-                MDA_round_current = MDA_round[l]
+            for round_idx in range(len(MDA_round)):
+                MDA_round_current = MDA_round[round_idx]
                 # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, label, systematic_non_compliance = (
                     get_MDA_params(MDAData, MDA_round_current, vals)
@@ -1294,8 +1289,8 @@ def sim_Ind_MDA_Include_Survey(
                 )
 
             else:
-                for l in range(len(vacc_round)):
-                    vacc_round2 = copy.deepcopy(vacc_round[l])
+                for round_idx in range(len(vacc_round)):
+                    vacc_round2 = copy.deepcopy(vacc_round[round_idx])
                     vals = vacc_timestep_Age_range(
                         params, vals, vacc_round2, VaccData, i / 52, demog
                     )
