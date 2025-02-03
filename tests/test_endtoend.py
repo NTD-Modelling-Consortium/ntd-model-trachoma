@@ -112,8 +112,7 @@ class EndToEndTest(unittest.TestCase):
                   'vacc_waning_length': 52 * 5,
                   'importation_rate': 0,
                   'importation_reduction_rate': 1,
-                  'surveyCoverage':0.4,
-                  'infection_risk_shape': 1}
+                  'surveyCoverage':0.4}
 
 
         sim_params = {'timesim':52*23,
@@ -184,7 +183,6 @@ class EndToEndTest(unittest.TestCase):
         # this means that when running with different seeds, there are differences in the simulation
         # which isn't guaranteed when there are no infections
         pickleData[0] = tf.Seed_infection(params=params, vals=pickleData[0]) # Seed infection
-        pickleData[0]['Infection_risk'] = np.random.gamma(size = params['N'], shape = params['infection_risk_shape'], scale = 1/params['infection_risk_shape'])
         #############################################################################################################################
         #############################################################################################################################
         # run as many simulations as specified
