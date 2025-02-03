@@ -1,4 +1,4 @@
-from trachoma import Trachoma_Simulation
+from ntdmc_trachoma import Trachoma_Simulation
 import numpy.testing
 
 def main():

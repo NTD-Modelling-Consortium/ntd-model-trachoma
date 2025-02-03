@@ -1,86 +1,74 @@
-# Trachoma Simulation Model
+# NTDMC trachoma model
 
-To run the trachoma simulation model, import the `Trachoma_Simulation()` function from the `trachoma_simulations` module in the `trachoma` package.
+## Installation
 
-The `Trachoma_Simulation()` function requires the following inputs.
+We recommend that you install the model within a dedicated Python
+virtual environment. See [venv — Creation of virtual environments](
+https://docs.python.org/3/library/venv.html) for more information
+about working with virtual environments.
 
-    BetFilePath: str
-        This is the path to the input CSV file with the
-        random seed and beta to be used for each simulation.
+The model can be installed with the standard `pip` package management
+utility, specifying the URL of the project's GitHub repository
+followed by the string `@v<x.y.z>` where `<x.y.z>` is the version
+number.  The latest release's version number can be found [here](https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma/tags).
 
-    MDAFilePath: str
-        This is the path to the input CSV file with the
-        first and last year of the simulations and with
-        the first and last year of MDA.
-
-    PrevFilePath: str
-        This is the path where the output CSV file with
-        the simulated prevalence will be saved.
-
-    SaveOutput: bool
-        If True, the last state of the simulations will
-        be saved in a pickle file. If False, the last
-        state of the simulations will not be saved.
-
-    OutSimFilePath: str
-        This is the path where the output pickle file with
-        the last state of the simulations will be saved. It
-        is only required when SaveOutput = True.
-
-    InSimFilePath: str
-        This is the path where the input pickle file with
-        the last state of the simulations has been saved.
-        If this is provided, the code will skip the burnin
-        and resume the previous simulations from this state.
-        If this is not provided, the code will start new
-        simulations from scratch, including the burnin.
-
-Numerous different examples are included in the Jupyter notebook `trachoma_tests.ipynb` in the `tests` folder.
-
-### How to run
-
-Install `pipenv` and `setuptools` according to the instructions for your OS, e.g. 
-```commandline
-pip install pipenv
-pip install setuptools
+```shell
+   pip install git+https://github.com/NTD-Modelling-Consortium/ntd-model-trachoma.git@v1.0.1
 ```
 
-`cd` to the project directory and run:
-```commandline
-pipenv install .
+## Using the model
+
+Currently, the model is expected to be used through the top-level function `ntdmc_trachoma.run_single_simulation`:
+
+```python
+from ntd_trachoma import run_single_simulation
+
+vals, results = run_single_simulation(
+    params, vals, timesim, burnin, demog, beta, MDA_times, MDAData,
+    vacc_times, VaccData, outputTimes, doSurvey, doIHMEOutput,
+    numpy_state,
+)
 ```
 
-At this point you will need to add files to the root of the project directory. Please ask your 
-administrator for these files.
+See [the docs](link) for more information about the meaning of the
+different parameters and the objects returned by the function.
 
-Then you can run an example file using `pipenv`:
-```commandline
-pipenv run python simple_example.py
+## Contributing
+
+Start by cloning the repository:
+
+```shell
+git clone git@github.com:NTD-Modelling-Consortium/ntd-model-trachoma.git
 ```
 
-or open up the `pipenv` shell and run:
-```commandline
-pipenv shell
-python simple_example.py
+Then install the package in editable mode.  It is recommend that you
+do so within a Python virtual environment dedicated to this project.
+
+```shell
+cd ntd-model-trachoma && pip install --editable .[dev]
 ```
 
-### Notes about Python versions
+Specifying the `[dev]` suffix will trigger the installation of both
+`ruff` and `pytest`.
 
-If you have both python 2 and 3 installed, you may need to provide `pipenv` commands with the correct version,
-e.g. `pipenv install . --python 3`, `pipenv run python3 simple_example.py`, and `pipenv shell; python3 simple_example.py`
-along with using `pip3`.
+Contributions to the Python code are expected to pass all checks
+applied by the `ruff check` tool.  Before you commit changes, make
+sure this is the case by running the `ruff check trachoma/` command
+from the root of the repository.
 
-Note that the project has deprecated dependencies that require Python 3.8, so if you have a newer version
-installed and are using an IDE, you may need to set the Python interpreter to 3.8.
+Contributions to the Python code are expected to comply with the style
+enforced by the `ruff format` tool.  Before your commit changes, make
+sure to format your code accordingly by running the `ruff format
+trachoma` command frfrom the root of the repository.
 
-### How to test
+Automated tests can be run with `pytest`:
 
-There is currently one working test. It can be run using the command
-
-```commandline
-cd tests
-python -m unittest test_endtoend.py
+```shell
+cd tests && python -m pytest .
 ```
+
+Note the current directory _must_ be set to the `tests` folder in
+order for all the tests to pass.
 
 ### Building the docs
 
@@ -93,3 +81,4 @@ sphinx-build -b html docs/source docs/build/html
 ```
 
 You can now visualise the documentation webiste by opening `docs/build/html/index.html` with your web browser.
+

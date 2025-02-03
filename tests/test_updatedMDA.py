@@ -3,7 +3,7 @@ import numpy as np
 import copy
 import unittest
 import numpy.testing as npt
-from trachoma.trachoma_functions import *
+from ntdmc_trachoma.trachoma_functions import *
 
 class TestMDAFunctionality(unittest.TestCase):
     # start by defining parameters for the run
@@ -40,7 +40,8 @@ class TestMDAFunctionality(unittest.TestCase):
                        'vacc_coverage': 0,  
                        'vacc_waning_length': 52 * 5,
                        'importation_rate': 0,
-                       'importation_reduction_rate': 1}
+                       'importation_reduction_rate': 1,
+                       'infection_risk_shape' : 1}
 
         burnin = 100 * 52
         timesim = burnin + 21 * 52

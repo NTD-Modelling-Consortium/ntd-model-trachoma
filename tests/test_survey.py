@@ -2,7 +2,7 @@ import numpy as np
 import numpy.testing as npt
 import unittest  # Import unittest
 
-from trachoma.trachoma_functions import * 
+from ntdmc_trachoma.trachoma_functions import * 
 
 class TestSurvey(unittest.TestCase): 
 
@@ -86,7 +86,8 @@ class TestSurvey(unittest.TestCase):
             'vacc_waning_length': 52 * 5,
             'importation_rate': 0,
             'importation_reduction_rate': 1,
-            'surveyCoverage': 0.4
+            'surveyCoverage': 0.4,
+            'infection_risk_shape' : 1
         }
 
         self.sim_params = {
