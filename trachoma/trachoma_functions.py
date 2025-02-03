@@ -655,7 +655,7 @@ def editTreatProbability(vals, cov, snc):
 def set_infection_risk(params, N):
     """
     Set the infection risk values for each individual.
-    If the params["infection_risk_shape"] is <=0 then this indicates that we don't need this 
+    If the params["infection_risk_shape"] is <=0 then this indicates that we don't need this
     for the current runs, as these values aren't permissible in the gamma distribution.
     In this case set everyone to have infection risk of 1 (they are all identical in their risk of infection)
     Otherwise set from gamma dsitribution
@@ -668,6 +668,7 @@ def set_infection_risk(params, N):
             scale=1 / params["infection_risk_shape"],
             shape=params["infection_risk_shape"],
         )
+
 
 def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse="Poisson"):
     """
@@ -706,7 +707,7 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse="Poisso
         )
     vals = dict(
         # generate risk of infection for each person
-        Infection_risk = set_infection_risk(params, params['N']),
+        Infection_risk=set_infection_risk(params, params["N"]),
         # Individual's infected status
         IndI=np.zeros(params["N"]),
         # Individual's disease status
@@ -846,7 +847,9 @@ def Import_individual(vals, import_indivs, params, demog, distToUse="Poisson"):
     vals["treatProbability"][import_indivs] = drawTreatmentProbabilities(
         numImportIndivs, vals["MDA_coverage"], vals["systematic_non_compliance"]
     )
-    vals["Infection_risk"][import_indivs] = set_infection_risk(params, len(import_indivs))
+    vals["Infection_risk"][import_indivs] = set_infection_risk(
+        params, len(import_indivs)
+    )
     return vals
 
 
@@ -950,7 +953,7 @@ def Check_for_Infection_risk(vals, params):
     -------
     dict
         vals dictionary modified with infection risk
-    dict 
+    dict
         params dictionary with infection_risk_shape added as -1
         if there is no infection risk already in vals, as this
         means that this parameter wasn't used in setting up the
@@ -959,8 +962,9 @@ def Check_for_Infection_risk(vals, params):
 
     if not set(["Infection_risk"]).issubset(vals.keys()):
         vals["Infection_risk"] = np.ones(len(vals["IndI"]))
-        params['infection_risk_shape'] = -1
+        params["infection_risk_shape"] = -1
     return vals, params
+
 
 def Check_and_init_vaccination_state(params, vals):
     """
