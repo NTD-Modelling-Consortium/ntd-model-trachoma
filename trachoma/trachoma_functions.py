@@ -1015,15 +1015,33 @@ def init_ages(params, demog, numpy_state):
 
 
 def SecularTrendBetaDecrease(timesim, burnin, bet, params):
-    simbeta = bet * np.ones(timesim + 1)
+    simbeta = bet * np.ones(timesim)
+    weeklyBetaDecrease = (1 - params["SecularTrendYearlyBetaDecrease"]) ** (1 / 52)
     if params["SecularTrendIndicator"] == 1:
-        for j in range(round(burnin / 52), round(len(simbeta) / 52)):
-            bet1 = simbeta[j * 52]
-            for i in range(52 + 1):
-                simbeta[(j * 52) + i] = bet1 - (
-                    params["SecularTrendYearlyBetaDecrease"] * bet1 * i / 52
-                )
+        for j in range(round(burnin), round(len(simbeta))):
+            simbeta[j] = simbeta[j - 1] * weeklyBetaDecrease
     return simbeta
+
+
+def YearlyBetaToWeeklyBeta(timesim, yearlyBetas):
+    return np.repeat(yearlyBetas, 52)[:timesim]
+
+
+def calculateWeeklyBetas(timesim, burnin, bet, params):
+    # if the specified betas are already the same length as the simulation, then we don't do anything
+    # to them. If it is just one value or the length of the number of years of the simulation, then we
+    # extend them to be the length of the simulation
+
+    if isinstance(bet, (list, np.ndarray)) and len(bet) == timesim:
+        return bet
+    elif np.isscalar(bet):  # Check if bet is a single number
+        return SecularTrendBetaDecrease(timesim, burnin, bet, params)
+    elif isinstance(bet, (list, np.ndarray)) and len(bet) == int(timesim / 52):
+        return YearlyBetaToWeeklyBeta(timesim, bet)
+    else:
+        raise ValueError(
+            f"Invalid length for bet. Expected length 1, {int(timesim / 52)}, or {timesim}, but got {len(bet) if isinstance(bet, (list, np.ndarray)) else 'unknown'}."
+        )
 
 
 def numMDAsBeforeNextSurvey(surveyPrev):
@@ -1156,7 +1174,9 @@ def sim_Ind_MDA_Include_Survey(
     # no survey occurred in a year. Without this, we are likely to get outputs with different
     # number of rows in them for different simulations, as there may be different numbers of
     # surveys based on the dynamics.
-    betas = SecularTrendBetaDecrease(timesim, burnin, bet, params)
+
+    # get weekly beta values
+    betas = calculateWeeklyBetas(timesim, burnin, bet, params)
 
     for i in range(timesim):
         if i % 52 == 0:
