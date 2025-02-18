@@ -652,6 +652,25 @@ def editTreatProbability(vals, cov, snc):
         vals["treatProbability"] = np.ones(len(vals["IndI"])) * cov
 
 
+def set_infection_risk(params, N):
+    """
+    Set the infection risk values for each individual.
+    If the params["infection_risk_shape"] is <=0 then this indicates that we don't need this
+    for the current runs, as these values aren't permissible in the gamma distribution.
+    In this case set everyone to have infection risk of 1 (they are all identical in their risk of infection)
+    Otherwise set from gamma dsitribution
+    """
+    if params["infection_risk_shape"] <= 0:
+        return np.ones(N)
+    else:
+        return np.random.gamma(
+            size=N,
+            scale=1 / params["infection_risk_shape"],
+            shape=params["infection_risk_shape"],
+        )
+
+
+
 def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse="Poisson"):
     """
     Set initial values.
@@ -689,11 +708,7 @@ def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse="Poisso
         )
     vals = dict(
         # generate risk of infection for each person
-        Infection_risk=np.random.gamma(
-            size=params["N"],
-            scale=1 / params["infection_risk_shape"],
-            shape=params["infection_risk_shape"],
-        ),
+        Infection_risk=set_infection_risk(params, params["N"]),
         # Individual's infected status
         IndI=np.zeros(params["N"]),
         # Individual's disease status
@@ -777,11 +792,7 @@ def Reset_vals(vals, reset_indivs, params, distToUse="Poisson"):
     )
     new_ids = np.arange(maxID + 1, maxID + numResetIndivs + 1)
     vals["ids"][reset_indivs] = new_ids
-    vals["Infection_risk"][reset_indivs] = np.random.gamma(
-        size=len(reset_indivs),
-        shape=params["infection_risk_shape"],
-        scale=1 / params["infection_risk_shape"],
-    )
+    vals["Infection_risk"][reset_indivs] = set_infection_risk(params, len(reset_indivs))
     return vals
 
 
@@ -837,10 +848,8 @@ def Import_individual(vals, import_indivs, params, demog, distToUse="Poisson"):
     vals["treatProbability"][import_indivs] = drawTreatmentProbabilities(
         numImportIndivs, vals["MDA_coverage"], vals["systematic_non_compliance"]
     )
-    vals["Infection_risk"][import_indivs] = np.random.gamma(
-        size=len(import_indivs),
-        shape=params["infection_risk_shape"],
-        scale=1 / params["infection_risk_shape"],
+    vals["Infection_risk"][import_indivs] = set_infection_risk(
+        params, len(import_indivs)
     )
     return vals
 
@@ -929,6 +938,33 @@ def Check_for_MDA_Vacc_And_Survey_Data(vals):
         vals["n_vaccinated_population"] = {}
 
     return vals
+
+
+def Check_for_Infection_risk(vals, params):
+    """
+    Check if "Infection_risk" key is in `vals`. If they are
+    not then initialize for population
+    Parameters
+    ----------
+    vals : dict
+        Contains current state of simulation
+    params : dict
+        Parameter dictionary
+    Returns
+    -------
+    dict
+        vals dictionary modified with infection risk
+    dict
+        params dictionary with infection_risk_shape added as -1
+        if there is no infection risk already in vals, as this
+        means that this parameter wasn't used in setting up the
+        population, so we don't want to use it in these simulations.
+    """
+
+    if not set(["Infection_risk"]).issubset(vals.keys()):
+        vals["Infection_risk"] = np.ones(len(vals["IndI"]))
+        params["infection_risk_shape"] = -1
+    return vals, params
 
 
 def Check_and_init_vaccination_state(params, vals):
@@ -1123,7 +1159,7 @@ def sim_Ind_MDA_Include_Survey(
     doIHMEOutput,
     numpy_state,
     distToUse="Poisson",
-):
+    postMDAImportationReduction = False):
     """
     Function to run a single simulation with MDA at time points determined by function MDA_times.
     Output is true prevalence of infection/disease in children aged 1-9.
@@ -1132,6 +1168,12 @@ def sim_Ind_MDA_Include_Survey(
     # when we are resuming previous simulations we use the provided random state
     np.random.set_state(numpy_state)
 
+     # if we are going to allow reduction of importation by ratio of pre and post MDA prevalence
+    # then set the timeForImpReduction to be after the simulation as this is the timepoint
+    # at which we will check whether we want to reduce the importation. Later in the simulation
+    # when an MDA is done, this value will be set to some different time after that MDA
+    if postMDAImportationReduction:
+        timeForImpReduction = timesim + 10
     # vacc_time = params['vacc_time']
     prevalence = []
     infections = []
@@ -1189,6 +1231,15 @@ def sim_Ind_MDA_Include_Survey(
     for i in range(timesim):
         if i % 52 == 0:
             params["importation_rate"] *= params["importation_reduction_rate"]
+
+        if postMDAImportationReduction:
+            if i == timeForImpReduction:
+                postMDAPrev = vals['IndI'].sum()/params["N"]
+                if postMDAPrev < 1/params["N"]:
+                    params['importation_rate'] = params['min_importation_rate']
+                elif preMDAPrev > 1/params["N"]:
+                    importationRatio = min(1, postMDAPrev / preMDAPrev)
+                    params['importation_rate'] *= importationRatio
 
         if ((i + 1) % 52) == 0:
             # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
@@ -1273,6 +1324,7 @@ def sim_Ind_MDA_Include_Survey(
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
             for round_idx in range(len(MDA_round)):
+                preMDAPrev = vals['IndI'].sum()/params["N"]
                 MDA_round_current = MDA_round[round_idx]
                 # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, label, systematic_non_compliance = (
@@ -1307,7 +1359,10 @@ def sim_Ind_MDA_Include_Survey(
                 )
                 if nMDAWholePop == numMDAForSurvey and surveyPass < 2:
                     surveyTime = i + 25
-
+                    
+                if postMDAImportationReduction:
+                    timeForImpReduction = i + params['importation_reduction_length']
+                    
         if i in vacc_times:
             vacc_round = np.where(vacc_times == i)[0]
             if len(vacc_round) == 1:
@@ -1954,6 +2009,7 @@ def run_single_simulation(
     vals = Check_and_init_MDA_treatment_state(params, vals, MDAData, numpy_state)
     vals = Check_for_IDs(vals)
     vals = Check_for_MDA_Vacc_And_Survey_Data(vals)
+    vals, params = Check_for_Infection_risk(vals, params)
     vals = resetMDAVaccAndSurveyData(vals)
     params["N"] = len(vals["IndI"])
     results = sim_Ind_MDA_Include_Survey(

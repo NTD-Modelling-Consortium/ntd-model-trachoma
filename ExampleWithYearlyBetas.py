@@ -45,7 +45,10 @@ params = {'N': 2500,
           'vacc_waning_length': 52 * 5,
           'importation_rate': 0.000008,
           'importation_reduction_rate': (0.9)**(1/10),
-            "infection_risk_shape":10000000}
+          'infection_risk_shape':6.4, # extra parameter needed for infection risk shape. equivalent to k in STH/sch model.
+                                        #Set to a very high number if you want to assume everyone is the same
+          'min_importation_rate':  1/(20 * 52 * 2500),
+          'importation_reduction_length' : 25}
 
 sim_params = {'timesim':(52*96)+1,
               'burnin': (52*70)-1,
