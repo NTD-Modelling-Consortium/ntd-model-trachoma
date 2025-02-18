@@ -1028,10 +1028,11 @@ def YearlyBetaToWeeklyBeta(timesim, yearlyBetas):
     extraPoints = timesim - len(weeklyBetas)  # Compute extra required points
 
     if extraPoints > 0:
-        weeklyBetas = np.concatenate((weeklyBetas, np.full(extraPoints, weeklyBetas[-1])))  # Repeat final value
+        weeklyBetas = np.concatenate(
+            (weeklyBetas, np.full(extraPoints, weeklyBetas[-1]))
+        )  # Repeat final value
 
     return weeklyBetas
-
 
 
 def calculateWeeklyBetas(timesim, burnin, bet, params):

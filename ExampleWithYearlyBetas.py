@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 
 num_cores = multiprocessing.cpu_count()
 
+'''
+I don't think you need to change anything on your end except for the betas which is at the bottom. 
+The rest of this script is just setting up the population
+'''
 
 params = {'N': 2500,
           'av_I_duration' : 2,
@@ -102,7 +106,7 @@ def alterMDACoverage(MDAData, coverage):
     return MDAData
 
 
-distToUse = "Expo"
+
 
 
 
@@ -128,9 +132,18 @@ outputTimes = getOutputTimes(outputYear)
 outputTimes = get_Intervention_times(outputTimes, Start_date, sim_params['burnin'])
 
 # extra functions to generate data we need for the runs and to run and plot the simulations
-seed = 10
+
+
+
+# This is so that we use exponentially distributed times rather than poisson.
+# I think you have been doing this recently
+distToUse = "Expo"
+
+
+# set up population
+
+seed = 100
 np.random.seed(seed)
-MDAData = alterMDACoverage(MDAData, coverages[0])
 vals = create_initial_population(initial_infect_frac, MDAData, params, distToUse)
 random_state = np.random.get_state()
 
@@ -138,10 +151,19 @@ timesim = sim_params['timesim']
 burnin = sim_params['burnin']
 
 
-betas = np.random.uniform(0.1,0.2,size = int(sim_params['timesim']/52))
+'''
+here you specify what you want to do with the yearly beta values. 
+the length should be int(sim_params['timesim']/52)
 
+so I think for the amis code, you need to do 
 
-out, _ = sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin, demog, betas, MDA_times, alterMDACoverage(MDAData, coverages[0]), vacc_times,  VaccData, outputTimes,
+beta=amisPars[0:(int(sim_params['timesim']/52)-1)]
+
+'''
+#betas = np.random.uniform(0.1, 0.2, size = int(sim_params['timesim']/52))
+betas = np.linspace(0.1, 0.05, int(sim_params['timesim']/52))
+
+out, _ = sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin, demog, betas, MDA_times, alterMDACoverage(MDAData, 0.8), vacc_times,  VaccData, outputTimes,
                                     doSurvey = False, doIHMEOutput= False, numpy_state = random_state, distToUse = distToUse)
 
-plt.plot(out['True_Prev_Disease_children_1_9'])
+print(out['True_Prev_Disease_children_1_9'])
