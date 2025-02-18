@@ -2029,7 +2029,7 @@ def run_single_simulation(
         doIHMEOutput=doIHMEOutput,
         numpy_state=numpy_state,
         distToUse=distToUse,
-        postMDAImportationReduction = postMDAImportationReduction)
+        postMDAImportationReduction = postMDAImportationReduction
     )
     return results
 
