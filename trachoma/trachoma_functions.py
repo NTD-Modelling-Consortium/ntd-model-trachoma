@@ -1999,6 +1999,7 @@ def run_single_simulation(
     index,
     numpy_state,
     distToUse="Poisson",
+    postMDAImportationReduction = False
 ):
     """
     Function to run a single instance of the simulation. The starting point for these simulations
@@ -2028,6 +2029,7 @@ def run_single_simulation(
         doIHMEOutput=doIHMEOutput,
         numpy_state=numpy_state,
         distToUse=distToUse,
+        postMDAImportationReduction = postMDAImportationReduction)
     )
     return results
 

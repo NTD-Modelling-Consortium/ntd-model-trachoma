@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 num_cores = multiprocessing.cpu_count()
 
 '''
-I don't think you need to change anything on your end except for the betas which is at the bottom. 
-The rest of this script is just setting up the population
+    There are new parameters at the bottom of the params variable which you'll have to add to the amis code
 '''
 
 params = {'N': 2500,
@@ -47,8 +46,8 @@ params = {'N': 2500,
           'importation_reduction_rate': (0.9)**(1/10),
           'infection_risk_shape':6.4, # extra parameter needed for infection risk shape. equivalent to k in STH/sch model.
                                         #Set to a very high number if you want to assume everyone is the same
-          'min_importation_rate':  1/(20 * 52 * 2500),
-          'importation_reduction_length' : 25}
+          'min_importation_rate':  1/(20 * 52 * 2500), # some small number for the minimum importation rate. Can be 0 if you want
+          'importation_reduction_length' : 25} # time in weeks after performing an MDA which we wait before reducing the importation rate
 
 sim_params = {'timesim':(52*96)+1,
               'burnin': (52*70)-1,
@@ -63,7 +62,9 @@ demog = {'tau': 0.0004807692,
 
 Start_date = date(1996,1, 1)
 
-
+'''
+    All this stuff is just set up which you won't need to copy over
+'''
 def get_Vacc_data(coverageFileName, Start_date, sim_params):
     VaccData = readPlatformData(coverageFileName, "Vaccine")
     Vaccine_dates = getInterventionDates(VaccData)
@@ -138,6 +139,7 @@ outputTimes = get_Intervention_times(outputTimes, Start_date, sim_params['burnin
 
 
 
+
 # This is so that we use exponentially distributed times rather than poisson.
 # I think you have been doing this recently
 distToUse = "Expo"
@@ -164,9 +166,11 @@ beta=amisPars[0:(int(sim_params['timesim']/52)-1)]
 
 '''
 #betas = np.random.uniform(0.1, 0.2, size = int(sim_params['timesim']/52))
-betas = np.linspace(0.1, 0.05, int(sim_params['timesim']/52))
 
-out, _ = sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin, demog, betas, MDA_times, alterMDACoverage(MDAData, 0.8), vacc_times,  VaccData, outputTimes,
-                                    doSurvey = False, doIHMEOutput= False, numpy_state = random_state, distToUse = distToUse)
+betas = np.linspace(0.1, 0.04, int(sim_params['timesim']/52))
+
+out, _ = sim_Ind_MDA_Include_Survey(params, vals, timesim, burnin, demog, betas, MDA_times, MDAData, vacc_times,  VaccData, outputTimes,
+                                    doSurvey = False, doIHMEOutput= False, numpy_state = random_state, distToUse = distToUse,
+                                    postMDAImportationReduction = True)
 
 print(out['True_Prev_Disease_children_1_9'])
