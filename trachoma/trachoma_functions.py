@@ -1167,6 +1167,7 @@ def sim_Ind_MDA_Include_Survey(
     outputTimes2 = copy.deepcopy(outputTimes)
     # when we are resuming previous simulations we use the provided random state
     np.random.set_state(numpy_state)
+    preMDAPrev = 1 # initialize this variable here, as it is only used if postMDAImportationReduction = True
 
      # if we are going to allow reduction of importation by ratio of pre and post MDA prevalence
     # then set the timeForImpReduction to be after the simulation as this is the timepoint
