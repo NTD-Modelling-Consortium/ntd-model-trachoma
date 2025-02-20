@@ -4,7 +4,7 @@ import unittest
 
 from ntdmc_trachoma.trachoma_functions import * 
 
-class TestGetLambdaStep(unittest.TestCase): 
+class TestSpecificationOfBetas(unittest.TestCase): 
 
     def setUp(self):
         self.bet = 1
