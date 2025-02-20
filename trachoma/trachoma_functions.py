@@ -670,7 +670,6 @@ def set_infection_risk(params, N):
         )
 
 
-
 def Set_inits(params, demog, sim_params, MDAData, numpy_state, distToUse="Poisson"):
     """
     Set initial values.
@@ -1159,7 +1158,8 @@ def sim_Ind_MDA_Include_Survey(
     doIHMEOutput,
     numpy_state,
     distToUse="Poisson",
-    postMDAImportationReduction = False):
+    postMDAImportationReduction=False,
+):
     """
     Function to run a single simulation with MDA at time points determined by function MDA_times.
     Output is true prevalence of infection/disease in children aged 1-9.
@@ -1167,9 +1167,9 @@ def sim_Ind_MDA_Include_Survey(
     outputTimes2 = copy.deepcopy(outputTimes)
     # when we are resuming previous simulations we use the provided random state
     np.random.set_state(numpy_state)
-    preMDAPrev = 1 # initialize this variable here, as it is only used if postMDAImportationReduction = True
+    preMDAPrev = 1  # initialize this variable here, as it is only used if postMDAImportationReduction = True
 
-     # if we are going to allow reduction of importation by ratio of pre and post MDA prevalence
+    # if we are going to allow reduction of importation by ratio of pre and post MDA prevalence
     # then set the timeForImpReduction to be after the simulation as this is the timepoint
     # at which we will check whether we want to reduce the importation. Later in the simulation
     # when an MDA is done, this value will be set to some different time after that MDA
@@ -1235,12 +1235,12 @@ def sim_Ind_MDA_Include_Survey(
 
         if postMDAImportationReduction:
             if i == timeForImpReduction:
-                postMDAPrev = vals['IndI'].sum()/params["N"]
-                if postMDAPrev < 1/params["N"]:
-                    params['importation_rate'] = params['min_importation_rate']
-                elif preMDAPrev > 1/params["N"]:
+                postMDAPrev = vals["IndI"].sum() / params["N"]
+                if postMDAPrev < 1 / params["N"]:
+                    params["importation_rate"] = params["min_importation_rate"]
+                elif preMDAPrev > 1 / params["N"]:
                     importationRatio = min(1, postMDAPrev / preMDAPrev)
-                    params['importation_rate'] *= importationRatio
+                    params["importation_rate"] *= importationRatio
 
         if ((i + 1) % 52) == 0:
             # if we are after the burnin and haven't done a survey this year, then do a survey with 0 coverage
@@ -1325,7 +1325,7 @@ def sim_Ind_MDA_Include_Survey(
         if i in MDA_times:
             MDA_round = np.where(MDA_times == i)[0]
             for round_idx in range(len(MDA_round)):
-                preMDAPrev = vals['IndI'].sum()/params["N"]
+                preMDAPrev = vals["IndI"].sum() / params["N"]
                 MDA_round_current = MDA_round[round_idx]
                 # we want to get the data corresponding to this MDA from the MDAdata
                 ageStart, ageEnd, cov, label, systematic_non_compliance = (
@@ -1360,10 +1360,10 @@ def sim_Ind_MDA_Include_Survey(
                 )
                 if nMDAWholePop == numMDAForSurvey and surveyPass < 2:
                     surveyTime = i + 25
-                    
+
                 if postMDAImportationReduction:
-                    timeForImpReduction = i + params['importation_reduction_length']
-                    
+                    timeForImpReduction = i + params["importation_reduction_length"]
+
         if i in vacc_times:
             vacc_round = np.where(vacc_times == i)[0]
             if len(vacc_round) == 1:
@@ -2000,7 +2000,7 @@ def run_single_simulation(
     index,
     numpy_state,
     distToUse="Poisson",
-    postMDAImportationReduction = False
+    postMDAImportationReduction=False,
 ):
     """
     Function to run a single instance of the simulation. The starting point for these simulations
@@ -2030,7 +2030,7 @@ def run_single_simulation(
         doIHMEOutput=doIHMEOutput,
         numpy_state=numpy_state,
         distToUse=distToUse,
-        postMDAImportationReduction = postMDAImportationReduction
+        postMDAImportationReduction=postMDAImportationReduction,
     )
     return results
 
